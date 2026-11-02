@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Quotation {{ quotation.quotation_number }} - Klean Max Pro</title>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 8mm 12mm 12mm 12mm;
+            @bottom-center {
+                content: "Contact :- 7338882036 / 9710148218 -- Website :- www.kleanmaxpro.com";
+                font-size: 8pt;
+                color: #475569;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            }
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            color: #1e293b;
+            margin: 0;
+            padding: 0;
+            font-size: 8.5pt;
+            line-height: 1.35;
+            background-color: #ffffff;
+        }
+
+        /* Top Letterhead Banner */
+        .banner-container {
+            width: 100%;
+            text-align: center;
+            margin-bottom: 12px;
+            border-bottom: 2px solid #0f172a;
+            padding-bottom: 6px;
+        }
+
+        .banner-img {
+            width: 100%;
+            max-height: 110px;
+            object-fit: contain;
+        }
+
+        /* Quotation Title */
+        .quote-title {
+            text-align: center;
+            font-size: 13pt;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            color: #0f172a;
+            text-transform: uppercase;
+            text-decoration: underline;
+            margin: 8px 0 14px 0;
+        }
+
+        /* Meta block: Number, Date, To */
+        .meta-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+
+        .meta-to {
+            vertical-align: top;
+            width: 55%;
+            font-size: 8.5pt;
+        }
+
+        .meta-to-label {
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 2px;
+        }
+
+        .meta-to-name {
+            font-size: 10pt;
+            font-weight: 800;
+            color: #0f172a;
+            text-transform: uppercase;
+        }
+
+        .meta-no-date {
+            vertical-align: top;
+            width: 45%;
+            text-align: right;
+            font-size: 8.5pt;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        /* About Us Box */
+        .about-us-box {
+            font-size: 7.8pt;
+            color: #334155;
+            line-height: 1.4;
+            margin-bottom: 14px;
+            padding: 6px 10px;
+            background-color: #f8fafc;
+            border-left: 3px solid #fed10c;
+            border-radius: 2px;
+        }
+
+        .about-us-title {
+            font-weight: 800;
+            font-size: 8.5pt;
+            color: #0f172a;
+            margin-bottom: 3px;
+        }
+
+        /* Quotation Data Table */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 12px;
+            font-size: 8pt;
+        }
+
+        .data-table th {
+            background-color: #f1f5f9;
+            color: #0f172a;
+            font-weight: 800;
+            text-transform: uppercase;
+            padding: 6px 8px;
+            border: 1px solid #94a3b8;
+            font-size: 7.5pt;
+            text-align: left;
+        }
+
+        .data-table td {
+            padding: 5px 8px;
+            border: 1px solid #cbd5e1;
+            vertical-align: middle;
+        }
+
+        .section-header-row td {
+            background-color: #e2e8f0;
+            font-weight: 800;
+            color: #0f172a;
+            text-transform: uppercase;
+            padding: 4px 8px;
+            font-size: 8pt;
+        }
+
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+
+        .total-row td {
+            font-weight: 800;
+            font-size: 9pt;
+            background-color: #f8fafc;
+            border-top: 2px solid #0f172a;
+        }
+
+        /* Machine image inside table */
+        .machine-img {
+            max-width: 170px;
+            max-height: 130px;
+            display: block;
+            margin: 6px 0;
+            border-radius: 4px;
+        }
+
+        .machine-specs {
+            font-size: 7.5pt;
+            color: #475569;
+            line-height: 1.35;
+            margin-top: 4px;
+        }
+
+        /* After-table sections */
+        .after-table-grid {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            page-break-inside: avoid;
+        }
+
+        .section-heading {
+            font-size: 8.5pt;
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+        }
+
+        .bullet-list {
+            margin: 0;
+            padding-left: 14px;
+            font-size: 7.5pt;
+            color: #334155;
+            line-height: 1.4;
+        }
+
+        /* Bank Details Box */
+        .bank-box {
+            background-color: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            padding: 6px 10px;
+            margin: 8px 0;
+            font-size: 7.5pt;
+            line-height: 1.4;
+        }
+
+        /* Signatory Block */
+        .signature-block {
+            margin-top: 14px;
+            width: 100%;
+            border-collapse: collapse;
+            page-break-inside: avoid;
+        }
+
+        .sign-left {
+            width: 55%;
+            font-size: 7.5pt;
+            color: #475569;
+            font-style: italic;
+        }
+
+        .sign-right {
+            width: 45%;
+            text-align: right;
+            font-size: 8pt;
+            line-height: 1.35;
+        }
+
+        .computer-notice {
+            margin-top: 14px;
+            padding-top: 6px;
+            border-top: 1px dashed #cbd5e1;
+            font-size: 7pt;
+            color: #64748b;
+            text-align: center;
+            font-style: italic;
+        }
+
+        .fixed-footer-line {
+            margin-top: 12px;
+            padding-top: 6px;
+            border-top: 1px solid #94a3b8;
+            text-align: center;
+            font-size: 8pt;
+            font-weight: 700;
+            color: #0f172a;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 1. Top Letterhead Banner -->
+    <div class="banner-container">
+        {% if banner_base64 %}
+        <img src="data:image/png;base64,{{ banner_base64 }}" class="banner-img" alt="Klean Max Pro Letterhead Banner" />
+        {% else %}
+        <div style="font-size: 16pt; font-weight: 900; color: #0f172a;">KLEAN MAX PRO</div>
+        <div style="font-size: 8pt; color: #64748b;">NO 6, B6, Jayam Industrial Estate, Chettiyar Agaram First Main Road, Vanagaram, Chennai - 600077</div>
+        {% endif %}
+    </div>
+
+    <!-- 2. Quotation Title -->
+    <div class="quote-title">
+        {% if quotation.quotation_type == 'repair_service' or 'SPARE' in quotation.job_description|default('')|upper %}
+            SPARES AND SERVICE QUOTATION
+        {% elif quotation.quotation_type == 'item_based' or 'SALE' in quotation.job_description|default('')|upper %}
+            SALES QUOTATION
+        {% else %}
+            COMMERCIAL QUOTATION
+        {% endif %}
+    </div>
+
+    <!-- 3. Meta Table (Quotation Number, Date, Client) -->
+    <table class="meta-table">
+        <tr>
+            <td class="meta-to">
+                <div class="meta-to-label">To :-</div>
+                <div class="meta-to-name">{{ customer.company_name }}</div>
+                {% if customer.billing_address_line1 %}
+                <div>{{ customer.billing_address_line1 }}{% if customer.billing_city %}, {{ customer.billing_city }}{% endif %}</div>
+                {% elif customer.billing_city %}
+                <div>{{ customer.billing_city }}.</div>
+                {% endif %}
+                {% if customer.phone %}
+                <div>Ph: {{ customer.phone }}</div>
+                {% endif %}
+            </td>
+            <td class="meta-no-date">
+                <div>Revised Quotation No :- {{ quotation.quotation_number }}{% if quotation.revision_number > 0 %}-R{{ quotation.revision_number }}{% endif %}</div>
+                <div style="margin-top: 4px;">Date :- {{ quotation.quotation_date.strftime('%d/%m/%Y') if quotation.quotation_date else '' }}</div>
+            </td>
+        </tr>
+    </table>
+
+    <!-- 4. Fixed About Us Section -->
+    <div class="about-us-box">
+        <div class="about-us-title">About us</div>
+        {% if quotation.quotation_type == 'item_based' or 'SALE' in quotation.job_description|default('')|upper %}
+        Kleanmax Pro is a leading provider of cleaning machine rental and sales services, offering a wide range of equipment — from vacuum cleaners to ride-on scrubbers — to industries, malls, commercial spaces, and facility management companies across Chennai, Bangalore, Hyderabad and Visakhapatnam.<br/><br/>
+        Our rental machines are well-maintained, ready-to-use, and come with on-site delivery and pickup. We also offer on-call technical support throughout the rental period, ensuring seamless operations. Machines are equipped with GPS tracking devices to monitor usage, location, and efficiency in real-time. For larger or longer projects, we provide custom rental packages, and where needed, can include standby machines and basic operator training. With flexible rental durations, affordable pricing, and transparent terms, our rental service is designed to deliver both performance and peace of mind.
+        {% else %}
+        Kleanmax is a trusted name in the repair and maintenance of all types of cleaning equipment — from vacuum cleaners to ride-on scrubbers. With 12+ years of experience since 2013, we serve clients across Chennai, Bangalore, Hyderabad, and Visakhapatnam.<br/><br/>
+        We operate a large, fully equipped service center with a skilled technical team capable of handling both mechanical and electronic issues, including motherboard-level troubleshooting. We also offer custom fabrication of high-cost spare parts to reduce downtime and cost.<br/><br/>
+        We provide AMC (Annual Maintenance Contracts) and CMC (Comprehensive Maintenance Contracts) to ensure consistent machine performance and hassle-free upkeep.
+        {% endif %}
+    </div>
+
+    <!-- 5. Items / Spares / Services Table -->
+    {% if items and items|length > 0 %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th style="width: 8%;" class="text-center">SL NO</th>
+                <th style="width: 52%;">DESCRIPTION</th>
+                <th style="width: 10%;" class="text-center">QTY</th>
+                <th style="width: 10%;" class="text-center">UOM</th>
+                <th style="width: 10%;" class="text-right">RATE</th>
+                <th style="width: 10%;" class="text-right">AMOUNT</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+                {# Check if this item is a section header (e.g. machine name) #}
+                {% if item.description and item.description.startswith('HEADER:') %}
+                <tr class="section-header-row">
+                    <td class="text-center">{{ item.hsn_sac or loop.index }}</td>
+                    <td colspan="5">{{ item.item_name }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td class="text-center">{{ loop.index }}</td>
+                    <td>
+                        <div style="font-weight: 700; color: #0f172a;">{{ item.item_name }}</div>
+                        {% if machine_base64 and ('SCRUBBER' in item.item_name|upper or 'KARCHER' in item.item_name|upper) %}
+                        <img src="data:image/png;base64,{{ machine_base64 }}" class="machine-img" alt="Machine Photo" />
+                        {% endif %}
+                        {% if item.description and not item.description.startswith('HEADER:') %}
+                        <div class="machine-specs">{{ item.description }}</div>
+                        {% endif %}
+                    </td>
+                    <td class="text-center" style="font-weight: 700;">{{ item.quantity|int if item.quantity == item.quantity|int else item.quantity }}</td>
+                    <td class="text-center">{{ item.uom|upper }}</td>
+                    <td class="text-right">₹ {{ "%.2f"|format(item.applied_rate) }}</td>
+                    <td class="text-right" style="font-weight: 700;">₹ {{ "%.2f"|format(item.line_total) }}</td>
+                </tr>
+                {% endif %}
+            {% endfor %}
+
+            {# Financial Totals #}
+            {% if quotation.cgst_amount and quotation.cgst_amount > 0 %}
+            <tr class="total-row">
+                <td colspan="5" class="text-right">SUB TOTAL</td>
+                <td class="text-right">₹ {{ "%.2f"|format(quotation.subtotal) }}</td>
+            </tr>
+            <tr>
+                <td colspan="5" class="text-right" style="font-weight: 600;">CGST ({{ quotation.cgst_rate }}%)</td>
+                <td class="text-right">₹ {{ "%.2f"|format(quotation.cgst_amount) }}</td>
+            </tr>
+            <tr>
+                <td colspan="5" class="text-right" style="font-weight: 600;">SGST ({{ quotation.sgst_rate }}%)</td>
+                <td class="text-right">₹ {{ "%.2f"|format(quotation.sgst_amount) }}</td>
+            </tr>
+            <tr class="total-row" style="background-color: #fef08a;">
+                <td colspan="5" class="text-right" style="font-size: 10pt;">TOTAL</td>
+                <td class="text-right" style="font-size: 10pt; color: #0f172a;">₹ {{ "%.2f"|format(quotation.final_amount) }}</td>
+            </tr>
+            {% else %}
+            <tr class="total-row">
+                <td colspan="5" class="text-right" style="font-size: 9.5pt;">TOTAL</td>
+                <td class="text-right" style="font-size: 9.5pt; color: #0f172a;">₹ {{ "%.2f"|format(quotation.final_amount) }}</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+    {% elif sections and sections|length > 0 %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th style="width: 8%;" class="text-center">SL NO</th>
+                <th style="width: 44%;">AREA & SERVICE SCOPE</th>
+                <th style="width: 14%;" class="text-center">DIMENSIONS</th>
+                <th style="width: 12%;" class="text-center">BILLABLE AREA</th>
+                <th style="width: 11%;" class="text-right">RATE</th>
+                <th style="width: 11%;" class="text-right">TOTAL</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in sections %}
+            <tr>
+                <td class="text-center">{{ loop.index }}</td>
+                <td>
+                    <div style="font-weight: 700; color: #0f172a;">{{ s.section_name }}</div>
+                    <div style="font-size: 7.5pt; color: #475569;">{{ s.service_name }}</div>
+                </td>
+                <td class="text-center">{{ s.length }} x {{ s.breadth }} {{ s.measurement_unit }}{% if s.repetitions > 1 %} (x{{ s.repetitions }}){% endif %}</td>
+                <td class="text-center" style="font-weight: 700;">{{ s.billable_area }} sq ft</td>
+                <td class="text-right">₹ {{ "%.2f"|format(s.applied_rate) }}</td>
+                <td class="text-right" style="font-weight: 700;">₹ {{ "%.2f"|format(s.line_total) }}</td>
+            </tr>
+            {% endfor %}
+
+            <tr class="total-row">
+                <td colspan="5" class="text-right">SUB TOTAL</td>
+                <td class="text-right">₹ {{ "%.2f"|format(quotation.subtotal) }}</td>
+            </tr>
+            {% if quotation.cgst_amount and quotation.cgst_amount > 0 %}
+            <tr>
+                <td colspan="5" class="text-right" style="font-weight: 600;">CGST ({{ quotation.cgst_rate }}%)</td>
+                <td class="text-right">₹ {{ "%.2f"|format(quotation.cgst_amount) }}</td>
+            </tr>
+            <tr>
+                <td colspan="5" class="text-right" style="font-weight: 600;">SGST ({{ quotation.sgst_rate }}%)</td>
+                <td class="text-right">₹ {{ "%.2f"|format(quotation.sgst_amount) }}</td>
+            </tr>
+            {% endif %}
+            <tr class="total-row" style="background-color: #fef08a;">
+                <td colspan="5" class="text-right" style="font-size: 10pt;">TOTAL</td>
+                <td class="text-right" style="font-size: 10pt; color: #0f172a;">₹ {{ "%.2f"|format(quotation.final_amount) }}</td>
+            </tr>
+        </tbody>
+    </table>
+    {% endif %}
+
+    <!-- 6. Fixed After-Table Content -->
+    {% if quotation.quotation_type == 'item_based' or 'SALE' in quotation.job_description|default('')|upper %}
+    <!-- Equipment Sales After-Table -->
+    <div style="margin-top: 10px;">
+        <div class="section-heading">Advantages of Buying from Kleanmax</div>
+        <ul class="bullet-list">
+            <li>14+ years of trusted industry experience.</li>
+            <li>High-performance, quality-tested machines.</li>
+            <li>Customized solutions for various industries.</li>
+            <li>Transparent and competitive pricing.</li>
+            <li>Fast and reliable delivery service.</li>
+            <li>Dedicated after-sales technical support.</li>
+            <li>Readily available genuine spare parts.</li>
+            <li>Expert consultation for the right machine selection.</li>
+            <li>Basic operator training provided.</li>
+            <li>Long-term value with reliable performance.</li>
+        </ul>
+    </div>
+    <div style="margin-top: 8px;">
+        <div class="section-heading">Other Services</div>
+        <ul class="bullet-list">
+            <li>Repair & Maintenance of Cleaning Equipment</li>
+            <li>AMC / CMC Contracts</li>
+            <li>Sales of New & Used Machines</li>
+            <li>Housekeeping Material Supply</li>
+            <li>Commercial Cleaning & Painting Services</li>
+        </ul>
+    </div>
+    {% else %}
+    <!-- Spares and Service After-Table -->
+    <div style="margin-top: 10px;">
+        <div class="section-heading">Other Services</div>
+        <ul class="bullet-list">
+            <li>Cleaning Machine Rentals & Sales</li>
+            <li>Housekeeping Material Supply</li>
+            <li>Commercial Cleaning & Painting Services</li>
+        </ul>
+    </div>
+
+    <div style="margin-top: 8px;">
+        <div class="section-heading">Terms & Conditions</div>
+        <ul class="bullet-list">
+            <li>Quotation valid for 15 days from the date of issue.</li>
+            <li>Service will be provided within 24–48 hours of confirmation.</li>
+            <li>All replaced parts will be returned to the client on request.</li>
+            <li>Any additional repair will be done after client approval.</li>
+            <li>Only listed services and parts are covered in this quotation.</li>
+        </ul>
+    </div>
+
+    <!-- Bank Details -->
+    <div class="bank-box">
+        <div style="font-weight: 800; color: #0f172a; margin-bottom: 2px;">Company's Bank Details</div>
+        <div>• A/c Holder's Name : <strong>KLEAN MAX PRO</strong></div>
+        <div>• Bank Name : <strong>ICICI BANK KMP</strong></div>
+        <div>• A/c No. : <strong>027505010327</strong></div>
+        <div>• Branch & IFS Code: <strong>PORUR & ICIC0000275</strong></div>
+    </div>
+
+    <div style="font-size: 7.5pt; font-weight: 600; color: #0f172a; margin-top: 6px;">
+        Kleanmax Pro — Your trusted service partner for complete cleaning equipment solutions across South India.
+    </div>
+
+    <!-- Signatory -->
+    <table class="signature-block">
+        <tr>
+            <td class="sign-left">
+                &nbsp;
+            </td>
+            <td class="sign-right">
+                <div style="font-weight: 700;">For Klean max pro</div>
+                <div style="margin-top: 25px; font-weight: 800; color: #0f172a;">Mr. Manikandan</div>
+                <div style="font-size: 7.5pt; color: #475569;">Service Head</div>
+                <div style="font-size: 7.5pt; color: #475569;">+91 7338882036</div>
+                <div style="font-weight: 700; color: #0f172a; margin-top: 2px;">Authorised Signatory</div>
+            </td>
+        </tr>
+    </table>
+    {% endif %}
+
+    <!-- 7. Computer Notice & Fixed Footer -->
+    <div class="computer-notice">
+        This is a computer generated document and authenticated by Klean max pro. Hence, it can be considered valid even if not signed manually.
+    </div>
+
+    <div class="fixed-footer-line">
+        Contact :- 7338882036 / 9710148218 -- Website :- www.kleanmaxpro.com
+    </div>
+
+</body>
+</html>

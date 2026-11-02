@@ -1,0 +1,2 @@
+# Optional server-side headless browser dependencies for Playwright PDF rendering
+playwright>=1.42.0
