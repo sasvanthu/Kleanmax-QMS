@@ -3,7 +3,7 @@ import {
   CompanySetting
 } from './types';
 
-const BASE_URL = '/api';
+const BASE_URL = (((import.meta as any).env?.VITE_API_BASE_URL as string) || '/api').replace(/\/$/, '');
 
 class ApiError extends Error {
   status: number;
@@ -106,11 +106,12 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
-    list: (params: { search?: string; status?: string; customer_id?: string } = {}) => {
+    list: (params: { search?: string; status?: string; customer_id?: string; company_code?: string } = {}) => {
       const q = new URLSearchParams();
       if (params.search) q.append('search', params.search);
       if (params.status) q.append('status', params.status);
       if (params.customer_id) q.append('customer_id', params.customer_id);
+      if (params.company_code) q.append('company_code', params.company_code);
       return request<Quotation[]>(`/quotations?${q.toString()}`);
     },
     get: (id: string) => request<Quotation>(`/quotations/${id}`),
@@ -130,12 +131,40 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ revision_reason: reason }),
     }),
-    getPdfUrl: (id: string) => `/api/quotations/${id}/pdf`,
-    getHtmlUrl: (id: string) => `/api/quotations/${id}/html`,
+    getPdfUrl: (id: string) => `${BASE_URL}/quotations/${id}/pdf`,
+    getDocxUrl: (id: string) => `${BASE_URL}/quotations/${id}/docx`,
+    getHtmlUrl: (id: string) => `${BASE_URL}/quotations/${id}/html`,
+    downloadPdf: (id: string, filename?: string) => {
+      const link = document.createElement('a');
+      link.href = `${BASE_URL}/quotations/${id}/pdf`;
+      link.target = '_blank';
+      if (filename) link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    },
+    downloadDocx: (id: string, filename?: string) => {
+      const link = document.createElement('a');
+      link.href = `${BASE_URL}/quotations/${id}/docx`;
+      link.target = '_blank';
+      if (filename) link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    },
   },
 
   company: {
-    get: () => request<CompanySetting>('/company'),
+    get: (code?: string) => {
+      const q = code ? `?code=${encodeURIComponent(code)}` : '';
+      return request<CompanySetting>(`/company${q}`);
+    },
+    getAll: () => request<CompanySetting[]>('/company/all'),
+    getByIdentifier: (identifier: string) => request<CompanySetting>(`/company/${identifier}`),
+    updateByIdentifier: (identifier: string, data: Partial<CompanySetting>) => request<CompanySetting>(`/company/${identifier}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
     update: (data: Partial<CompanySetting>) => request<CompanySetting>('/company', {
       method: 'PUT',
       body: JSON.stringify(data),

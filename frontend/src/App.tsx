@@ -2,9 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { User } from './services/types';
 import { api } from './services/api';
 import { Layout } from './components/Layout';
-import { Dashboard } from './pages/Dashboard';
+
+// 5 Dashboards
+import { Dashboard } from './pages/Dashboard'; // Dashboard 1: Unified Master Admin
+import { KleanmaxProDashboard } from './pages/KleanmaxProDashboard'; // Dashboard 2: Kleanmax Pro
+import { KleanmaxDashboard } from './pages/KleanmaxDashboard'; // Dashboard 3: Kleanmax
+import { UniquePaintersDashboard } from './pages/UniquePaintersDashboard'; // Dashboard 4: Unique Painters
+import { CleantechDashboard } from './pages/CleantechDashboard'; // Dashboard 5: Cleantech Services
+
+// Quotation & Operational Pages
 import { QuotationsList } from './pages/QuotationsList';
 import { QuotationCreate } from './pages/QuotationCreate';
+import { QuotationEdit } from './pages/QuotationEdit';
 import { QuotationDetail } from './pages/QuotationDetail';
 import { Customers } from './pages/Customers';
 import { ServicesCatalogue } from './pages/ServicesCatalogue';
@@ -12,6 +21,8 @@ import { CompanySettings } from './pages/CompanySettings';
 import { KleanmaxProAreaQuotation } from './pages/KleanmaxProAreaQuotation';
 import { KleanmaxSparesQuotation } from './pages/KleanmaxSparesQuotation';
 import { KleanmaxSalesQuotation } from './pages/KleanmaxSalesQuotation';
+import { UniquePaintersGenerator } from './pages/UniquePaintersGenerator';
+import { CleantechGenerator } from './pages/CleantechGenerator';
 import { PdfPreviewModal } from './components/quotation/PdfPreviewModal';
 
 export const App: React.FC = () => {
@@ -62,6 +73,7 @@ export const App: React.FC = () => {
 
   const renderCurrentPage = () => {
     switch (currentPage) {
+      // DASHBOARD 1: UNIFIED MASTER ADMIN
       case 'dashboard':
         return (
           <Dashboard
@@ -71,7 +83,8 @@ export const App: React.FC = () => {
           />
         );
 
-      // KLEANMAX PRO Subdivisions
+      // DASHBOARD 2: COMPANY 1 - KLEANMAX PRO (3 Pages: Generator, Past Quotes, Editor)
+      case 'kleanmaxpro_dash':
       case 'kleanmaxpro_area':
         return (
           <KleanmaxProAreaQuotation
@@ -90,7 +103,8 @@ export const App: React.FC = () => {
           />
         );
 
-      // KLEANMAX Subdivisions (Spares & Sales based on WhatsApp Images)
+      // DASHBOARD 3: COMPANY 2 - KLEANMAX (3 Pages: Generator, Past Quotes, Editor)
+      case 'kleanmax_dash':
       case 'kleanmax_spares':
         return (
           <KleanmaxSparesQuotation
@@ -117,7 +131,47 @@ export const App: React.FC = () => {
           />
         );
 
-      // Shared / General
+      // DASHBOARD 4: COMPANY 3 - UNIQUE PAINTERS
+      case 'uniquepainters_dash':
+      case 'uniquepainters_generator':
+        return (
+          <UniquePaintersGenerator
+            currentUser={currentUser}
+            onNavigate={handleNavigate}
+            onOpenPreview={handleOpenPreview}
+          />
+        );
+      case 'uniquepainters_quotes':
+        return (
+          <QuotationsList
+            currentUser={currentUser}
+            onNavigate={handleNavigate}
+            onOpenPreview={handleOpenPreview}
+            defaultBrandFilter="uniquepainters"
+          />
+        );
+
+      // DASHBOARD 5: COMPANY 4 - CLEANTECH SERVICES
+      case 'cleantech_dash':
+      case 'cleantech_generator':
+        return (
+          <CleantechGenerator
+            currentUser={currentUser}
+            onNavigate={handleNavigate}
+            onOpenPreview={handleOpenPreview}
+          />
+        );
+      case 'cleantech_quotes':
+        return (
+          <QuotationsList
+            currentUser={currentUser}
+            onNavigate={handleNavigate}
+            onOpenPreview={handleOpenPreview}
+            defaultBrandFilter="cleantech"
+          />
+        );
+
+      // UNIFIED ADMIN: SHARED & MANAGEMENT PAGES
       case 'quotations':
         return (
           <QuotationsList
@@ -134,6 +188,16 @@ export const App: React.FC = () => {
             onNavigate={handleNavigate}
             onOpenPreview={handleOpenPreview}
             initialQuotation={pageParams}
+          />
+        );
+      case 'quotation_edit':
+        return (
+          <QuotationEdit
+            quotationId={pageParams?.id}
+            initialCompanyCode={pageParams?.company_code}
+            currentUser={currentUser}
+            onNavigate={handleNavigate}
+            onOpenPreview={handleOpenPreview}
           />
         );
       case 'quotation_detail':
@@ -162,6 +226,8 @@ export const App: React.FC = () => {
         return (
           <CompanySettings
             currentUser={currentUser}
+            initialTab={pageParams?.tab || 'kleanmaxpro'}
+            onNavigate={handleNavigate}
           />
         );
       default:
@@ -188,6 +254,7 @@ export const App: React.FC = () => {
         quotationId={previewQuotationId}
         isOpen={previewModalOpen}
         onClose={() => setPreviewModalOpen(false)}
+        onNavigate={handleNavigate}
       />
     </Layout>
   );

@@ -126,6 +126,7 @@ export interface QuotationRevision {
 
 export interface Quotation {
   id: string;
+  company_code?: string;
   quotation_number: string;
   revision_number: number;
   parent_quotation_id?: string;
@@ -179,6 +180,7 @@ export interface Quotation {
 
 export interface CompanySetting {
   id?: string;
+  company_code?: string;
   company_name: string;
   legal_name: string;
   gstin?: string;
@@ -202,6 +204,8 @@ export interface CompanySetting {
   quotation_prefix: string;
   default_validity_days: number;
   rounding_policy: string;
+  tagline?: string;
+  brand_color?: string;
   default_payment_terms?: string;
   default_delivery_terms?: string;
   default_warranty_terms?: string;

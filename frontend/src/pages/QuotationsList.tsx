@@ -4,14 +4,14 @@ import { api } from '../services/api';
 import {
   FileText, Search, PlusCircle, Filter, Eye, Printer, Download,
   CheckCircle2, Send, RotateCcw, AlertTriangle, ChevronRight, X,
-  Wrench, ShoppingCart, Layers
+  Wrench, ShoppingCart, Layers, Edit
 } from 'lucide-react';
 
 interface QuotationsListProps {
   currentUser: User | null;
   onNavigate: (page: string, params?: any) => void;
   onOpenPreview: (quotationId: string) => void;
-  defaultBrandFilter?: 'all' | 'kleanmaxpro' | 'kleanmax';
+  defaultBrandFilter?: 'all' | 'kleanmaxpro' | 'kleanmax' | 'uniquepainters' | 'cleantech';
 }
 
 export const QuotationsList: React.FC<QuotationsListProps> = ({
@@ -24,7 +24,11 @@ export const QuotationsList: React.FC<QuotationsListProps> = ({
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [brandFilter, setBrandFilter] = useState<'all' | 'kleanmaxpro' | 'kleanmax'>(defaultBrandFilter);
+  const [brandFilter, setBrandFilter] = useState<'all' | 'kleanmaxpro' | 'kleanmax' | 'uniquepainters' | 'cleantech'>(defaultBrandFilter);
+
+  useEffect(() => {
+    setBrandFilter(defaultBrandFilter);
+  }, [defaultBrandFilter]);
 
   useEffect(() => {
     loadQuotations();
@@ -61,15 +65,22 @@ export const QuotationsList: React.FC<QuotationsListProps> = ({
   const filteredQuotations = quotations.filter((q) => {
     if (brandFilter === 'all') return true;
     if (brandFilter === 'kleanmaxpro') {
-      return q.quotation_type === 'area_based' || (q.job_description && q.job_description.includes('Kleanmax Pro'));
+      return q.company_code === 'kleanmaxpro' || q.quotation_type === 'area_based' || (q.job_description && q.job_description.includes('Kleanmax Pro'));
     }
     if (brandFilter === 'kleanmax') {
       return (
+        q.company_code === 'kleanmax' ||
         q.quotation_type === 'repair_service' ||
         q.quotation_type === 'item_based' ||
         (q.customer_ref && q.customer_ref.startsWith('KM/')) ||
         (q.job_description && (q.job_description.includes('Spares') || q.job_description.includes('Sales')))
       );
+    }
+    if (brandFilter === 'uniquepainters') {
+      return q.company_code === 'uniquepainters' || (q.job_description && q.job_description.toLowerCase().includes('paint'));
+    }
+    if (brandFilter === 'cleantech') {
+      return q.company_code === 'cleantech' || (q.job_description && (q.job_description.toLowerCase().includes('solar') || q.job_description.toLowerCase().includes('facade') || q.job_description.toLowerCase().includes('amc')));
     }
     return true;
   });
@@ -137,7 +148,7 @@ export const QuotationsList: React.FC<QuotationsListProps> = ({
         <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
           <div className="flex items-center gap-2">
             <span className="text-[11px] font-bold text-slate-500 uppercase">Division:</span>
-            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg">
+            <div className="flex flex-wrap items-center gap-1 bg-slate-100 p-1 rounded-lg">
               <button
                 onClick={() => setBrandFilter('all')}
                 className={`px-3 py-1 text-xs font-black rounded-md transition-all ${
@@ -162,11 +173,31 @@ export const QuotationsList: React.FC<QuotationsListProps> = ({
                 onClick={() => setBrandFilter('kleanmax')}
                 className={`px-3 py-1 text-xs font-black rounded-md transition-all ${
                   brandFilter === 'kleanmax'
-                    ? 'bg-blue-600 text-white shadow-xs'
+                    ? 'bg-sky-500 text-slate-950 shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 KLEANMAX
+              </button>
+              <button
+                onClick={() => setBrandFilter('uniquepainters')}
+                className={`px-3 py-1 text-xs font-black rounded-md transition-all ${
+                  brandFilter === 'uniquepainters'
+                    ? 'bg-purple-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                UNIQUE PAINTERS
+              </button>
+              <button
+                onClick={() => setBrandFilter('cleantech')}
+                className={`px-3 py-1 text-xs font-black rounded-md transition-all ${
+                  brandFilter === 'cleantech'
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                CLEANTECH
               </button>
             </div>
           </div>
@@ -248,13 +279,21 @@ export const QuotationsList: React.FC<QuotationsListProps> = ({
                       </td>
 
                       <td className="p-3.5">
-                        {isPro ? (
-                          <span className="bg-[#FED10C]/20 text-slate-900 border border-[#FED10C] font-black text-[10px] px-2 py-0.5 rounded">
-                            KLEANMAX PRO
+                        {q.company_code === 'cleantech' ? (
+                          <span className="bg-teal-50 text-teal-800 border border-teal-300 font-extrabold text-[10px] px-2 py-0.5 rounded">
+                            CLEANTECH
+                          </span>
+                        ) : q.company_code === 'uniquepainters' ? (
+                          <span className="bg-purple-50 text-purple-800 border border-purple-300 font-extrabold text-[10px] px-2 py-0.5 rounded">
+                            UNIQUE PAINTERS
+                          </span>
+                        ) : q.company_code === 'kleanmax' ? (
+                          <span className="bg-sky-50 text-sky-800 border border-sky-300 font-extrabold text-[10px] px-2 py-0.5 rounded">
+                            KLEANMAX
                           </span>
                         ) : (
-                          <span className="bg-blue-50 text-blue-700 border border-blue-200 font-bold text-[10px] px-2 py-0.5 rounded">
-                            KLEANMAX
+                          <span className="bg-amber-100 text-amber-950 border border-amber-300 font-black text-[10px] px-2 py-0.5 rounded">
+                            KLEANMAX PRO
                           </span>
                         )}
                       </td>
@@ -305,17 +344,34 @@ export const QuotationsList: React.FC<QuotationsListProps> = ({
 
                       <td className="p-3.5 text-center whitespace-nowrap">
                         <div className="flex items-center justify-center gap-1.5">
-                          {/* 1-Click Ready to Download PDF button */}
-                          <a
-                            href={`/api/quotations/${q.id}/pdf`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="px-2.5 py-1 bg-[#FED10C] hover:bg-[#E5BC07] text-slate-950 font-black text-[11px] rounded flex items-center gap-1 shadow-2xs"
-                            title="Instant Download PDF"
+                          {/* Edit Button */}
+                          <button
+                            onClick={() => onNavigate('quotation_edit', { id: q.id })}
+                            className="p-1 hover:bg-slate-200 text-slate-600 hover:text-blue-600 rounded transition-colors"
+                            title="Edit Quotation"
                           >
-                            <Download className="w-3.5 h-3.5" />
-                            <span>Download PDF</span>
-                          </a>
+                            <Edit className="w-3.5 h-3.5" />
+                          </button>
+
+                          {/* Word (.docx) Download */}
+                          <button
+                            onClick={() => api.quotations.downloadDocx(q.id)}
+                            className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white font-bold text-[10px] rounded flex items-center gap-1 shadow-2xs transition-colors"
+                            title="Download Word (.docx)"
+                          >
+                            <FileText className="w-3 h-3" />
+                            <span>Word</span>
+                          </button>
+
+                          {/* PDF Download */}
+                          <button
+                            onClick={() => api.quotations.downloadPdf(q.id)}
+                            className="px-2 py-1 bg-[#FED10C] hover:bg-[#E5BC07] text-slate-950 font-bold text-[10px] rounded flex items-center gap-1 shadow-2xs transition-colors"
+                            title="Download PDF"
+                          >
+                            <Download className="w-3 h-3" />
+                            <span>PDF</span>
+                          </button>
 
                           {/* Preview PDF Modal */}
                           <button
@@ -325,17 +381,6 @@ export const QuotationsList: React.FC<QuotationsListProps> = ({
                           >
                             <Eye className="w-4 h-4 text-slate-600" />
                           </button>
-
-                          {/* Status Submit/Approve if Draft */}
-                          {q.status === 'draft' && (
-                            <button
-                              onClick={() => handleAction(q.id, 'submit')}
-                              className="px-2 py-1 bg-amber-500 hover:bg-amber-600 text-slate-950 text-[10px] font-extrabold rounded shadow-2xs"
-                              title="Submit for Approval"
-                            >
-                              Submit
-                            </button>
-                          )}
 
                           {/* View Full Detail */}
                           <button

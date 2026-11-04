@@ -4,6 +4,7 @@ from typing import Optional
 class CompanySettingSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: Optional[str] = None
+    company_code: Optional[str] = "kleanmaxpro"
     company_name: str
     legal_name: str
     gstin: Optional[str] = None
@@ -27,6 +28,8 @@ class CompanySettingSchema(BaseModel):
     quotation_prefix: str = "KMP"
     default_validity_days: int = 30
     rounding_policy: str = "HALF_UP"
+    tagline: Optional[str] = None
+    brand_color: Optional[str] = "#FED10C"
     default_payment_terms: Optional[str] = None
     default_delivery_terms: Optional[str] = None
     default_warranty_terms: Optional[str] = None

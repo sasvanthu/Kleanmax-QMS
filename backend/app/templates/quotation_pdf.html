@@ -248,20 +248,26 @@
 
     <!-- 1. Top Letterhead Banner -->
     <div class="banner-container">
-        {% if banner_base64 %}
-        <img src="data:image/png;base64,{{ banner_base64 }}" class="banner-img" alt="Klean Max Pro Letterhead Banner" />
+        {% if header_base64 or banner_base64 %}
+        <img src="data:image/png;base64,{{ header_base64 or banner_base64 }}" class="banner-img" alt="{{ company.company_name }} Letterhead Banner" />
         {% else %}
-        <div style="font-size: 16pt; font-weight: 900; color: #0f172a;">KLEAN MAX PRO</div>
-        <div style="font-size: 8pt; color: #64748b;">NO 6, B6, Jayam Industrial Estate, Chettiyar Agaram First Main Road, Vanagaram, Chennai - 600077</div>
+        <div style="font-size: 16pt; font-weight: 900; color: #0f172a;">{{ company.company_name or 'KLEAN MAX PRO' }}</div>
+        <div style="font-size: 8pt; color: #64748b;">{{ company.address_line1 or '' }}{% if company.city %}, {{ company.city }}{% endif %}{% if company.pincode %} - {{ company.pincode }}{% endif %}</div>
         {% endif %}
     </div>
 
     <!-- 2. Quotation Title -->
     <div class="quote-title">
-        {% if quotation.quotation_type == 'repair_service' or 'SPARE' in quotation.job_description|default('')|upper %}
+        {% if company_code == 'cleantech' or 'SOLAR' in quotation.job_description|default('')|upper %}
+            SOLAR PANEL CLEANING & AMC PROPOSAL
+        {% elif company_code == 'uniquepainters' or 'PAINT' in quotation.job_description|default('')|upper or 'COATING' in quotation.job_description|default('')|upper or 'EPOXY' in quotation.job_description|default('')|upper %}
+            SURFACE COATING & PAINTING QUOTATION
+        {% elif quotation.quotation_type == 'repair_service' or 'SPARE' in quotation.job_description|default('')|upper %}
             SPARES AND SERVICE QUOTATION
         {% elif quotation.quotation_type == 'item_based' or 'SALE' in quotation.job_description|default('')|upper %}
             SALES QUOTATION
+        {% elif 'RENTAL' in quotation.job_description|default('')|upper or quotation.quotation_type == 'rental' %}
+            MONTHLY RENTAL QUOTATION
         {% else %}
             COMMERCIAL QUOTATION
         {% endif %}
@@ -289,16 +295,21 @@
         </tr>
     </table>
 
-    <!-- 4. Fixed About Us Section -->
+    <!-- 4. About Us Section -->
     <div class="about-us-box">
         <div class="about-us-title">About us</div>
-        {% if quotation.quotation_type == 'item_based' or 'SALE' in quotation.job_description|default('')|upper %}
-        Kleanmax Pro is a leading provider of cleaning machine rental and sales services, offering a wide range of equipment — from vacuum cleaners to ride-on scrubbers — to industries, malls, commercial spaces, and facility management companies across Chennai, Bangalore, Hyderabad and Visakhapatnam.<br/><br/>
-        Our rental machines are well-maintained, ready-to-use, and come with on-site delivery and pickup. We also offer on-call technical support throughout the rental period, ensuring seamless operations. Machines are equipped with GPS tracking devices to monitor usage, location, and efficiency in real-time. For larger or longer projects, we provide custom rental packages, and where needed, can include standby machines and basic operator training. With flexible rental durations, affordable pricing, and transparent terms, our rental service is designed to deliver both performance and peace of mind.
+        {% if company and company.about_us %}
+            {{ company.about_us|replace('\n', '<br/>') }}
+        {% elif company_code == 'cleantech' %}
+            Cleantech Services is a premier industrial cleaning and facility maintenance provider specializing in utility-scale and commercial rooftop solar panel cleaning, automated mechanized solar washing, and high-level architectural maintenance. We deploy cutting-edge technology and certified safety teams to maximize solar yield and asset longevity.
+        {% elif company_code == 'uniquepainters' %}
+            Unique Painters is a trusted contractor for commercial, industrial, and protective coatings with over a decade of hands-on expertise. We specialize in epoxy floor systems, chemical-resistant PU coatings, anti-fungal exterior finishes, and high-performance industrial repainting with zero compromise on surface preparation and finish durability.
+        {% elif quotation.quotation_type == 'item_based' or 'SALE' in quotation.job_description|default('')|upper %}
+            Kleanmax Pro is a leading provider of cleaning machine rental and sales services, offering a wide range of equipment — from vacuum cleaners to ride-on scrubbers — to industries, malls, commercial spaces, and facility management companies across Chennai, Bangalore, Hyderabad and Visakhapatnam.<br/><br/>
+            Our rental machines are well-maintained, ready-to-use, and come with on-site delivery and pickup. We also offer on-call technical support throughout the rental period, ensuring seamless operations. Machines are equipped with GPS tracking devices to monitor usage, location, and efficiency in real-time.
         {% else %}
-        Kleanmax is a trusted name in the repair and maintenance of all types of cleaning equipment — from vacuum cleaners to ride-on scrubbers. With 12+ years of experience since 2013, we serve clients across Chennai, Bangalore, Hyderabad, and Visakhapatnam.<br/><br/>
-        We operate a large, fully equipped service center with a skilled technical team capable of handling both mechanical and electronic issues, including motherboard-level troubleshooting. We also offer custom fabrication of high-cost spare parts to reduce downtime and cost.<br/><br/>
-        We provide AMC (Annual Maintenance Contracts) and CMC (Comprehensive Maintenance Contracts) to ensure consistent machine performance and hassle-free upkeep.
+            Kleanmax is a trusted name in the repair and maintenance of all types of cleaning equipment — from vacuum cleaners to ride-on scrubbers. With 12+ years of experience since 2013, we serve clients across Chennai, Bangalore, Hyderabad, and Visakhapatnam.<br/><br/>
+            We operate a large, fully equipped service center with a skilled technical team capable of handling both mechanical and electronic issues, including motherboard-level troubleshooting. We also offer custom fabrication of high-cost spare parts to reduce downtime and cost.
         {% endif %}
     </div>
 
@@ -471,14 +482,14 @@
     <!-- Bank Details -->
     <div class="bank-box">
         <div style="font-weight: 800; color: #0f172a; margin-bottom: 2px;">Company's Bank Details</div>
-        <div>• A/c Holder's Name : <strong>KLEAN MAX PRO</strong></div>
-        <div>• Bank Name : <strong>ICICI BANK KMP</strong></div>
-        <div>• A/c No. : <strong>027505010327</strong></div>
-        <div>• Branch & IFS Code: <strong>PORUR & ICIC0000275</strong></div>
+        <div>• A/c Holder's Name : <strong>{{ company.bank_account_name or company.company_name or 'KLEAN MAX PRO' }}</strong></div>
+        <div>• Bank Name : <strong>{{ company.bank_name or 'ICICI BANK KMP' }}</strong></div>
+        <div>• A/c No. : <strong>{{ company.bank_account_no or '027505010327' }}</strong></div>
+        <div>• Branch & IFS Code: <strong>{{ company.bank_branch or 'PORUR' }} & {{ company.bank_ifsc or 'ICIC0000275' }}</strong></div>
     </div>
 
     <div style="font-size: 7.5pt; font-weight: 600; color: #0f172a; margin-top: 6px;">
-        Kleanmax Pro — Your trusted service partner for complete cleaning equipment solutions across South India.
+        {{ company.company_name or 'Kleanmax Pro' }} — Your trusted service partner for complete cleaning equipment and facility solutions across South India.
     </div>
 
     <!-- Signatory -->
@@ -488,24 +499,42 @@
                 &nbsp;
             </td>
             <td class="sign-right">
-                <div style="font-weight: 700;">For Klean max pro</div>
-                <div style="margin-top: 25px; font-weight: 800; color: #0f172a;">Mr. Manikandan</div>
-                <div style="font-size: 7.5pt; color: #475569;">Service Head</div>
-                <div style="font-size: 7.5pt; color: #475569;">+91 7338882036</div>
+                <div style="font-weight: 700;">For {{ company.company_name or 'Klean max pro' }}</div>
+                <div style="margin-top: 25px; font-weight: 800; color: #0f172a;">
+                    {% if company_code == 'cleantech' %}
+                    Mr. Manikandan Balamurugan
+                    {% elif 'kleanmax' in company_code %}
+                    Mr. Manikandan
+                    {% else %}
+                    {{ prepared_by_name or 'Authorised Signatory' }}
+                    {% endif %}
+                </div>
+                <div style="font-size: 7.5pt; color: #475569;">
+                    {% if company_code == 'cleantech' %}Sales & Service Head
+                    {% elif 'kleanmax' in company_code %}Service Head
+                    {% else %}Project Estimations Head{% endif %}
+                </div>
+                <div style="font-size: 7.5pt; color: #475569;">{{ company.phone or '+91 7338882036' }}</div>
                 <div style="font-weight: 700; color: #0f172a; margin-top: 2px;">Authorised Signatory</div>
             </td>
         </tr>
     </table>
     {% endif %}
 
-    <!-- 7. Computer Notice & Fixed Footer -->
+    <!-- 7. Computer Notice & Footer -->
     <div class="computer-notice">
-        This is a computer generated document and authenticated by Klean max pro. Hence, it can be considered valid even if not signed manually.
+        This is a computer generated document and authenticated by {{ company.company_name or 'Klean max pro' }}. Hence, it can be considered valid even if not signed manually.
     </div>
 
-    <div class="fixed-footer-line">
-        Contact :- 7338882036 / 9710148218 -- Website :- www.kleanmaxpro.com
+    {% if footer_base64 %}
+    <div style="text-align: center; margin-top: 10px;">
+        <img src="data:image/png;base64,{{ footer_base64 }}" style="width: 100%; max-height: 55px; object-fit: contain;" alt="Footer banner" />
     </div>
+    {% else %}
+    <div class="fixed-footer-line">
+        Contact :- {{ company.phone or '7338882036 / 9710148218' }} -- Email :- {{ company.email or 'info@kleanmaxpro.com' }} -- Website :- {{ company.website or 'www.kleanmaxpro.com' }}
+    </div>
+    {% endif %}
 
 </body>
 </html>

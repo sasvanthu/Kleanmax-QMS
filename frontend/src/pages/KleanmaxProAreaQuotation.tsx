@@ -3,7 +3,7 @@ import { User } from '../services/types';
 import { api } from '../services/api';
 import {
   Download, Printer, Save, CheckCircle2,
-  Calendar, Layers, ShieldCheck, Sparkles, Plus, Trash2, ArrowLeft
+  Calendar, Layers, ShieldCheck, Sparkles, Plus, Trash2, ArrowLeft, FileText
 } from 'lucide-react';
 
 interface AreaSection {
@@ -166,6 +166,7 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
 
       // 3. Create quotation
       const payload = {
+        company_code: 'kleanmaxpro',
         customer_id: customer.id,
         quotation_type: 'area_based',
         quotation_date: quotationDate,
@@ -200,7 +201,17 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
       qId = await handleSaveToDatabase();
     }
     if (qId) {
-      window.open(`/api/quotations/${qId}/pdf`, '_blank');
+      api.quotations.downloadPdf(qId);
+    }
+  };
+
+  const handleDownloadDocx = async () => {
+    let qId = savedQuoteId;
+    if (!qId) {
+      qId = await handleSaveToDatabase();
+    }
+    if (qId) {
+      api.quotations.downloadDocx(qId);
     }
   };
 
@@ -243,7 +254,17 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
         </div>
 
         {/* 1-Click Action Buttons */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={handleDownloadDocx}
+            disabled={saving}
+            className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-md flex items-center gap-1.5 transition-all"
+            title="Download Word (.docx)"
+          >
+            <FileText className="w-4 h-4 text-white" />
+            <span>Word (.docx)</span>
+          </button>
+
           <button
             onClick={handleSaveToDatabase}
             disabled={saving}

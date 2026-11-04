@@ -41,7 +41,12 @@ def create_quotation(
     if not customer:
         raise HTTPException(status_code=404, detail="Customer not found")
 
-    company = db.query(CompanySetting).first()
+    company = None
+    if getattr(data, 'company_code', None):
+        company = db.query(CompanySetting).filter(CompanySetting.company_code == data.company_code).first()
+    if not company:
+        company = db.query(CompanySetting).first()
+
     company_state = company.state_code if company else "33"
     validity_days = company.default_validity_days if company else 30
 
@@ -119,9 +124,11 @@ def create_quotation(
     calc_res = calculate_quotation_totals(calc_req)
 
     # Generate sequential number safely
-    quotation_number = generate_next_quotation_number(db, data.quotation_date)
+    prefix = company.quotation_prefix if company and company.quotation_prefix else "KMP"
+    quotation_number = generate_next_quotation_number(db, data.quotation_date, prefix=prefix)
 
     quotation = Quotation(
+        company_code=data.company_code or (company.company_code if company else "kleanmaxpro"),
         quotation_number=quotation_number,
         revision_number=0,
         customer_id=customer.id,
@@ -264,7 +271,14 @@ def update_quotation(
         )
 
     customer = db.query(Customer).filter(Customer.id == (data.customer_id or quotation.customer_id)).first()
-    company = db.query(CompanySetting).first()
+    if data.company_code:
+        quotation.company_code = data.company_code
+
+    company = None
+    if quotation.company_code:
+        company = db.query(CompanySetting).filter(CompanySetting.company_code == quotation.company_code).first()
+    if not company:
+        company = db.query(CompanySetting).first()
     company_state = company.state_code if company else "33"
 
     if data.customer_id:
@@ -345,24 +359,44 @@ def update_quotation(
             for s in quotation.sections
         ]
 
-    calc_items = [
-        ItemCalculationInput(
-            item_name=i.item_name,
-            quantity=i.quantity,
-            uom=i.uom,
-            unit_price=i.unit_price,
-            discount_percent=Decimal("0.00"),
-            tax_rate=i.tax_rate,
-            service_id=i.service_id,
-            item_code=i.item_code,
-            description=i.description,
-            hsn_sac=i.hsn_sac,
-            rate_source=i.rate_source,
-            original_catalogue_rate=i.original_catalogue_rate,
-            override_reason=i.override_reason,
-        )
-        for i in quotation.items
-    ]
+    if data.items is not None:
+        calc_items = [
+            ItemCalculationInput(
+                item_name=i.item_name,
+                quantity=i.quantity,
+                uom=i.uom,
+                unit_price=i.unit_price,
+                discount_percent=Decimal("0.00"),
+                tax_rate=i.tax_rate,
+                service_id=i.service_id,
+                item_code=i.item_code,
+                description=i.description,
+                hsn_sac=i.hsn_sac,
+                rate_source=i.rate_source,
+                original_catalogue_rate=i.original_catalogue_rate,
+                override_reason=i.override_reason,
+            )
+            for i in data.items
+        ]
+    else:
+        calc_items = [
+            ItemCalculationInput(
+                item_name=i.item_name,
+                quantity=i.quantity,
+                uom=i.uom,
+                unit_price=i.unit_price,
+                discount_percent=Decimal("0.00"),
+                tax_rate=i.tax_rate,
+                service_id=i.service_id,
+                item_code=i.item_code,
+                description=i.description,
+                hsn_sac=i.hsn_sac,
+                rate_source=i.rate_source,
+                original_catalogue_rate=i.original_catalogue_rate,
+                override_reason=i.override_reason,
+            )
+            for i in quotation.items
+        ]
 
     calc_req = QuotationCalculationRequest(
         sections=calc_sections,
@@ -427,6 +461,34 @@ def update_quotation(
                 notes=sec_input.notes,
             )
             db.add(s_row)
+
+    if data.items is not None:
+        db.query(QuotationItem).filter(QuotationItem.quotation_id == quotation.id).delete()
+        for idx, (item_input, item_calc) in enumerate(zip(data.items, calc_res.items), start=1):
+            item_row = QuotationItem(
+                quotation_id=quotation.id,
+                item_order=idx,
+                service_id=item_input.service_id,
+                item_code=item_input.item_code,
+                item_name=item_calc.item_name,
+                description=item_input.description,
+                hsn_sac=item_input.hsn_sac,
+                quotation_type=item_input.quotation_type,
+                quantity=item_calc.quantity,
+                uom=item_calc.uom,
+                unit_price=item_calc.unit_price,
+                rate_source=item_input.rate_source,
+                original_catalogue_rate=item_input.original_catalogue_rate,
+                applied_rate=item_input.applied_rate,
+                override_reason=item_input.override_reason,
+                override_by_id=current_user.id if item_input.rate_source == "manual_override" else None,
+                override_at=datetime.utcnow() if item_input.rate_source == "manual_override" else None,
+                taxable_value=item_calc.taxable_value,
+                tax_rate=item_calc.tax_rate,
+                line_total=item_calc.line_total,
+                notes=item_input.notes,
+            )
+            db.add(item_row)
 
     audit_update = AuditLog(
         entity_type="quotation",

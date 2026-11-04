@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Quotation, Customer, Service, User } from '../services/types';
+import { Quotation, Customer, Service, User, CompanySetting } from '../services/types';
 import { api } from '../services/api';
 import {
   FileText, Clock, CheckCircle2, Send, PlusCircle, Users,
   ArrowUpRight, Search, Eye, TrendingUp, Calculator,
   Building2, ShieldCheck, Layers, Check, Sparkles,
   AlertCircle, ChevronRight, Download, Wrench, ShoppingCart,
-  ArrowRight
+  ArrowRight, Paintbrush, Sun, Shield, Palette, HardHat, Edit
 } from 'lucide-react';
 
 interface DashboardProps {
@@ -22,18 +22,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
 }) => {
   const [quotations, setQuotations] = useState<Quotation[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [services, setServices] = useState<Service[]>([]);
+  const [companies, setCompanies] = useState<CompanySetting[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [companyFilter, setCompanyFilter] = useState<'all' | 'kleanmaxpro' | 'kleanmax' | 'uniquepainters' | 'cleantech'>('all');
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-
-  // Quick Area Estimator
-  const [calcServiceId, setCalcServiceId] = useState<string>('');
-  const [calcLength, setCalcLength] = useState<number>(80);
-  const [calcBreadth, setCalcBreadth] = useState<number>(40);
-  const [calcUnit, setCalcUnit] = useState<'ft' | 'm'>('ft');
-  const [calcRepetitions, setCalcRepetitions] = useState<number>(1);
 
   useEffect(() => {
     loadData();
@@ -42,20 +36,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const loadData = async () => {
     setLoading(true);
     try {
-      const [qList, cList, sList] = await Promise.all([
+      const [qList, cList, comps] = await Promise.all([
         api.quotations.list(),
         api.customers.list(),
-        api.services.list(),
+        api.company.getAll(),
       ]);
       setQuotations(qList);
       setCustomers(cList);
-      setServices(sList);
-      if (sList.length > 0 && !calcServiceId) {
-        const areaService = sList.find((s) => s.quotation_type === 'area_based') || sList[0];
-        setCalcServiceId(areaService.id);
-      }
+      setCompanies(comps);
     } catch (err) {
-      console.error('Error loading dashboard data:', err);
+      console.error('Error loading master dashboard data:', err);
     } finally {
       setLoading(false);
     }
@@ -75,29 +65,44 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
-  // Staff Quick Estimator calculation
-  const selectedService = services.find((s) => s.id === calcServiceId) || services[0];
-  const rawArea = Number(calcLength || 0) * Number(calcBreadth || 0) * Number(calcRepetitions || 1);
-  const billableAreaSqFt = calcUnit === 'm' ? rawArea * 10.76391 : rawArea;
-  const standardRate = Number(selectedService?.standard_rate || 4.5);
-  const estimatedAmount = billableAreaSqFt * standardRate;
+  // Metrics per company
+  const kmpQuotes = quotations.filter(q => q.company_code === 'kleanmaxpro' || (!q.company_code && q.quotation_type === 'area_based'));
+  const klmQuotes = quotations.filter(q => q.company_code === 'kleanmax' || q.quotation_type === 'repair_service' || (q.customer_ref && q.customer_ref.startsWith('KM/')));
+  const unpQuotes = quotations.filter(q => q.company_code === 'uniquepainters' || (q.job_description && q.job_description.toLowerCase().includes('paint')));
+  const ctsQuotes = quotations.filter(q => q.company_code === 'cleantech' || (q.job_description && (q.job_description.toLowerCase().includes('solar') || q.job_description.toLowerCase().includes('facade') || q.job_description.toLowerCase().includes('amc'))));
 
-  // Pipeline calculations
-  const totalCount = quotations.length;
-  const pendingQuotations = quotations.filter((q) => q.status === 'pending_approval');
-  const issuedQuotations = quotations.filter((q) => q.status === 'issued' || q.status === 'approved');
-  const totalPipelineValue = quotations.reduce((sum, q) => sum + Number(q.final_amount || 0), 0);
+  const totalValue = quotations.reduce((sum, q) => sum + Number(q.final_amount || 0), 0);
+  const kmpValue = kmpQuotes.reduce((sum, q) => sum + Number(q.final_amount || 0), 0);
+  const klmValue = klmQuotes.reduce((sum, q) => sum + Number(q.final_amount || 0), 0);
+  const unpValue = unpQuotes.reduce((sum, q) => sum + Number(q.final_amount || 0), 0);
+  const ctsValue = ctsQuotes.reduce((sum, q) => sum + Number(q.final_amount || 0), 0);
 
-  // Filter recent quotations
-  const recentQuotations = quotations.filter((q) => {
+  const pendingCount = quotations.filter(q => q.status === 'pending_approval').length;
+  const approvedCount = quotations.filter(q => q.status === 'approved' || q.status === 'issued').length;
+
+  // Filtered quotations list
+  const filteredQuotations = quotations.filter(q => {
+    // Company match
+    if (companyFilter === 'kleanmaxpro') {
+      if (q.company_code !== 'kleanmaxpro' && q.quotation_type !== 'area_based') return false;
+    } else if (companyFilter === 'kleanmax') {
+      if (q.company_code !== 'kleanmax' && q.quotation_type !== 'repair_service') return false;
+    } else if (companyFilter === 'uniquepainters') {
+      if (q.company_code !== 'uniquepainters') return false;
+    } else if (companyFilter === 'cleantech') {
+      if (q.company_code !== 'cleantech') return false;
+    }
+
+    // Search query match
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      const matchNum = q.quotation_number.toLowerCase().includes(query);
-      const matchCust = q.customer?.company_name?.toLowerCase().includes(query);
-      return matchNum || matchCust;
+      const numMatch = q.quotation_number?.toLowerCase().includes(query);
+      const custMatch = q.customer?.company_name?.toLowerCase().includes(query);
+      const descMatch = q.job_description?.toLowerCase().includes(query);
+      return numMatch || custMatch || descMatch;
     }
     return true;
-  }).slice(0, 8);
+  });
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
@@ -114,372 +119,485 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
       )}
 
-      {/* Unified Executive Header */}
-      <div className="bg-gradient-to-r from-[#0F172A] via-[#1E293B] to-[#0F172A] text-white rounded-2xl p-6 shadow-md border border-slate-800">
-        <div className="flex flex-wrap items-center justify-between gap-4">
+      {/* Unified Executive Master Header */}
+      <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 text-white rounded-2xl p-6 md:p-8 shadow-xl border border-slate-800 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-bl from-amber-500/10 via-sky-500/10 to-purple-500/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="flex flex-wrap items-center justify-between gap-4 relative z-10">
           <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex items-center gap-1.5 bg-[#FED10C] text-slate-950 px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider">
+            <div className="flex flex-wrap items-center gap-2 mb-2.5">
+              <span className="inline-flex items-center gap-1.5 bg-[#FED10C] text-slate-950 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider shadow-xs">
                 <Sparkles className="w-3.5 h-3.5 text-slate-950" />
-                Automated Quotation Management
+                Unified Enterprise Hub
               </span>
-              <span className="inline-flex items-center gap-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full text-[10px] font-bold">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                Admin Workspace Active
+              <span className="inline-flex items-center gap-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2.5 py-0.5 rounded-full text-[11px] font-bold">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                4 Active Companies Integrated
+              </span>
+              <span className="bg-slate-800 text-slate-300 px-2.5 py-0.5 rounded-full text-[11px] font-bold">
+                Admin Privilege Active
               </span>
             </div>
             <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">
-              Kleanmax Pro & Kleanmax Operations Hub
+              Enterprise Operations & 5-Dashboard Administration
             </h1>
-            <p className="text-xs text-slate-400 mt-1 max-w-2xl leading-relaxed">
-              Automated quotations with fixed letterhead banner, pre-filled rates & specs, live quantity calculation, and 1-click ready-to-download official PDF generation.
+            <p className="text-xs text-slate-300 mt-2 max-w-3xl leading-relaxed">
+              Consolidated administration across <span className="text-amber-400 font-bold">Kleanmax Pro</span> (Floor Scrubbing), <span className="text-sky-400 font-bold">Kleanmax</span> (Spares & Sales), <span className="text-purple-400 font-bold">Unique Painters</span> (Surface Coating), and <span className="text-emerald-400 font-bold">Cleantech Services</span> (Sanitization & AMC).
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={() => onNavigate('settings')}
-              className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs rounded-xl flex items-center gap-1.5"
+              className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl border border-slate-700 shadow-xs flex items-center gap-2 transition-all"
             >
-              <Building2 className="w-3.5 h-3.5 text-amber-400" />
-              <span>Company & Bank</span>
+              <Building2 className="w-4 h-4 text-amber-400" />
+              <span>Manage 4 Companies (All Editable)</span>
             </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Primary Division Cards: KLEANMAX PRO vs KLEANMAX */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
-        {/* DIVISION 1: KLEANMAX PRO */}
-        <div className="bg-white rounded-2xl border-2 border-amber-300/80 shadow-md p-6 flex flex-col justify-between hover:shadow-lg transition-all relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-amber-100 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <span className="bg-[#FED10C] text-slate-950 text-xs font-black px-3 py-1 rounded-full uppercase tracking-wider shadow-2xs">
-                DIVISION: KLEANMAX PRO
-              </span>
-              <span className="text-[11px] font-bold text-slate-500">Commercial Services</span>
-            </div>
-
-            <h2 className="text-xl font-black text-slate-900 tracking-tight">
-              Commercial Floor Scrubbing & Painting
-            </h2>
-            <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-              Area-based commercial scrubbing, industrial rotary degreasing, epoxy coating & warehouse maintenance. Staff enters dimensions (Length x Breadth); billable sq ft and GST calculate dynamically.
-            </p>
-
-            {/* Quick Action Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-5">
-              <button
-                onClick={() => onNavigate('kleanmaxpro_area')}
-                className="p-3 bg-amber-50 hover:bg-amber-100/80 border border-amber-300 rounded-xl text-left transition-all flex items-center justify-between group"
-              >
-                <div>
-                  <div className="text-xs font-black text-slate-900 flex items-center gap-1.5">
-                    <Calculator className="w-3.5 h-3.5 text-amber-700" />
-                    <span>Area Quotation</span>
-                  </div>
-                  <div className="text-[10px] text-slate-500 mt-0.5">Length x Breadth calculation</div>
-                </div>
-                <ArrowRight className="w-4 h-4 text-amber-700 transform group-hover:translate-x-1 transition-transform" />
-              </button>
-
-              <button
-                onClick={() => onNavigate('kleanmaxpro_quotes')}
-                className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-left transition-all flex items-center justify-between group"
-              >
-                <div>
-                  <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                    <FileText className="w-3.5 h-3.5 text-slate-600" />
-                    <span>Pro Quotations</span>
-                  </div>
-                  <div className="text-[10px] text-slate-400 mt-0.5">Saved area records & PDF</div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-700" />
-              </button>
-
-              <button
-                onClick={() => onNavigate('services')}
-                className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-left transition-all flex items-center justify-between group"
-              >
-                <div>
-                  <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                    <Layers className="w-3.5 h-3.5 text-slate-600" />
-                    <span>Services Catalogue</span>
-                  </div>
-                  <div className="text-[10px] text-slate-400 mt-0.5">Sq Ft standard rates</div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-700" />
-              </button>
-
-              <button
-                onClick={() => onNavigate('customers')}
-                className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-left transition-all flex items-center justify-between group"
-              >
-                <div>
-                  <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                    <Users className="w-3.5 h-3.5 text-slate-600" />
-                    <span>Client Master</span>
-                  </div>
-                  <div className="text-[10px] text-slate-400 mt-0.5">Commercial customer directory</div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-700" />
-              </button>
-            </div>
-          </div>
-
-          <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-amber-800">
-            <span>Automated Top Banner & Scope Fixed</span>
             <button
-              onClick={() => onNavigate('kleanmaxpro_area')}
-              className="text-xs font-black text-slate-900 bg-[#FED10C] hover:bg-[#E5BC07] px-3 py-1.5 rounded-lg flex items-center gap-1"
+              onClick={() => onNavigate('create_quotation')}
+              className="px-4 py-2.5 bg-[#FED10C] hover:bg-[#E5BC07] text-slate-950 font-black text-xs rounded-xl shadow-md flex items-center gap-2 transition-all transform active:scale-95"
             >
-              <span>Create Pro Quote</span>
-              <ChevronRight className="w-3.5 h-3.5" />
+              <PlusCircle className="w-4 h-4" />
+              <span>New Quotation</span>
             </button>
           </div>
         </div>
-
-        {/* DIVISION 2: KLEANMAX */}
-        <div className="bg-white rounded-2xl border-2 border-sky-300/80 shadow-md p-6 flex flex-col justify-between hover:shadow-lg transition-all relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-sky-100 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <span className="bg-sky-600 text-white text-xs font-black px-3 py-1 rounded-full uppercase tracking-wider shadow-2xs">
-                DIVISION: KLEANMAX
-              </span>
-              <span className="text-[11px] font-bold text-slate-500">Equipment & Service</span>
-            </div>
-
-            <h2 className="text-xl font-black text-slate-900 tracking-tight">
-              Cleaning Machines, Spares & Servicing
-            </h2>
-            <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-              Automated quotations matching official WhatsApp documents. Employees enter only the quantity; rates, machine photos, technical specs, terms, and ICICI bank details are pre-fixed and ready to download.
-            </p>
-
-            {/* Quick Action Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-5">
-              {/* Spares & Service Quote */}
-              <button
-                onClick={() => onNavigate('kleanmax_spares')}
-                className="p-3 bg-sky-50 hover:bg-sky-100/80 border border-sky-300 rounded-xl text-left transition-all flex items-center justify-between group"
-              >
-                <div>
-                  <div className="text-xs font-black text-slate-900 flex items-center gap-1.5">
-                    <Wrench className="w-3.5 h-3.5 text-sky-700" />
-                    <span>Spares & Service Quote</span>
-                  </div>
-                  <div className="text-[10px] text-slate-500 mt-0.5">Images 1 & 2 • Clearock / Karcher</div>
-                </div>
-                <ArrowRight className="w-4 h-4 text-sky-700 transform group-hover:translate-x-1 transition-transform" />
-              </button>
-
-              {/* Equipment Sales Quote */}
-              <button
-                onClick={() => onNavigate('kleanmax_sales')}
-                className="p-3 bg-sky-50 hover:bg-sky-100/80 border border-sky-300 rounded-xl text-left transition-all flex items-center justify-between group"
-              >
-                <div>
-                  <div className="text-xs font-black text-slate-900 flex items-center gap-1.5">
-                    <ShoppingCart className="w-3.5 h-3.5 text-blue-700" />
-                    <span>Equipment Sales Quote</span>
-                  </div>
-                  <div className="text-[10px] text-slate-500 mt-0.5">Images 3 & 4 • Auto Scrubber Sale</div>
-                </div>
-                <ArrowRight className="w-4 h-4 text-sky-700 transform group-hover:translate-x-1 transition-transform" />
-              </button>
-
-              {/* Kleanmax Quotations */}
-              <button
-                onClick={() => onNavigate('kleanmax_quotes')}
-                className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-left transition-all flex items-center justify-between group"
-              >
-                <div>
-                  <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                    <FileText className="w-3.5 h-3.5 text-slate-600" />
-                    <span>Kleanmax Quotations</span>
-                  </div>
-                  <div className="text-[10px] text-slate-400 mt-0.5">Saved spares & sales records</div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-700" />
-              </button>
-
-              {/* All Master */}
-              <button
-                onClick={() => onNavigate('quotations')}
-                className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-left transition-all flex items-center justify-between group"
-              >
-                <div>
-                  <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-slate-600" />
-                    <span>All Quotations Master</span>
-                  </div>
-                  <div className="text-[10px] text-slate-400 mt-0.5">Unified status & approval</div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-700" />
-              </button>
-            </div>
-          </div>
-
-          <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-sky-800">
-            <span>Mr. Manikandan Signatory & ICICI Bank Fixed</span>
-            <button
-              onClick={() => onNavigate('kleanmax_spares')}
-              className="text-xs font-black text-white bg-sky-600 hover:bg-sky-700 px-3 py-1.5 rounded-lg flex items-center gap-1"
-            >
-              <span>Create Kleanmax Quote</span>
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500 mb-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider">Total Quotations</span>
-            <FileText className="w-4 h-4 text-slate-400" />
+      {/* Aggregate KPI Strip */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs hover:border-slate-300 transition-all">
+          <div className="flex items-center justify-between text-slate-500 mb-2">
+            <span className="text-xs font-bold uppercase tracking-wider">Enterprise Pipeline</span>
+            <TrendingUp className="w-5 h-5 text-emerald-500" />
           </div>
-          <div className="text-2xl font-black text-slate-900">{totalCount}</div>
-          <div className="text-[10px] text-slate-500 mt-0.5">Across Both Divisions</div>
+          <div className="text-2xl font-black text-slate-900">
+            ₹{totalValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+          </div>
+          <div className="text-[11px] text-slate-500 mt-1 flex items-center gap-1.5">
+            <span className="text-emerald-600 font-bold">{approvedCount} approved / issued</span>
+          </div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500 mb-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider">Commercial Pipeline</span>
-            <TrendingUp className="w-4 h-4 text-emerald-600" />
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs hover:border-slate-300 transition-all">
+          <div className="flex items-center justify-between text-slate-500 mb-2">
+            <span className="text-xs font-bold uppercase tracking-wider">Total Quotations</span>
+            <FileText className="w-5 h-5 text-amber-500" />
           </div>
-          <div className="text-xl font-black text-slate-900 truncate">
-            ₹ {totalPipelineValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+          <div className="text-2xl font-black text-slate-900">{quotations.length}</div>
+          <div className="text-[11px] text-slate-500 mt-1">
+            Across 4 commercial subsidiaries
           </div>
-          <div className="text-[10px] text-emerald-600 font-semibold mt-0.5">Active Quotes Value</div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500 mb-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider">Pending Action</span>
-            <Clock className="w-4 h-4 text-amber-500" />
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs hover:border-slate-300 transition-all">
+          <div className="flex items-center justify-between text-slate-500 mb-2">
+            <span className="text-xs font-bold uppercase tracking-wider">Pending Approvals</span>
+            <Clock className="w-5 h-5 text-rose-500" />
           </div>
-          <div className="text-2xl font-black text-amber-900">{pendingQuotations.length}</div>
-          <div className="text-[10px] text-amber-700 font-semibold mt-0.5">Awaiting Approval</div>
+          <div className="text-2xl font-black text-slate-900">{pendingCount}</div>
+          <div className="text-[11px] text-amber-600 font-bold mt-1">
+            Awaiting executive sign-off
+          </div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500 mb-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider">Issued & Finalized</span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs hover:border-slate-300 transition-all">
+          <div className="flex items-center justify-between text-slate-500 mb-2">
+            <span className="text-xs font-bold uppercase tracking-wider">Client Accounts</span>
+            <Users className="w-5 h-5 text-sky-500" />
           </div>
-          <div className="text-2xl font-black text-emerald-700">{issuedQuotations.length}</div>
-          <div className="text-[10px] text-emerald-600 font-semibold mt-0.5">Client Ready</div>
+          <div className="text-2xl font-black text-slate-900">{customers.length}</div>
+          <div className="text-[11px] text-slate-500 mt-1">
+            Industrial, tech parks & commercial
+          </div>
         </div>
       </div>
 
-      {/* Recent Quotations with Direct 1-Click PDF Download */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-5">
-        <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-200 mb-4">
+      {/* 4 Company Hubs Grid (The Core Multi-Company Navigator) */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-base font-black text-slate-900 tracking-tight">
-              Recent Quotations & Ready Downloads
+            <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-amber-500" />
+              <span>Dedicated Company Hubs & Dashboards</span>
             </h2>
             <p className="text-xs text-slate-500">
-              Download the official formatted A4 PDF immediately or preview onscreen.
+              Select any of the 4 subsidiaries to access its tailored workspace, calculators, and proposals.
+            </p>
+          </div>
+          <button
+            onClick={() => onNavigate('settings')}
+            className="text-xs font-bold text-amber-700 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all"
+          >
+            <span>Edit All 4 Company Details</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Company 1: Kleanmax Pro */}
+          <div className="bg-white rounded-2xl border-2 border-amber-200 p-5 shadow-xs hover:border-amber-400 hover:shadow-md transition-all flex flex-col justify-between group">
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <span className="bg-[#FED10C] text-slate-950 font-black text-[11px] px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-2xs">
+                  Company 1
+                </span>
+                <span className="text-xs font-mono font-bold text-slate-500">KMP</span>
+              </div>
+              <h3 className="text-base font-black text-slate-900 group-hover:text-amber-600 transition-colors">
+                Klean Max Pro
+              </h3>
+              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                Commercial floor scrubbing, mechanized warehouse cleaning & area calculations.
+              </p>
+
+              <div className="mt-4 pt-3 border-t border-slate-100 space-y-1 text-xs">
+                <div className="flex justify-between text-slate-600">
+                  <span>Proposals:</span>
+                  <span className="font-bold text-slate-900">{kmpQuotes.length}</span>
+                </div>
+                <div className="flex justify-between text-slate-600">
+                  <span>Pipeline:</span>
+                  <span className="font-black text-amber-700">₹{kmpValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-5 space-y-1.5">
+              <button
+                onClick={() => onNavigate('kleanmaxpro_area')}
+                className="w-full py-2 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-xs transition-all"
+              >
+                <Calculator className="w-3.5 h-3.5" />
+                <span>1. Quotation Generator</span>
+              </button>
+              <div className="grid grid-cols-2 gap-1.5">
+                <button
+                  onClick={() => onNavigate('kleanmaxpro_quotes')}
+                  className="py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-[11px] rounded-lg flex items-center justify-center gap-1 border border-slate-200"
+                >
+                  <FileText className="w-3 h-3 text-slate-500" />
+                  <span>2. Past Quotes</span>
+                </button>
+                <button
+                  onClick={() => onNavigate('quotation_edit', { company_code: 'kleanmaxpro' })}
+                  className="py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-[11px] rounded-lg flex items-center justify-center gap-1 border border-slate-200"
+                >
+                  <Edit className="w-3 h-3 text-blue-500" />
+                  <span>3. Editor</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Company 2: Kleanmax */}
+          <div className="bg-white rounded-2xl border-2 border-sky-200 p-5 shadow-xs hover:border-sky-400 hover:shadow-md transition-all flex flex-col justify-between group">
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <span className="bg-sky-500 text-slate-950 font-black text-[11px] px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-2xs">
+                  Company 2
+                </span>
+                <span className="text-xs font-mono font-bold text-slate-500">KLM</span>
+              </div>
+              <h3 className="text-base font-black text-slate-900 group-hover:text-sky-600 transition-colors">
+                Kleanmax
+              </h3>
+              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                Industrial equipment sales, machine repairs, spare parts & job cards.
+              </p>
+
+              <div className="mt-4 pt-3 border-t border-slate-100 space-y-1 text-xs">
+                <div className="flex justify-between text-slate-600">
+                  <span>Proposals:</span>
+                  <span className="font-bold text-slate-900">{klmQuotes.length}</span>
+                </div>
+                <div className="flex justify-between text-slate-600">
+                  <span>Pipeline:</span>
+                  <span className="font-black text-sky-700">₹{klmValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-5 space-y-1.5">
+              <button
+                onClick={() => onNavigate('kleanmax_spares')}
+                className="w-full py-2 bg-sky-500 hover:bg-sky-400 text-slate-950 font-black text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-xs transition-all"
+              >
+                <Wrench className="w-3.5 h-3.5" />
+                <span>1. Quotation Generator</span>
+              </button>
+              <div className="grid grid-cols-2 gap-1.5">
+                <button
+                  onClick={() => onNavigate('kleanmax_quotes')}
+                  className="py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-[11px] rounded-lg flex items-center justify-center gap-1 border border-slate-200"
+                >
+                  <FileText className="w-3 h-3 text-slate-500" />
+                  <span>2. Past Quotes</span>
+                </button>
+                <button
+                  onClick={() => onNavigate('quotation_edit', { company_code: 'kleanmax' })}
+                  className="py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-[11px] rounded-lg flex items-center justify-center gap-1 border border-slate-200"
+                >
+                  <Edit className="w-3 h-3 text-blue-500" />
+                  <span>3. Editor</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Company 3: Unique Painters */}
+          <div className="bg-white rounded-2xl border-2 border-purple-200 p-5 shadow-xs hover:border-purple-400 hover:shadow-md transition-all flex flex-col justify-between group">
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <span className="bg-purple-600 text-white font-black text-[11px] px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-2xs">
+                  Company 3
+                </span>
+                <span className="text-xs font-mono font-bold text-slate-500">UNP</span>
+              </div>
+              <h3 className="text-base font-black text-slate-900 group-hover:text-purple-600 transition-colors">
+                Unique Painters
+              </h3>
+              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                Commercial & residential painting, heavy duty epoxy flooring & waterproofing.
+              </p>
+
+              <div className="mt-4 pt-3 border-t border-slate-100 space-y-1 text-xs">
+                <div className="flex justify-between text-slate-600">
+                  <span>Proposals:</span>
+                  <span className="font-bold text-slate-900">{unpQuotes.length}</span>
+                </div>
+                <div className="flex justify-between text-slate-600">
+                  <span>Pipeline:</span>
+                  <span className="font-black text-purple-700">₹{unpValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-5 space-y-1.5">
+              <button
+                onClick={() => onNavigate('uniquepainters_generator')}
+                className="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white font-black text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-xs transition-all"
+              >
+                <Palette className="w-3.5 h-3.5" />
+                <span>1. Quotation Generator</span>
+              </button>
+              <div className="grid grid-cols-2 gap-1.5">
+                <button
+                  onClick={() => onNavigate('uniquepainters_quotes')}
+                  className="py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-[11px] rounded-lg flex items-center justify-center gap-1 border border-slate-200"
+                >
+                  <FileText className="w-3 h-3 text-slate-500" />
+                  <span>2. Past Quotes</span>
+                </button>
+                <button
+                  onClick={() => onNavigate('quotation_edit', { company_code: 'uniquepainters' })}
+                  className="py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-[11px] rounded-lg flex items-center justify-center gap-1 border border-slate-200"
+                >
+                  <Edit className="w-3 h-3 text-blue-500" />
+                  <span>3. Editor</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Company 4: Cleantech Services */}
+          <div className="bg-white rounded-2xl border-2 border-emerald-200 p-5 shadow-xs hover:border-emerald-400 hover:shadow-md transition-all flex flex-col justify-between group">
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <span className="bg-emerald-600 text-white font-black text-[11px] px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-2xs">
+                  Company 4
+                </span>
+                <span className="text-xs font-mono font-bold text-slate-500">CTS</span>
+              </div>
+              <h3 className="text-base font-black text-slate-900 group-hover:text-emerald-600 transition-colors">
+                Cleantech Services
+              </h3>
+              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                Solar PV array cleaning, facade glass cradles, kitchen ducting & long-term AMC.
+              </p>
+
+              <div className="mt-4 pt-3 border-t border-slate-100 space-y-1 text-xs">
+                <div className="flex justify-between text-slate-600">
+                  <span>Proposals:</span>
+                  <span className="font-bold text-slate-900">{ctsQuotes.length}</span>
+                </div>
+                <div className="flex justify-between text-slate-600">
+                  <span>Pipeline:</span>
+                  <span className="font-black text-emerald-700">₹{ctsValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-5 space-y-1.5">
+              <button
+                onClick={() => onNavigate('cleantech_generator')}
+                className="w-full py-2 bg-teal-500 hover:bg-teal-400 text-slate-950 font-black text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-xs transition-all"
+              >
+                <Sun className="w-3.5 h-3.5" />
+                <span>1. Quotation Generator</span>
+              </button>
+              <div className="grid grid-cols-2 gap-1.5">
+                <button
+                  onClick={() => onNavigate('cleantech_quotes')}
+                  className="py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-[11px] rounded-lg flex items-center justify-center gap-1 border border-slate-200"
+                >
+                  <FileText className="w-3 h-3 text-slate-500" />
+                  <span>2. Past Quotes</span>
+                </button>
+                <button
+                  onClick={() => onNavigate('quotation_edit', { company_code: 'cleantech' })}
+                  className="py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-[11px] rounded-lg flex items-center justify-center gap-1 border border-slate-200"
+                >
+                  <Edit className="w-3 h-3 text-blue-500" />
+                  <span>3. Editor</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Unified Master Quotations Stream */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 className="text-base font-black text-slate-900">
+              Master Quotations Stream (All 4 Companies)
+            </h2>
+            <p className="text-xs text-slate-500">
+              Filter by subsidiary or search across quotation number, client name, and job specifications.
             </p>
           </div>
 
-          <div className="relative w-full sm:w-64">
-            <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Filter by quote #, client..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg pl-9 pr-3 py-2 focus:ring-1 focus:ring-amber-500 focus:bg-white"
-            />
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+              <input
+                type="text"
+                placeholder="Search quotes..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 pr-3 py-1.5 text-xs border border-slate-300 rounded-xl focus:border-amber-400 focus:outline-hidden w-48 sm:w-64"
+              />
+            </div>
           </div>
         </div>
 
-        {recentQuotations.length === 0 ? (
-          <div className="p-8 text-center text-slate-400 text-xs">
-            No quotations found. Use the division buttons above to create your first quotation.
+        {/* Company Filter Tabs */}
+        <div className="flex flex-wrap gap-2 pt-1 border-b border-slate-100 pb-3">
+          {[
+            { id: 'all', label: `All Entities (${quotations.length})`, color: 'bg-slate-900 text-white' },
+            { id: 'kleanmaxpro', label: `⚡ Kleanmax Pro (${kmpQuotes.length})`, color: 'bg-amber-400 text-slate-950 font-black' },
+            { id: 'kleanmax', label: `🔧 Kleanmax (${klmQuotes.length})`, color: 'bg-sky-500 text-slate-950 font-black' },
+            { id: 'uniquepainters', label: `🎨 Unique Painters (${unpQuotes.length})`, color: 'bg-purple-600 text-white font-bold' },
+            { id: 'cleantech', label: `🌿 Cleantech Services (${ctsQuotes.length})`, color: 'bg-emerald-600 text-white font-bold' },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setCompanyFilter(tab.id as any)}
+              className={`px-3 py-1.5 rounded-xl text-xs transition-all ${
+                companyFilter === tab.id
+                  ? `${tab.color} shadow-xs font-bold`
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {filteredQuotations.length === 0 ? (
+          <div className="text-center py-10 text-xs text-slate-500">
+            No quotations found matching the selected filter.
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-700 uppercase font-bold text-[10px]">
+              <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider font-extrabold border-b border-slate-200">
                 <tr>
-                  <th className="p-3">Quotation #</th>
-                  <th className="p-3">Division</th>
-                  <th className="p-3">Customer</th>
-                  <th className="p-3">Date</th>
-                  <th className="p-3 text-right">Amount (₹)</th>
-                  <th className="p-3 text-center">Status</th>
-                  <th className="p-3 text-center">Instant Download</th>
+                  <th className="py-3 px-4">Quotation #</th>
+                  <th className="py-3 px-4">Company Entity</th>
+                  <th className="py-3 px-4">Client</th>
+                  <th className="py-3 px-4">Date</th>
+                  <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4 text-right">Amount</th>
+                  <th className="py-3 px-4 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {recentQuotations.map((q) => {
-                  const isPro =
-                    q.quotation_type === 'area_based' ||
-                    (q.job_description && q.job_description.includes('Kleanmax Pro'));
+                {filteredQuotations.slice(0, 10).map((q) => {
+                  const compCode = q.company_code || (q.quotation_type === 'area_based' ? 'kleanmaxpro' : 'kleanmax');
+                  const compBadge =
+                    compCode === 'kleanmaxpro' ? { name: 'Klean Max Pro', badge: 'bg-amber-100 text-amber-800' } :
+                    compCode === 'kleanmax' ? { name: 'Kleanmax', badge: 'bg-sky-100 text-sky-800' } :
+                    compCode === 'uniquepainters' ? { name: 'Unique Painters', badge: 'bg-purple-100 text-purple-800' } :
+                    { name: 'Cleantech', badge: 'bg-emerald-100 text-emerald-800' };
 
                   return (
                     <tr key={q.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="p-3 font-mono font-bold text-slate-900">
+                      <td className="py-3 px-4 font-mono font-bold text-slate-900">
                         {q.quotation_number}
                       </td>
-                      <td className="p-3">
-                        {isPro ? (
-                          <span className="bg-amber-100 text-amber-900 font-extrabold text-[10px] px-2 py-0.5 rounded">
-                            KLEANMAX PRO
-                          </span>
-                        ) : (
-                          <span className="bg-sky-100 text-sky-900 font-extrabold text-[10px] px-2 py-0.5 rounded">
-                            KLEANMAX
-                          </span>
-                        )}
+                      <td className="py-3 px-4">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase ${compBadge.badge}`}>
+                          {compBadge.name}
+                        </span>
                       </td>
-                      <td className="p-3 font-bold text-slate-800">
-                        {q.customer?.company_name || 'Direct Customer'}
+                      <td className="py-3 px-4 font-semibold text-slate-800">
+                        {q.customer?.company_name || 'Commercial Client'}
                       </td>
-                      <td className="p-3 text-slate-500">
-                        {q.quotation_date
-                          ? new Date(q.quotation_date).toLocaleDateString('en-IN')
-                          : '—'}
-                      </td>
-                      <td className="p-3 text-right font-black text-slate-900">
-                        ₹ {Number(q.final_amount || 0).toLocaleString('en-IN', {
-                          minimumFractionDigits: 2,
-                        })}
-                      </td>
-                      <td className="p-3 text-center">
-                        <span className="bg-slate-100 text-slate-700 border border-slate-300 px-2 py-0.5 rounded text-[10px] font-bold uppercase">
+                      <td className="py-3 px-4 text-slate-500">{q.quotation_date}</td>
+                      <td className="py-3 px-4">
+                        <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-extrabold uppercase ${
+                          q.status === 'approved' ? 'bg-emerald-100 text-emerald-800' :
+                          q.status === 'issued' ? 'bg-sky-100 text-sky-800' :
+                          'bg-amber-100 text-amber-800'
+                        }`}>
                           {q.status}
                         </span>
                       </td>
-                      <td className="p-3 text-center">
+                      <td className="py-3 px-4 text-right font-black text-slate-900">
+                        ₹{Number(q.final_amount || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                      </td>
+                      <td className="py-3 px-4 text-center">
                         <div className="flex items-center justify-center gap-1.5">
-                          {/* 1-Click Direct PDF Download */}
-                          <a
-                            href={`/api/quotations/${q.id}/pdf`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="px-2.5 py-1 bg-[#FED10C] hover:bg-[#E5BC07] text-slate-950 font-black text-[11px] rounded flex items-center gap-1 shadow-2xs"
-                            title="Instant Download PDF"
+                          {q.status === 'pending_approval' && (
+                            <button
+                              onClick={() => handleQuickApprove(q.id, q.quotation_number)}
+                              disabled={approvingId === q.id}
+                              className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[10px] font-bold"
+                            >
+                              {approvingId === q.id ? 'Approving...' : 'Approve'}
+                            </button>
+                          )}
+                          <button
+                            onClick={() => onNavigate('quotation_edit', { id: q.id })}
+                            className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-blue-600 rounded-lg transition-colors"
+                            title="Edit Quotation"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => api.quotations.downloadDocx(q.id)}
+                            className="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition-colors"
+                            title="Download Word (.docx)"
+                          >
+                            <FileText className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => api.quotations.downloadPdf(q.id)}
+                            className="p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-lg transition-colors"
+                            title="Download PDF"
                           >
                             <Download className="w-3.5 h-3.5" />
-                            <span>Download PDF</span>
-                          </a>
-
+                          </button>
                           <button
                             onClick={() => onOpenPreview(q.id)}
-                            className="p-1.5 hover:bg-slate-200 rounded text-slate-600"
-                            title="Preview Onscreen"
+                            className="p-1.5 bg-slate-100 hover:bg-amber-100 text-slate-700 hover:text-amber-900 rounded-lg transition-colors"
+                            title="Preview A4 Document"
                           >
-                            <Eye className="w-4 h-4" />
+                            <Eye className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </td>

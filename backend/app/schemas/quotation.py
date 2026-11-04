@@ -61,6 +61,7 @@ class QuotationItemSchema(BaseModel):
 
 class QuotationCreate(BaseModel):
     customer_id: str
+    company_code: Optional[str] = "kleanmaxpro"
     quotation_type: str = "area_based"  # area_based, item_based, repair_service, rental, contract
     quotation_date: date = Field(default_factory=date.today)
     validity_date: Optional[date] = None
@@ -84,6 +85,7 @@ class QuotationCreate(BaseModel):
     rounding_policy: str = "HALF_UP"
 
 class QuotationUpdate(BaseModel):
+    company_code: Optional[str] = None
     customer_id: Optional[str] = None
     quotation_type: Optional[str] = None
     quotation_date: Optional[date] = None
@@ -121,6 +123,7 @@ class QuotationRevisionSchema(BaseModel):
 class QuotationResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: str
+    company_code: Optional[str] = "kleanmaxpro"
     quotation_number: str
     revision_number: int
     parent_quotation_id: Optional[str] = None

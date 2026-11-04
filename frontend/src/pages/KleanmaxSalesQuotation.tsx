@@ -3,7 +3,7 @@ import { User } from '../services/types';
 import { api } from '../services/api';
 import {
   Download, Printer, Save, CheckCircle2,
-  Calendar, Layers, ShieldCheck, Sparkles, Plus, Trash2
+  Calendar, Layers, ShieldCheck, Sparkles, Plus, Trash2, FileText
 } from 'lucide-react';
 
 interface KleanmaxSalesQuotationProps {
@@ -86,6 +86,7 @@ export const KleanmaxSalesQuotation: React.FC<KleanmaxSalesQuotationProps> = ({
 
       // 3. Create quotation
       const payload = {
+        company_code: 'kleanmax',
         customer_id: customer.id,
         quotation_type: 'item_based',
         quotation_date: quotationDate,
@@ -120,7 +121,17 @@ export const KleanmaxSalesQuotation: React.FC<KleanmaxSalesQuotationProps> = ({
       qId = await handleSaveToDatabase();
     }
     if (qId) {
-      window.open(`/api/quotations/${qId}/pdf`, '_blank');
+      api.quotations.downloadPdf(qId);
+    }
+  };
+
+  const handleDownloadDocx = async () => {
+    let qId = savedQuoteId;
+    if (!qId) {
+      qId = await handleSaveToDatabase();
+    }
+    if (qId) {
+      api.quotations.downloadDocx(qId);
     }
   };
 
@@ -161,12 +172,22 @@ export const KleanmaxSalesQuotation: React.FC<KleanmaxSalesQuotationProps> = ({
         {/* Action Buttons */}
         <div className="flex flex-wrap items-center gap-2.5">
           <button
+            onClick={handleDownloadDocx}
+            disabled={saving}
+            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-lg flex items-center gap-2 transition-transform active:scale-95"
+            title="Download Word (.docx)"
+          >
+            <FileText className="w-4 h-4" />
+            <span>Download Word (.docx)</span>
+          </button>
+
+          <button
             onClick={handleDownload}
             disabled={saving}
             className="px-4 py-2.5 bg-[#FED10C] hover:bg-[#E5BC07] text-slate-950 font-black text-xs rounded-xl shadow-lg flex items-center gap-2 transition-transform active:scale-95"
           >
             <Download className="w-4 h-4" />
-            <span>Download Official PDF</span>
+            <span>Download PDF</span>
           </button>
 
           <button

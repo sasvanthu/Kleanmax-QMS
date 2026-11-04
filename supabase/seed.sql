@@ -1,23 +1,25 @@
--- Klean Max Pro Seed Data
--- Fictional development seed data with realistic industrial specifications
+-- Klean Max Pro QMS Seed Data for Supabase / PostgreSQL
+-- Seeds all 4 companies, Admin profile, Services Catalogue, and Quotations
 
--- Insert Profiles
+-- 1. Profiles (Admin)
 INSERT INTO profiles (id, email, full_name, role, is_active, phone)
 VALUES 
-    ('11111111-1111-1111-1111-111111111111', 'admin@kleanmaxpro.com', 'Arun Kumar (Admin)', 'admin', true, '+91 73388 82034'),
-    ('22222222-2222-2222-2222-222222222222', 'manager@kleanmaxpro.com', 'Suresh Rajan (Manager)', 'manager', true, '+91 97101 48218'),
-    ('33333333-3333-3333-3333-333333333333', 'staff@kleanmaxpro.com', 'Kavitha S (Staff Estimator)', 'staff', true, '+91 98401 23456')
-ON CONFLICT (email) DO NOTHING;
+    ('11111111-1111-1111-1111-111111111111', 'admin@kleanmaxpro.com', 'Admin', 'admin', true, '+91 73388 82034')
+ON CONFLICT (email) DO UPDATE SET full_name = EXCLUDED.full_name, role = EXCLUDED.role;
 
--- Insert Company Settings
+-- 2. Seed All 4 Companies
 INSERT INTO company_settings (
-    id, company_name, legal_name, gstin, pan, cin,
+    id, company_code, company_name, legal_name, gstin, pan, cin,
     address_line1, address_line2, city, state, state_code, pincode,
     phone1, phone2, email, website,
     bank_name, bank_account_no, bank_ifsc, bank_branch,
-    quotation_prefix, default_validity_days, rounding_policy
-) VALUES (
+    quotation_prefix, default_validity_days, rounding_policy,
+    tagline, brand_color,
+    default_payment_terms, default_delivery_terms, default_warranty_terms, terms_and_conditions
+) VALUES 
+(
     'c0000000-0000-0000-0000-000000000001',
+    'kleanmaxpro',
     'Klean Max Pro',
     'Klean Max Pro Commercial Services Private Limited',
     '33AABCK1234F1Z8',
@@ -39,100 +41,222 @@ INSERT INTO company_settings (
     'Porur Branch, Chennai',
     'KMP',
     30,
-    'HALF_UP'
-) ON CONFLICT (id) DO NOTHING;
+    'HALF_UP',
+    'Commercial Floor Scrubbing & Deep Facility Care',
+    '#FED10C',
+    '50% Advance with confirmed work order, 50% upon job completion.',
+    'Service execution commences within 3 business days of site readiness.',
+    '30-day workmanship assurance on all commercial deep floor scrubbing.',
+    '1. Water and 3-phase electricity must be provided at the site by the customer.\n2. GST applicable as per statutory guidelines.\n3. Quotation valid for 30 days.'
+),
+(
+    'c0000000-0000-0000-0000-000000000002',
+    'kleanmax',
+    'Kleanmax',
+    'Kleanmax Equipment & Spares India LLP',
+    '33DXIPS4251R2ZP',
+    'DXIPS4251R',
+    'AAB-5432',
+    '6, Jayam Industrial Estate, Chettyar Agaram 1st St',
+    'Opp to Ishwarya Apts, Vanagaram',
+    'Chennai',
+    'Tamil Nadu',
+    '33',
+    '600095',
+    '+91 98400 12345',
+    '+91 97101 48218',
+    'service@kleanmax.in',
+    'www.kleanmax.in',
+    'ICICI Bank',
+    '001105023948',
+    'ICIC0000011',
+    'Vanagaram Branch, Chennai',
+    'KLM',
+    15,
+    'HALF_UP',
+    'Industrial Cleaning Equipment, Spares & Authorized Service',
+    '#0284c7',
+    '100% advance against Proforma Invoice prior to machine/spares dispatch.',
+    'Ex-works Chennai warehouse. Ready spares dispatched within 24-48 hours.',
+    '12 months standard OEM manufacturer warranty on machines. 90 days on genuine spares.',
+    '1. Freight, transit insurance and handling extra at actuals.\n2. Goods once sold will not be taken back unless OEM defect confirmed.\n3. Subject to Chennai jurisdiction.'
+),
+(
+    'c0000000-0000-0000-0000-000000000003',
+    'uniquepainters',
+    'Unique Painters',
+    'Unique Painters & Surface Coatings Private Limited',
+    '33AABUP9876G1ZK',
+    'AABUP9876G',
+    'U45200TN2022PTC156789',
+    'Plot No. 14, Industrial Corridor, Ambattur Industrial Estate',
+    'Near Telephone Exchange',
+    'Chennai',
+    'Tamil Nadu',
+    '33',
+    '600058',
+    '+91 94440 88776',
+    '+91 98402 33445',
+    'contact@uniquepainters.in',
+    'www.uniquepainters.in',
+    'State Bank of India',
+    '38992019283',
+    'SBIN0001550',
+    'Ambattur Industrial Estate Branch',
+    'UNP',
+    30,
+    'HALF_UP',
+    'Commercial & Residential Painting, Epoxy Flooring & Waterproofing',
+    '#7c3aed',
+    '40% advance with work order, 40% on primer/base completion, 20% on final coat inspection.',
+    'Painting starts within 48 hours of surface preparation clearance.',
+    'Up to 3-5 years warranty on exterior weather-coat paint and 24 months on epoxy floor coating.',
+    '1. Scaffolding / boom lift arrangements included as per quote specification.\n2. Civil repairs and crack-filling beyond 3mm will be billed additionally.\n3. Color shades to be approved in writing prior to application.'
+),
+(
+    'c0000000-0000-0000-0000-000000000004',
+    'cleantech',
+    'Cleantech Services',
+    'Cleantech Environmental & Industrial Services LLP',
+    '33AABCT5432M1ZQ',
+    'AABCT5432M',
+    'AAK-8921',
+    '28, Tech Park Road, Porur Phase II',
+    'Near Mount Poonamallee High Road',
+    'Chennai',
+    'Tamil Nadu',
+    '33',
+    '600116',
+    '+91 98840 55667',
+    '+91 97101 48218',
+    'contracts@cleantechservices.in',
+    'www.cleantechservices.in',
+    'Axis Bank',
+    '921020038849102',
+    'UTIB0000128',
+    'Porur Branch, Chennai',
+    'CTS',
+    45,
+    'HALF_UP',
+    'Specialized Sanitization, Solar Panel & Facade Tech Solutions',
+    '#0d9488',
+    'Monthly/Quarterly in advance for AMC contracts; 50% advance for specialized projects.',
+    'Scheduled as per agreed SLA calendar and monthly service windows.',
+    '100% SLA adherence guarantee with documented before-after de-ionization and turbidity reports.',
+    '1. Roof and electrical access permits to be secured by client prior to solar wash.\n2. Water supply point within 50m of work zone to be provided.\n3. Safety and rope-access permits comply with ISO 45001 standards.'
+)
+ON CONFLICT (id) DO UPDATE SET
+    company_name = EXCLUDED.company_name,
+    legal_name = EXCLUDED.legal_name,
+    company_code = EXCLUDED.company_code,
+    gstin = EXCLUDED.gstin,
+    pan = EXCLUDED.pan,
+    bank_name = EXCLUDED.bank_name,
+    bank_account_no = EXCLUDED.bank_account_no,
+    bank_ifsc = EXCLUDED.bank_ifsc,
+    quotation_prefix = EXCLUDED.quotation_prefix,
+    tagline = EXCLUDED.tagline,
+    brand_color = EXCLUDED.brand_color;
 
--- Insert Realistic Customers
+-- 3. Quotation Counter
+INSERT INTO quotation_counters (id, fiscal_year, last_sequence)
+VALUES ('c0000000-0000-0000-0000-000000000001', '2026-27', 4)
+ON CONFLICT (fiscal_year) DO NOTHING;
+
+-- 4. Core Customers
 INSERT INTO customers (
-    id, customer_code, company_name, contact_person, phone, email, gstin,
+    id, customer_code, company_name, contact_person, phone, email, gstin, pan,
     billing_address_line1, billing_address_line2, billing_city, billing_state, billing_state_code, billing_pincode,
-    delivery_address_line1, delivery_city, delivery_state, delivery_state_code, delivery_pincode,
-    created_by_id
+    is_active
 ) VALUES 
 (
     'c1111111-1111-1111-1111-111111111111',
-    'CUST-2026-001',
-    'Tata Steel Processing & Distribution Ltd',
-    'Mr. Rajesh Sharma (Plant Head)',
-    '+91 98409 11223',
-    'r.sharma@tatasteel.com',
-    '33AAACT2727Q1ZT',
-    'Plot 42-45, SIPCOT Industrial Park, Phase II',
-    'Mambakkam Post',
-    'Sriperumbudur',
+    'CUST-KMP-001',
+    'Foxconn Mega Tech Park',
+    'Mr. R. Rajesh (Admin)',
+    '+91 98401 22334',
+    'facilities@foxconn-india.com',
+    '33AAACF1029R1Z1',
+    'AAACF1029R',
+    'Plot 10, Hi-Tech SEZ, Sriperumbudur',
+    'Near Toll Plaza',
+    'Chennai',
     'Tamil Nadu',
     '33',
     '602105',
-    'Bay 3 & 4 Central Logistics Hub, SIPCOT Phase II',
-    'Sriperumbudur',
-    'Tamil Nadu',
-    '33',
-    '602105',
-    '11111111-1111-1111-1111-111111111111'
+    true
 ),
 (
     'c2222222-2222-2222-2222-222222222222',
-    'CUST-2026-002',
-    'Hyundai Motor Logistics Park',
-    'Mr. K. Narayanan (Facilities Manager)',
-    '+91 97109 44556',
-    'k.narayanan@hmi-logistics.in',
-    '33AABCH7890K1Z2',
-    'NH4 Outer Ring Road Intersect',
-    'Irungattukottai',
-    'Kancheepuram',
+    'CUST-KLM-002',
+    'Hyundai Motor Engineering Works',
+    'Mr. S. Karthik (Procurement)',
+    '+91 97909 44556',
+    'karthik.s@hyundai-auto.in',
+    '33AAACH4981M1ZK',
+    'AAACH4981M',
+    'Automotive Hub, Irungattukottai',
+    'SIPCOT Industrial Park',
+    'Chennai',
     'Tamil Nadu',
     '33',
     '602117',
-    'Warehouse Unit 7, Component Receiving Bay',
-    'Kancheepuram',
-    'Tamil Nadu',
-    '33',
-    '602117',
-    '22222222-2222-2222-2222-222222222222'
+    true
 ),
 (
     'c3333333-3333-3333-3333-333333333333',
-    'CUST-2026-003',
-    'Godrej Consumer Logistics Hub (Interstate)',
-    'Ms. Anita Desai (Regional Procurement)',
-    '+91 98200 99887',
-    'anita.desai@godrejcp.com',
-    '29AAACG1234M1Z5', -- Karnataka GSTIN for Interstate IGST testing!
-    'Godrej Bhavan, 4th Cross, Peenya Industrial Area',
-    'Phase 1',
-    'Bengaluru',
-    'Karnataka',
-    '29',
-    '560058',
-    'Depot 2, Hosur Road Border Logistics Yard',
-    'Bengaluru',
-    'Karnataka',
-    '29',
-    '560058',
-    '11111111-1111-1111-1111-111111111111'
+    'CUST-UNP-003',
+    'Prestige Cyber Tower Corp',
+    'Ms. Ananya Sharma (Facility Head)',
+    '+91 94441 55667',
+    'infra@prestigegroup.com',
+    '33AABCP3891L1ZQ',
+    'AABCP3891L',
+    'Tower B, OMR IT Expressway, Karapakkam',
+    'Opp TCS Synergy Park',
+    'Chennai',
+    'Tamil Nadu',
+    '33',
+    '600097',
+    true
+),
+(
+    'c4444444-4444-4444-4444-444444444444',
+    'CUST-CTS-004',
+    'Tata Power Solar & Logistics Park',
+    'Mr. V. Sundaram (Operations)',
+    '+91 98842 77889',
+    'sundaram.v@tatapowerclean.com',
+    '33AAACT9921B1ZM',
+    'AAACT9921B',
+    'Logistics Hub, Vallam Vadagal Industrial Park',
+    'Oragadam',
+    'Chennai',
+    'Tamil Nadu',
+    '33',
+    '602105',
+    true
 )
 ON CONFLICT (id) DO NOTHING;
 
--- Insert Services
+-- 5. Seed Core Services
 INSERT INTO services (
     id, service_code, service_name, category, quotation_type, description,
-    default_uom, hsn_sac_code, standard_rate, tax_category, default_tax_rate, is_active, internal_notes
-) VALUES
+    default_uom, hsn_sac_code, standard_rate, tax_category, default_tax_rate, is_active
+) VALUES 
 (
     's1111111-1111-1111-1111-111111111111',
     'SVC-WH-DEEP',
     'Warehouse Deep Floor Scrubbing & Degreasing',
     'cleaning',
     'area_based',
-    'Comprehensive heavy-duty industrial rotary scrubbing, oil stain degreasing, slurry suction and high-gloss neutral wash.',
+    'Heavy-duty industrial rotary scrubbing, oil stain degreasing, slurry suction and high-gloss wash.',
     'sq_ft',
     '998533',
     4.5000,
     'taxable',
     18.00,
-    true,
-    'Standard rate per sq ft for warehouse floors up to 50,000 sq ft.'
+    true
 ),
 (
     's2222222-2222-2222-2222-222222222222',
@@ -140,44 +264,13 @@ INSERT INTO services (
     'Industrial Ride-On Automated Floor Cleaning',
     'cleaning',
     'area_based',
-    'High-speed mechanized auto-scrubbing with cylindrical nylon brushes and eco-friendly industrial cleaning chemical.',
+    'Mechanized auto-scrubbing with cylindrical nylon brushes and eco-friendly chemical.',
     'sq_ft',
     '998533',
     3.2500,
     'taxable',
     18.00,
-    true,
-    'Recommended for regular maintenance or large open shop floors.'
-),
-(
-    's3333333-3333-3333-3333-333333333333',
-    'SVC-FAC-DUST',
-    'Factory High-Level Roof Truss & Pipeline Dusting',
-    'cleaning',
-    'area_based',
-    'Safety harness-assisted overhead beam, truss, cable tray and duct cleaning using explosion-proof industrial vacuums.',
-    'sq_ft',
-    '998533',
-    5.5000,
-    'taxable',
-    18.00,
-    true,
-    'Rate includes boom lift / scaffolding operator overhead.'
-),
-(
-    's4444444-4444-4444-4444-444444444444',
-    'SVC-EPOXY-COAT',
-    'Industrial Epoxy Floor Coating & Line Marking',
-    'painting',
-    'area_based',
-    'Surface preparation with diamond grinding, 100% solids epoxy primer, intermediate self-leveling coat and 500-micron polyurethane topcoat.',
-    'sq_ft',
-    '995472',
-    42.0000,
-    'taxable',
-    18.00,
-    true,
-    'Warranty 24 months against peeling and delamination.'
+    true
 ),
 (
     's5555555-5555-5555-5555-555555555555',
@@ -185,68 +278,40 @@ INSERT INTO services (
     'KMP-850R Industrial Ride-On Scrubber Dryer',
     'equipment_sales',
     'item_based',
-    '850mm scrub width, 120L solution tank, heavy-duty traction motor, twin disc brushes, maintenance-free AGM battery pack.',
+    '850mm scrub width, 120L solution tank, heavy-duty traction motor, twin disc brushes.',
     'nos',
     '84798999',
     485000.0000,
     'taxable',
     18.00,
-    true,
-    'OEM 1-year on-site comprehensive warranty included.'
+    true
 ),
 (
-    's6666666-6666-6666-6666-666666666666',
-    'EQ-VAC-WD80',
-    'KMP Heavy Duty Wet & Dry Industrial Vacuum 80L',
-    'equipment_sales',
+    's-pnt-01',
+    'PNT-INT-ROYALE',
+    'Premium Interior Royale Luxury Emulsion (2 Coats + Primer)',
+    'painting',
+    'area_based',
+    'High-sheen anti-fungal luxury emulsion paint with surface putty smoothing and alkali-resistant primer.',
+    'sq_ft',
+    '995472',
+    28.5000,
+    'taxable',
+    18.00,
+    true
+),
+(
+    's-cts-01',
+    'CTS-SOLAR-WASH',
+    'De-Ionized Robotic Solar Panel Array Wash & Dusting',
+    'cleaning',
     'item_based',
-    '3000W triple bypass motor, stainless steel 80L tilt tank, complete accessory kit for sludge and fine dust extraction.',
+    'Zero-mineral de-ionized water high-flow wash with soft scratch-free rotary brushes.',
     'nos',
-    '84798999',
-    38500.0000,
+    '998533',
+    45.0000,
     'taxable',
     18.00,
-    true,
-    'Popular unit for factory shop floors.'
-),
-(
-    's7777777-7777-7777-7777-777777777777',
-    'RNT-RIDE-SCRUB',
-    'Ride-on Scrubber Daily/Weekly Rental with Operator',
-    'rental',
-    'rental',
-    'Rental of heavy duty ride-on scrubber including trained operator, fuel/battery charge, and standard detergents.',
-    'days',
-    '997312',
-    4500.0000,
-    'taxable',
-    18.00,
-    true,
-    'Minimum 3-day rental period.'
-),
-(
-    's8888888-8888-8888-8888-888888888888',
-    'REP-MAINT-SRV',
-    'Cleaning Equipment Maintenance & Overhaul Service',
-    'repair_service',
-    'repair_service',
-    'Comprehensive machine inspection, electrical diagnostic, brush motor overhaul, vacuum motor sealing and squeegee tuning.',
-    'hours',
-    '998719',
-    850.0000,
-    'taxable',
-    18.00,
-    true,
-    'Spare parts billed separately as per actuals.'
+    true
 )
-ON CONFLICT (service_code) DO NOTHING;
-
--- Insert Service Rates
-INSERT INTO service_rates (service_id, uom, rate, effective_from, is_current)
-SELECT id, default_uom, standard_rate, CURRENT_DATE, true FROM services
-ON CONFLICT DO NOTHING;
-
--- Initialize Fiscal Year Counter for atomic quotation numbering
-INSERT INTO quotation_counters (fiscal_year, last_sequence)
-VALUES ('2026-27', 0)
-ON CONFLICT (fiscal_year) DO NOTHING;
+ON CONFLICT (id) DO NOTHING;

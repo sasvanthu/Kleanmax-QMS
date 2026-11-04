@@ -18,7 +18,7 @@ def get_current_fiscal_year(d: date = None) -> str:
         return f"{prev_yr}-{curr_yr_short}"
 
 
-def generate_next_quotation_number(db: Session, quotation_date: date = None) -> str:
+def generate_next_quotation_number(db: Session, quotation_date: date = None, prefix: str = None) -> str:
     """Atomically generates the next sequential quotation number in a race-condition safe manner.
     Format: {PREFIX}/{FY}/{SEQUENCE:04d}, e.g. KMP/2026-27/0001
     """
@@ -27,11 +27,15 @@ def generate_next_quotation_number(db: Session, quotation_date: date = None) -> 
 
     fy = get_current_fiscal_year(quotation_date)
 
-    # Get prefix from company settings if available
-    prefix = "KMP"
-    company = db.query(CompanySetting).first()
-    if company and company.quotation_prefix:
-        prefix = company.quotation_prefix.strip().upper()
+    # Get prefix from argument or company settings if available
+    if not prefix:
+        company = db.query(CompanySetting).first()
+        if company and company.quotation_prefix:
+            prefix = company.quotation_prefix.strip().upper()
+        else:
+            prefix = "KMP"
+    else:
+        prefix = prefix.strip().upper()
 
     # Lock counter row with FOR UPDATE when on PostgreSQL
     # On SQLite or Postgres, we query and update inside the active transaction

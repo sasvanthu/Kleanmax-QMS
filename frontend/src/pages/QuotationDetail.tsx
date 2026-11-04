@@ -4,7 +4,7 @@ import { api } from '../services/api';
 import {
   ArrowLeft, Printer, Download, Eye, Lock, RotateCcw, CheckCircle,
   Clock, ShieldAlert, AlertTriangle, FileText, Building, Calendar,
-  CreditCard, Sparkles, X, Check, Send
+  CreditCard, Sparkles, X, Check, Send, Edit
 } from 'lucide-react';
 
 interface QuotationDetailProps {
@@ -126,6 +126,18 @@ export const QuotationDetail: React.FC<QuotationDetailProps> = ({
 
         {/* Right Action Bar */}
         <div className="flex flex-wrap items-center gap-2">
+          {/* Edit Quotation */}
+          {(!isIssued || quotation.status === 'draft' || quotation.status === 'pending_approval' || quotation.status === 'revised') && (
+            <button
+              onClick={() => onNavigate('quotation_edit', { id: quotation.id })}
+              className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-2xs transition-colors"
+              title="Edit quotation fields, items and pricing"
+            >
+              <Edit className="w-4 h-4 text-blue-400" />
+              <span>Edit Quotation</span>
+            </button>
+          )}
+
           {/* Official Preview */}
           <button
             onClick={() => onOpenPreview(quotation.id)}
@@ -137,17 +149,27 @@ export const QuotationDetail: React.FC<QuotationDetailProps> = ({
 
           {/* Direct Print */}
           <button
-            onClick={() => window.open(`/api/quotations/${quotation.id}/html`, '_blank')}
+            onClick={() => window.open(api.quotations.getHtmlUrl(quotation.id), '_blank')}
             className="px-3.5 py-2 bg-white border border-slate-300 hover:border-slate-400 text-slate-800 font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-2xs"
           >
             <Printer className="w-4 h-4 text-slate-500" />
             <span>Print</span>
           </button>
 
+          {/* Download Word (.docx) */}
+          <button
+            onClick={() => api.quotations.downloadDocx(quotation.id)}
+            className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-sm transition-colors"
+            title="Download editable Microsoft Word document"
+          >
+            <FileText className="w-4 h-4" />
+            <span>Word (.docx)</span>
+          </button>
+
           {/* Download PDF */}
           <button
-            onClick={() => window.open(`/api/quotations/${quotation.id}/pdf`, '_blank')}
-            className="px-3.5 py-2 bg-[#FED10C] hover:bg-[#E5BC07] text-slate-950 font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-sm"
+            onClick={() => api.quotations.downloadPdf(quotation.id)}
+            className="px-3.5 py-2 bg-[#FED10C] hover:bg-[#E5BC07] text-slate-950 font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-sm transition-colors"
           >
             <Download className="w-4 h-4" />
             <span>Download PDF</span>

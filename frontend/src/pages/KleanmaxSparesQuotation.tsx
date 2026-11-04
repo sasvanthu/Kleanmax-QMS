@@ -141,6 +141,7 @@ export const KleanmaxSparesQuotation: React.FC<KleanmaxSparesQuotationProps> = (
 
       // 3. Create quotation
       const payload = {
+        company_code: 'kleanmax',
         customer_id: customer.id,
         quotation_type: 'repair_service',
         quotation_date: quotationDate,
@@ -175,7 +176,17 @@ export const KleanmaxSparesQuotation: React.FC<KleanmaxSparesQuotationProps> = (
       qId = await handleSaveToDatabase();
     }
     if (qId) {
-      window.open(`/api/quotations/${qId}/pdf`, '_blank');
+      api.quotations.downloadPdf(qId);
+    }
+  };
+
+  const handleDownloadDocx = async () => {
+    let qId = savedQuoteId;
+    if (!qId) {
+      qId = await handleSaveToDatabase();
+    }
+    if (qId) {
+      api.quotations.downloadDocx(qId);
     }
   };
 
@@ -216,12 +227,22 @@ export const KleanmaxSparesQuotation: React.FC<KleanmaxSparesQuotationProps> = (
         {/* 1-Click Action Buttons */}
         <div className="flex flex-wrap items-center gap-2.5">
           <button
+            onClick={handleDownloadDocx}
+            disabled={saving}
+            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-lg flex items-center gap-2 transition-transform active:scale-95"
+            title="Download Word (.docx)"
+          >
+            <FileText className="w-4 h-4" />
+            <span>Word (.docx)</span>
+          </button>
+
+          <button
             onClick={handleDownload}
             disabled={saving}
             className="px-4 py-2.5 bg-[#FED10C] hover:bg-[#E5BC07] text-slate-950 font-black text-xs rounded-xl shadow-lg flex items-center gap-2 transition-transform active:scale-95"
           >
             <Download className="w-4 h-4" />
-            <span>Download Official PDF</span>
+            <span>Download PDF</span>
           </button>
 
           <button

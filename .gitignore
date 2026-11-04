@@ -56,3 +56,7 @@ pnpm-debug.log*
 vite.config.ts.timestamp*
 *.timestamp-*.mjs
 
+# Scratch & Extracted Inspection Assets
+extracted_assets/
+inspect_docs.py
+

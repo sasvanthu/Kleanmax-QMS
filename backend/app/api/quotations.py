@@ -23,6 +23,7 @@ from backend.app.services.quotation_service import (
 from backend.app.services.pdf_generator import (
     render_quotation_html, generate_pdf_bytes_async
 )
+from backend.app.services.docx_generator import generate_quotation_docx_bytes
 
 router = APIRouter(prefix="/quotations", tags=["Quotations"])
 
@@ -43,6 +44,7 @@ def calculate_quotation(
 def get_quotations(
     search: Optional[str] = Query(None, description="Search quotation number, customer name, notes"),
     status: Optional[str] = Query(None, description="Filter by status: draft, pending_approval, approved, issued, revised, cancelled"),
+    company_code: Optional[str] = Query(None, description="Filter by company_code: kleanmaxpro, kleanmax, uniquepainters, cleantech"),
     customer_id: Optional[str] = Query(None),
     from_date: Optional[date] = Query(None),
     to_date: Optional[date] = Query(None),
@@ -66,6 +68,9 @@ def get_quotations(
 
     if status:
         query = query.filter(Quotation.status == status)
+
+    if company_code:
+        query = query.filter(Quotation.company_code == company_code)
 
     if customer_id:
         query = query.filter(Quotation.customer_id == customer_id)
@@ -195,7 +200,11 @@ def view_quotation_html(
     if not quotation:
         raise HTTPException(status_code=404, detail="Quotation not found")
 
-    company = db.query(CompanySetting).first()
+    company = None
+    if quotation.company_code:
+        company = db.query(CompanySetting).filter(CompanySetting.company_code == quotation.company_code).first()
+    if not company:
+        company = db.query(CompanySetting).first()
     if not company:
         company = CompanySetting()
 
@@ -219,7 +228,11 @@ async def download_quotation_pdf(
     if not quotation:
         raise HTTPException(status_code=404, detail="Quotation not found")
 
-    company = db.query(CompanySetting).first()
+    company = None
+    if quotation.company_code:
+        company = db.query(CompanySetting).filter(CompanySetting.company_code == quotation.company_code).first()
+    if not company:
+        company = db.query(CompanySetting).first()
     if not company:
         company = CompanySetting()
 
@@ -237,5 +250,39 @@ async def download_quotation_pdf(
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )
+
+
+@router.get("/{id}/docx")
+def download_quotation_docx(
+    id: str,
+    db: Session = Depends(get_db),
+    current_user: Profile = Depends(get_current_user)
+):
+    quotation = db.query(Quotation).filter(Quotation.id == id).first()
+    if not quotation:
+        raise HTTPException(status_code=404, detail="Quotation not found")
+
+    company = None
+    if quotation.company_code:
+        company = db.query(CompanySetting).filter(CompanySetting.company_code == quotation.company_code).first()
+    if not company:
+        company = db.query(CompanySetting).first()
+    if not company:
+        company = CompanySetting()
+
+    docx_bytes = generate_quotation_docx_bytes(
+        quotation=quotation,
+        company=company,
+        customer=quotation.customer,
+        sections=quotation.sections,
+        items=quotation.items,
+    )
+    filename = f"Quotation_{quotation.quotation_number.replace('/', '_')}.docx"
+
+    return Response(
+        content=docx_bytes,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'}
     )

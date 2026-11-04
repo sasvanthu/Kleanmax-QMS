@@ -238,8 +238,9 @@ export const QuotationCreate: React.FC<QuotationCreateProps> = ({
     setErrorMessage('');
     try {
       const payload = {
+        company_code: initialQuotation?.company_code || 'kleanmaxpro',
         customer_id: selectedCustomer.id,
-        quotation_type: 'area_based',
+        quotation_type: initialQuotation?.quotation_type || 'area_based',
         quotation_date: quotationDate,
         customer_ref: customerRef || undefined,
         job_description: jobDescription,

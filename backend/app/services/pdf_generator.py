@@ -33,7 +33,10 @@ def render_quotation_html(
     items: List[QuotationItem]
 ) -> str:
     template = jinja_env.get_template("quotation_pdf.html")
-    banner_b64 = get_file_base64("letterhead_banner.png") or get_logo_base64()
+    company_code = (getattr(company, 'company_code', None) or getattr(quotation, 'company_code', None) or 'kleanmaxpro').lower()
+    
+    header_b64 = get_file_base64(f"headers/header_{company_code}.png") or get_file_base64("letterhead_banner.png") or get_logo_base64()
+    footer_b64 = get_file_base64(f"headers/footer_{company_code}.png")
     machine_b64 = get_file_base64("karcher_scrubber.png")
 
     prepared_by_name = quotation.prepared_by.full_name if quotation.prepared_by else "Admin"
@@ -44,8 +47,11 @@ def render_quotation_html(
         customer=customer,
         sections=sections,
         items=items,
-        logo_base64=banner_b64,
-        banner_base64=banner_b64,
+        company_code=company_code,
+        logo_base64=header_b64,
+        header_base64=header_b64,
+        footer_base64=footer_b64,
+        banner_base64=header_b64,
         machine_base64=machine_b64,
         prepared_by_name=prepared_by_name
     )

@@ -30,6 +30,7 @@ class CompanySetting(Base):
     __tablename__ = "company_settings"
 
     id = Column(GUID, primary_key=True, default=generate_uuid)
+    company_code = Column(String(50), unique=True, nullable=True, index=True)
     company_name = Column(String(255), nullable=False, default="Klean Max Pro")
     legal_name = Column(String(255), nullable=False, default="Klean Max Pro Commercial Services Private Limited")
     gstin = Column(String(15), nullable=True, default="33AABCK1234F1Z8")
@@ -53,6 +54,8 @@ class CompanySetting(Base):
     quotation_prefix = Column(String(20), default="KMP")
     default_validity_days = Column(Integer, default=30)
     rounding_policy = Column(String(50), default="HALF_UP")
+    tagline = Column(String(255), nullable=True)
+    brand_color = Column(String(50), nullable=True, default="#FED10C")
     default_payment_terms = Column(Text, default="100% advance along with confirmed work order, or 50% advance and balance on completion.")
     default_delivery_terms = Column(Text, default="Work will commence within 3-5 business days of advance receipt and site clearance.")
     default_warranty_terms = Column(Text, default="Standard workmanship warranty of 30 days on deep cleaning services. Equipment as per OEM warranty terms.")
@@ -136,6 +139,7 @@ class Quotation(Base):
     __tablename__ = "quotations"
 
     id = Column(GUID, primary_key=True, default=generate_uuid)
+    company_code = Column(String(50), nullable=True, index=True, default="kleanmaxpro")
     quotation_number = Column(String(100), nullable=False, index=True)
     revision_number = Column(Integer, nullable=False, default=0)
     parent_quotation_id = Column(GUID, ForeignKey("quotations.id"), nullable=True)
