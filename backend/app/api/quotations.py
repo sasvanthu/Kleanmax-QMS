@@ -40,6 +40,35 @@ def calculate_quotation(
         raise HTTPException(status_code=400, detail=str(e))
 
 
+@router.get("/next-number")
+def get_next_quotation_number_endpoint(
+    company_code: str = Query("kleanmaxpro"),
+    format_style: str = Query("short"),
+    db: Session = Depends(get_db),
+    current_user: Profile = Depends(get_current_user)
+):
+    company = db.query(CompanySetting).filter(CompanySetting.company_code == company_code).first()
+    prefix = company.quotation_prefix if company and company.quotation_prefix else "KMP"
+    prefix = prefix.strip().upper()
+    
+    count = db.query(Quotation).filter(Quotation.company_code == company_code).count()
+    next_seq = count + 1
+    
+    if format_style == "short":
+        next_number = f"{prefix}/{next_seq:04d}"
+    else:
+        from backend.app.services.numbering import get_current_fiscal_year
+        fy = get_current_fiscal_year()
+        next_number = f"{prefix}/{fy}/{next_seq:04d}"
+        
+    return {
+        "company_code": company_code,
+        "prefix": prefix,
+        "next_sequence": next_seq,
+        "next_number": next_number
+    }
+
+
 @router.get("", response_model=List[QuotationResponse])
 def get_quotations(
     search: Optional[str] = Query(None, description="Search quotation number, customer name, notes"),

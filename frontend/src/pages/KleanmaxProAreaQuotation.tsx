@@ -1,54 +1,22 @@
-import React, { useState } from 'react';
-import { User } from '../services/types';
+import React, { useState, useEffect, useRef } from 'react';
+import { Customer, Service, User, CompanySetting } from '../services/types';
 import { api } from '../services/api';
 import {
-  Download, Printer, Save, CheckCircle2,
-  Calendar, Layers, ShieldCheck, Sparkles, Plus, Trash2, ArrowLeft, FileText
+  Download, FileText, Printer, Save, CheckCircle2,
+  Calendar, Layers, ShieldCheck, Sparkles, Plus, Trash2, ArrowLeft,
+  Search, Lock, Eye, Check, ChevronDown, Building, Phone, Mail, MapPin,
+  RefreshCw, Info, HelpCircle
 } from 'lucide-react';
 
-interface AreaSection {
+interface QuotationProductItem {
   id: string;
-  name: string;
-  service: string;
-  length: number;
-  breadth: number;
-  unit: string;
-  repetitions: number;
+  item_name: string;
+  description: string;
+  days: number;
+  uom: string;
   rate: number;
+  amount: number;
 }
-
-const DEFAULT_AREAS: AreaSection[] = [
-  {
-    id: '1',
-    name: 'Main Factory Shop Floor',
-    service: 'Industrial Deep Floor Scrubbing & Degreasing',
-    length: 100,
-    breadth: 50,
-    unit: 'ft',
-    repetitions: 1,
-    rate: 4.50,
-  },
-  {
-    id: '2',
-    name: 'High-Traffic Bay & Loading Dock',
-    service: 'Heavy-Duty Oil & Stain Removal Rotary Scrubbing',
-    length: 60,
-    breadth: 40,
-    unit: 'ft',
-    repetitions: 1,
-    rate: 5.50,
-  },
-  {
-    id: '3',
-    name: 'Warehouse Corridor & Aisle Area',
-    service: 'Mechanical Auto-Scrubber Buffing & Sanitization',
-    length: 80,
-    breadth: 25,
-    unit: 'ft',
-    repetitions: 1,
-    rate: 4.00,
-  },
-];
 
 interface KleanmaxProAreaQuotationProps {
   currentUser: User | null;
@@ -56,565 +24,1039 @@ interface KleanmaxProAreaQuotationProps {
   onOpenPreview: (quotationId: string) => void;
 }
 
+const HEADING_OPTIONS = [
+  'MONTHLY RENTAL QUOTATION',
+  'SALES QUOTATION',
+  'SERVICE QUOTATION',
+];
+
+const DEFAULT_ABOUT_US = `Kleanmax Pro is a leading provider of cleaning machine rental services, offering a wide range of equipment—from vacuum cleaners to ride-on scrubbers—to industries, malls, commercial spaces, and facility management companies across Chennai, Bangalore, Hyderabad and Visakhapatnam.
+
+Our rental machines are well-maintained, ready-to-use, and come with on-site delivery and pickup. We also offer on-call technical support throughout the rental period, ensuring seamless operations.
+
+Machines are equipped with GPS tracking devices to monitor usage, location, and efficiency in real-time. For larger or longer projects, we provide custom rental packages, and where needed, can include standby machines and basic operator training. With flexible rental durations, affordable pricing, and transparent terms, our rental service is designed to deliver both performance and peace of mind.`;
+
+const DEFAULT_NOTES = `1. TRANSPORT IS CUSTOMER SCOPE.
+2. TAX WILL BE EXTRA.
+3. 2 MONTHS RENTAL AMOUNT DEPOSIT REQUIRED.
+4. RENTAL PERIOD MAXIMUM 3 YEARS REQUIRED.`;
+
+const ADVANTAGES = [
+  'Access to a wide range of cleaning machines on demand.',
+  'Well-maintained, quality-checked equipment every time.',
+  'GPS tracking included for real-time usage monitoring.',
+  'On-call technical support throughout the rental period.',
+  'Zero maintenance worries — we handle all servicing.',
+  'Standby machine available (subject to availability).',
+  'Operator training support provided when needed.',
+  'Transparent pricing with no hidden charges.',
+];
+
+const TERMS_AND_CONDITIONS = [
+  'Consumables are included in the rental scope.',
+  'Machine maintenance and service spares are included in our scope.',
+  'Only depreciation parts are covered; broken parts due to misuse are not covered.',
+  'Preventive maintenance will be carried out once every two months.',
+  'Breakdown service will be provided within 24–48 hours, depending on location.',
+  'The renter is fully responsible for any damage or missing parts.',
+  'Payment terms: 30 days from the date of invoice submission.',
+];
+
+const OTHER_SERVICES = [
+  'Repair & Maintenance of Cleaning Equipment',
+  'AMC / CMC Contracts',
+  'Sales of New & Used Machines',
+  'Housekeeping Material Supply',
+  'Commercial Cleaning & Painting Services',
+];
+
 export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> = ({
   currentUser,
   onNavigate,
   onOpenPreview,
 }) => {
-  // Quotation Meta
-  const [quotationNo, setQuotationNo] = useState<string>(`KMP/26-27/${Math.floor(3000 + Math.random() * 7000)}`);
-  const [quotationDate, setQuotationDate] = useState<string>(new Date().toISOString().split('T')[0]);
-  const [customerName, setCustomerName] = useState<string>('TVS LOGISTICS & SUPPLY CHAIN SOLUTIONS');
-  const [customerLocation, setCustomerLocation] = useState<string>('Ambattur Industrial Estate, Chennai - 600058');
+  // 1. Heading Option & Text (Editable)
+  const [selectedHeadingOption, setSelectedHeadingOption] = useState<string>('MONTHLY RENTAL QUOTATION');
+  const [quotationTitle, setQuotationTitle] = useState<string>('MONTHLY RENTAL QUOTATION');
 
-  // Interactive Area sections
-  const [sections, setSections] = useState<AreaSection[]>(DEFAULT_AREAS);
+  // 2. Metadata: Quotation Number & Date (Editable & Auto-Incrementing)
+  const [quotationNo, setQuotationNo] = useState<string>('KMP/0001');
+  const [quotationDate, setQuotationDate] = useState<string>(new Date().toISOString().split('T')[0]);
+
+  // 3. "TO :-" Client Address Details (Editable)
+  const [customerName, setCustomerName] = useState<string>('ABANS FACILITY MANAGEMENT');
+  const [addressLine1, setAddressLine1] = useState<string>('Perungudi Industrial Estate');
+  const [addressLine2, setAddressLine2] = useState<string>('Chennai - 600096, Tamil Nadu');
+  const [contactPerson, setContactPerson] = useState<string>('Facility Operations Head');
+  const [phone, setPhone] = useState<string>('+91 98840 12345');
+  const [email, setEmail] = useState<string>('operations@abansfacility.com');
+  const [gstin, setGstin] = useState<string>('33AAAAA0000A1Z5');
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
+
+  // 4. Content Blocks
+  const [aboutUs, setAboutUs] = useState<string>(DEFAULT_ABOUT_US);
+  const [notes, setNotes] = useState<string>(DEFAULT_NOTES);
+
+  // 5. Products & Items Table
+  const [items, setItems] = useState<QuotationProductItem[]>([
+    {
+      id: 'item_1',
+      item_name: 'RIDE ON SCRUBBER MACHINE RB-800',
+      description: 'BRUSH SCRUBBING WIDTH - 800mm\nSUCTION WIDTH - 1100mm\nCOVERAGE AREA - 4800M.SQ/HR\nWORKING SPEED - 6KM/HR\nAIRFLOW RATE - 33L/SEC\nVACCUM PRESSURE - 1650MM\nPOWER - 24V\nTOTAL POWER - 2400W\nBRUSH MOTOR - 2*550W\nVACCUM MOTOR - 550W\nPERFORMANCE - 1950 m2/hr\nTANK CAPACITY - 120LTRS\nDIAMETRE OF BRUSH - 405MM\nDRIVER MOTOR POWER - 750MM',
+      days: 1,
+      uom: 'NOS',
+      rate: 32000.00,
+      amount: 32000.00,
+    },
+    {
+      id: 'item_2',
+      item_name: 'RIDE ON SCRUBBER MACHINE RB-650',
+      description: 'Scrubbing Width: 650 mm\nSuction / Squeegee Width: 870 mm\nTheoretical Area Coverage: 4,225 m2/hr\nWorking Speed: Up to 6.5 km/hr (Travel speed up to 7 km/hr)\nPower Supply / Battery: 24 V DC / 200 Ah\nTotal Power: 1,600 W\nBrushes: 2 disc brushes, 333 mm diameter each, running at 180 RPM\nBrush Pressure: 25 kg (with additional brush pressure option)\nSolution / Fresh Water Tank: 100 L\nRecovery / Dirty Water Tank: 100 L',
+      days: 1,
+      uom: 'NOS',
+      rate: 27000.00,
+      amount: 27000.00,
+    },
+  ]);
+
+  // Tax rates
+  const [applyTax, setApplyTax] = useState<boolean>(true);
   const [taxPercent, setTaxPercent] = useState<number>(18);
 
-  const [saving, setSaving] = useState(false);
+  // 6. Product Search Bar State
+  const [productSearchQuery, setProductSearchQuery] = useState<string>('');
+  const [availableProducts, setAvailableProducts] = useState<Service[]>([]);
+  const [searchResults, setSearchResults] = useState<Service[]>([]);
+  const [searchDropdownOpen, setSearchDropdownOpen] = useState<boolean>(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  // Customers & Company Setting
+  const [customerList, setCustomerList] = useState<Customer[]>([]);
+  const [company, setCompany] = useState<CompanySetting | null>(null);
+
+  // Status & Feedback
+  const [saving, setSaving] = useState<boolean>(false);
   const [savedQuoteId, setSavedQuoteId] = useState<string | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
-  // Calculations
-  const calculateArea = (s: AreaSection) => {
-    return Number(s.length || 0) * Number(s.breadth || 0) * Number(s.repetitions || 1);
+  useEffect(() => {
+    loadInitialData();
+  }, []);
+
+  // Close search dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setSearchDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const loadInitialData = async () => {
+    try {
+      // 1. Fetch Next Quotation Number for Kleanmax Pro (e.g. KMP/0001, KMP/0002)
+      try {
+        const nextNumRes = await api.quotations.getNextNumber('kleanmaxpro', 'short');
+        if (nextNumRes && nextNumRes.next_number) {
+          setQuotationNo(nextNumRes.next_number);
+        }
+      } catch (e) {
+        console.warn('Fallback quotation number:', e);
+      }
+
+      // 2. Fetch Customers & Company Details
+      const [custs, comp, services] = await Promise.all([
+        api.customers.list(),
+        api.company.get('kleanmaxpro'),
+        api.services.list({ company_code: 'kleanmaxpro' }),
+      ]);
+
+      setCustomerList(custs);
+      setCompany(comp);
+      setAvailableProducts(services);
+
+      if (custs.length > 0) {
+        setSelectedCustomerId(custs[0].id);
+      }
+    } catch (err) {
+      console.error('Failed to load initial Kleanmax Pro data:', err);
+    }
   };
 
-  const calculateLineTotal = (s: AreaSection) => {
-    return calculateArea(s) * Number(s.rate || 0);
+  // Filter products as employee types in search bar
+  useEffect(() => {
+    if (!productSearchQuery.trim()) {
+      setSearchResults(availableProducts.slice(0, 8));
+    } else {
+      const q = productSearchQuery.toLowerCase();
+      const filtered = availableProducts.filter((p) =>
+        p.service_name.toLowerCase().includes(q) ||
+        p.service_code.toLowerCase().includes(q) ||
+        (p.description && p.description.toLowerCase().includes(q)) ||
+        p.category.toLowerCase().includes(q)
+      );
+      setSearchResults(filtered);
+    }
+  }, [productSearchQuery, availableProducts]);
+
+  // Handle heading selection
+  const handleSelectHeadingOption = (opt: string) => {
+    setSelectedHeadingOption(opt);
+    setQuotationTitle(opt);
   };
 
-  const totalArea = sections.reduce((sum, s) => sum + calculateArea(s), 0);
-  const subtotal = sections.reduce((sum, s) => sum + calculateLineTotal(s), 0);
-  const cgstRate = taxPercent / 2;
-  const sgstRate = taxPercent / 2;
+  // Handle customer quick pick
+  const handleSelectCustomer = (custId: string) => {
+    setSelectedCustomerId(custId);
+    const found = customerList.find((c) => c.id === custId);
+    if (found) {
+      setCustomerName(found.company_name);
+      setAddressLine1(found.billing_address_line1 || '');
+      setAddressLine2(`${found.billing_city || ''} ${found.billing_pincode ? `- ${found.billing_pincode}` : ''}`.trim());
+      setContactPerson(found.contact_person || 'Facility Head');
+      setPhone(found.phone || '');
+      setEmail(found.email || '');
+      setGstin(found.gstin || '');
+    }
+  };
+
+  // Add product from search bar to table
+  const handleAddProduct = (prod: Service) => {
+    const newItem: QuotationProductItem = {
+      id: `item_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+      item_name: prod.service_name,
+      description: prod.description || '',
+      days: 1,
+      uom: prod.default_uom || 'NOS',
+      rate: Number(prod.standard_rate || 0),
+      amount: Number(prod.standard_rate || 0),
+    };
+    setItems((prev) => [...prev, newItem]);
+    setProductSearchQuery('');
+    setSearchDropdownOpen(false);
+  };
+
+  // Add custom manual item row
+  const handleAddCustomItem = () => {
+    const newItem: QuotationProductItem = {
+      id: `item_${Date.now()}`,
+      item_name: 'NEW CLEANING EQUIPMENT',
+      description: 'Technical specifications, power rating, brush size & tank capacity',
+      days: 1,
+      uom: 'NOS',
+      rate: 15000.00,
+      amount: 15000.00,
+    };
+    setItems((prev) => [...prev, newItem]);
+  };
+
+  // Update item field
+  const handleUpdateItem = (id: string, field: keyof QuotationProductItem, val: any) => {
+    setItems((prev) =>
+      prev.map((item) => {
+        if (item.id !== id) return item;
+        const updated = { ...item, [field]: val };
+        if (field === 'days' || field === 'rate') {
+          const d = field === 'days' ? Number(val) : updated.days;
+          const r = field === 'rate' ? Number(val) : updated.rate;
+          updated.amount = (Number(d) || 0) * (Number(r) || 0);
+        }
+        return updated;
+      })
+    );
+  };
+
+  // Step quantity (+ or -)
+  const handleStepQuantity = (id: string, delta: number) => {
+    setItems((prev) =>
+      prev.map((item) => {
+        if (item.id !== id) return item;
+        const newDays = Math.max(1, (Number(item.days) || 1) + delta);
+        return {
+          ...item,
+          days: newDays,
+          amount: newDays * Number(item.rate || 0),
+        };
+      })
+    );
+  };
+
+  // Remove item
+  const handleRemoveItem = (id: string) => {
+    setItems((prev) => prev.filter((i) => i.id !== id));
+  };
+
+  // Financial Calculations
+  const subtotal = items.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const cgstRate = applyTax ? taxPercent / 2 : 0;
+  const sgstRate = applyTax ? taxPercent / 2 : 0;
   const cgstAmount = (subtotal * cgstRate) / 100;
   const sgstAmount = (subtotal * sgstRate) / 100;
   const totalAmount = subtotal + cgstAmount + sgstAmount;
 
-  const handleUpdate = (id: string, field: keyof AreaSection, val: any) => {
-    setSections((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, [field]: val } : s))
-    );
-  };
+  // Convert numbers to Indian Rupees Words
+  const numberToWords = (num: number): string => {
+    const a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
+    const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+    const n = Math.floor(num);
+    if (n === 0) return 'Zero Rupees Only';
 
-  const handleAddSection = () => {
-    const newSec: AreaSection = {
-      id: Date.now().toString(),
-      name: 'New Commercial Area Section',
-      service: 'Mechanical Floor Scrubbing',
-      length: 50,
-      breadth: 30,
-      unit: 'ft',
-      repetitions: 1,
-      rate: 4.50,
+    const inWords = (n: number): string => {
+      let str = '';
+      if (n > 9999999) {
+        str += inWords(Math.floor(n / 10000000)) + 'Crore ';
+        n %= 10000000;
+      }
+      if (n > 99999) {
+        str += inWords(Math.floor(n / 100000)) + 'Lakh ';
+        n %= 100000;
+      }
+      if (n > 999) {
+        str += inWords(Math.floor(n / 1000)) + 'Thousand ';
+        n %= 1000;
+      }
+      if (n > 99) {
+        str += inWords(Math.floor(n / 100)) + 'Hundred ';
+        n %= 100;
+      }
+      if (n > 0) {
+        if (str !== '') str += 'and ';
+        if (n < 20) str += a[n];
+        else str += b[Math.floor(n / 10)] + (n % 10 !== 0 ? ' ' + a[n % 10] : ' ');
+      }
+      return str;
     };
-    setSections((prev) => [...prev, newSec]);
+    return `${inWords(n).trim()} Rupees Only`;
   };
 
-  const handleRemoveSection = (id: string) => {
-    if (sections.length <= 1) {
-      alert('Quotation must contain at least one area section.');
-      return;
-    }
-    setSections((prev) => prev.filter((s) => s.id !== id));
-  };
-
-  // Save to database
-  const handleSaveToDatabase = async () => {
+  // Save to Database
+  const handleSaveToDatabase = async (openPreviewAfter = false): Promise<string | null> => {
     setSaving(true);
+    setToastMsg(null);
     try {
-      // 1. Ensure customer exists
-      const existingCustomers = await api.customers.list(customerName);
-      let customer = existingCustomers.find(
-        (c) => c.company_name.toLowerCase().trim() === customerName.toLowerCase().trim()
-      );
-      if (!customer) {
-        customer = await api.customers.create({
+      // Find or create customer
+      let targetCustId = selectedCustomerId;
+      if (!targetCustId) {
+        const newCust = await api.customers.create({
           company_name: customerName,
+          billing_address_line1: addressLine1,
+          billing_address_line2: addressLine2,
+          contact_person: contactPerson,
+          phone: phone || '+91 00000 00000',
+          email: email || undefined,
+          gstin: gstin || undefined,
           billing_city: 'Chennai',
-          billing_address_line1: customerLocation,
           billing_state: 'Tamil Nadu',
           billing_state_code: '33',
-          billing_pincode: '600058',
-          phone: '+91 7338882036',
+          billing_pincode: '600001',
+          is_active: true,
         });
+        targetCustId = newCust.id;
       }
 
-      // 2. Prepare sections payload
-      const quotationSections = sections.map((s, idx) => {
-        const area = calculateArea(s);
-        const lTotal = calculateLineTotal(s);
-        return {
-          section_order: idx + 1,
-          section_name: s.name,
-          service_name: s.service,
-          length: Number(s.length),
-          breadth: Number(s.breadth),
-          measurement_unit: s.unit,
-          calculated_area: area,
-          repetitions: Number(s.repetitions || 1),
-          billable_area: area,
-          billable_uom: 'sq_ft',
-          rate_source: 'catalogue',
-          original_catalogue_rate: Number(s.rate),
-          applied_rate: Number(s.rate),
-          discount_percent: 0,
-          line_total: lTotal,
-        };
-      });
+      // Convert products to Quotation Items
+      const payloadItems = items.map((it, idx) => ({
+        item_name: it.item_name,
+        description: it.description,
+        quantity: Number(it.days) || 1,
+        uom: it.uom,
+        unit_price: Number(it.rate),
+        applied_rate: Number(it.rate),
+        rate_source: 'catalogue',
+        tax_rate: applyTax ? taxPercent : 0,
+        cgst_amount: applyTax ? (Number(it.amount) * (taxPercent / 2)) / 100 : 0,
+        sgst_amount: applyTax ? (Number(it.amount) * (taxPercent / 2)) / 100 : 0,
+        line_total: Number(it.amount),
+        item_order: idx + 1,
+      }));
 
-      // 3. Create quotation
+      // Quotation creation payload
       const payload = {
+        customer_id: targetCustId,
         company_code: 'kleanmaxpro',
-        customer_id: customer.id,
-        quotation_type: 'area_based',
+        quotation_number: quotationNo.trim(),
+        quotation_type: 'rental',
         quotation_date: quotationDate,
-        customer_ref: quotationNo,
-        job_description: 'Commercial Area Scrubbing & Cleaning Services - Kleanmax Pro',
-        items: [],
-        sections: quotationSections,
-        tax_rate: taxPercent,
+        job_description: quotationTitle,
+        notes: notes,
+        terms_and_conditions: TERMS_AND_CONDITIONS.join('\n'),
+        items: payloadItems,
+        sections: [],
+        tax_rate: applyTax ? taxPercent : 0,
         discount_type: 'none',
         discount_value: 0,
-        freight_charges: 0,
-        packing_charges: 0,
-        other_charges: 0,
       };
 
-      const created = await api.quotations.create(payload);
-      setSavedQuoteId(created.id);
-      setToastMsg(`Kleanmax Pro Quotation ${created.quotation_number} saved! Ready to download.`);
-      setTimeout(() => setToastMsg(null), 5000);
-      return created.id;
+      const res = await api.quotations.create(payload);
+      setSavedQuoteId(res.id);
+      setToastMsg(`Quotation ${res.quotation_number} saved successfully!`);
+
+      if (openPreviewAfter) {
+        onOpenPreview(res.id);
+      }
+      return res.id;
     } catch (err: any) {
-      alert(err.message || 'Failed to save area quotation');
+      console.error(err);
+      alert(err.message || 'Failed to save quotation');
       return null;
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDownload = async () => {
-    let qId = savedQuoteId;
-    if (!qId) {
-      qId = await handleSaveToDatabase();
-    }
-    if (qId) {
-      api.quotations.downloadPdf(qId);
-    }
-  };
-
   const handleDownloadDocx = async () => {
-    let qId = savedQuoteId;
-    if (!qId) {
-      qId = await handleSaveToDatabase();
+    let quoteId = savedQuoteId;
+    if (!quoteId) {
+      quoteId = await handleSaveToDatabase(false);
     }
-    if (qId) {
-      api.quotations.downloadDocx(qId);
+    if (quoteId) {
+      await api.quotations.downloadDocx(quoteId, `${quotationNo.replace('/', '_')}_KleanmaxPro.docx`);
     }
   };
 
-  const handlePrint = async () => {
-    let qId = savedQuoteId;
-    if (!qId) {
-      qId = await handleSaveToDatabase();
+  const handleDownloadPdf = async () => {
+    let quoteId = savedQuoteId;
+    if (!quoteId) {
+      quoteId = await handleSaveToDatabase(false);
     }
-    if (qId) {
-      const printWindow = window.open(`/api/quotations/${qId}/html`, '_blank');
-      if (printWindow) {
-        printWindow.onload = () => printWindow.print();
-      }
+    if (quoteId) {
+      await api.quotations.downloadPdf(quoteId, `${quotationNo.replace('/', '_')}_KleanmaxPro.pdf`);
     }
   };
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-16">
-      {/* Top Banner Navigation & Quick Action Bar */}
-      <div className="bg-slate-900 text-white p-4 rounded-xl shadow-lg border border-slate-800 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
+      {/* Toast Alert Banner */}
+      {toastMsg && (
+        <div className="bg-emerald-50 border border-emerald-300 text-emerald-900 px-4 py-3 rounded-2xl shadow-sm flex items-center justify-between animate-fade-in sticky top-20 z-30">
+          <div className="flex items-center gap-2 text-xs font-bold">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            <span>{toastMsg}</span>
+          </div>
+          <button onClick={() => setToastMsg(null)} className="text-emerald-700 font-extrabold text-xs hover:underline">
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {/* Top Action Bar */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex flex-wrap items-center justify-between gap-4 sticky top-16 z-20">
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => onNavigate('dashboard')}
-            className="p-2 hover:bg-slate-800 rounded-lg text-slate-300 hover:text-white"
-            title="Back to Dashboard"
+            onClick={() => onNavigate('kleanmaxpro_quotes')}
+            className="p-2 hover:bg-slate-100 rounded-xl text-slate-600 transition-colors"
+            title="View Past Quotations"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-4 h-4" />
           </button>
           <div>
             <div className="flex items-center gap-2">
-              <span className="bg-[#FED10C] text-slate-950 text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wider">
-                KLEANMAX PRO
-              </span>
-              <span className="text-xs text-slate-400">Commercial Operations</span>
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
+              <h1 className="text-base font-black text-slate-900 tracking-tight">
+                Kleanmax Pro Quotation Generator
+              </h1>
             </div>
-            <h1 className="text-lg font-black text-white tracking-tight">
-              Commercial Area Quotation Generator
-            </h1>
+            <p className="text-[11px] text-slate-500">
+              Interactive proposal builder matching authentic Kleanmax Pro manual quotations.
+            </p>
           </div>
         </div>
 
-        {/* 1-Click Action Buttons */}
         <div className="flex flex-wrap items-center gap-2">
+          {/* 1-Click Word (.docx) */}
           <button
             onClick={handleDownloadDocx}
             disabled={saving}
-            className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-md flex items-center gap-1.5 transition-all"
-            title="Download Word (.docx)"
+            className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-sm transition-all transform active:scale-95"
+            title="Download formatted Microsoft Word document with letterhead"
           >
-            <FileText className="w-4 h-4 text-white" />
-            <span>Word (.docx)</span>
+            <FileText className="w-4 h-4" />
+            <span>Download Word (.docx)</span>
           </button>
 
+          {/* 1-Click PDF */}
           <button
-            onClick={handleSaveToDatabase}
+            onClick={handleDownloadPdf}
             disabled={saving}
-            className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-lg border border-slate-700 flex items-center gap-1.5 transition-all"
+            className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-sm transition-all transform active:scale-95"
+            title="Download official PDF with letterhead"
           >
-            <Save className="w-4 h-4 text-amber-400" />
-            <span>{saving ? 'Saving...' : 'Save Record'}</span>
+            <Download className="w-4 h-4 text-amber-400" />
+            <span>Download PDF</span>
           </button>
 
+          {/* Preview A4 */}
           <button
-            onClick={handlePrint}
-            className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-lg border border-slate-700 flex items-center gap-1.5 transition-all"
+            onClick={() => handleSaveToDatabase(true)}
+            disabled={saving}
+            className="px-3.5 py-2 bg-white border border-slate-300 hover:border-slate-400 text-slate-800 font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-2xs transition-colors"
           >
-            <Printer className="w-4 h-4 text-blue-400" />
-            <span>Print A4</span>
+            <Eye className="w-4 h-4 text-slate-600" />
+            <span>Preview A4</span>
           </button>
 
+          {/* Save to DB */}
           <button
-            onClick={handleDownload}
-            className="px-4 py-2 bg-[#FED10C] hover:bg-[#E5BC07] text-slate-950 text-xs font-black rounded-lg shadow-md flex items-center gap-2 transition-all transform hover:scale-[1.02]"
+            onClick={() => handleSaveToDatabase(false)}
+            disabled={saving}
+            className="px-4 py-2 bg-[#FED10C] hover:bg-[#E5BC07] text-slate-950 font-black text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all transform active:scale-95"
           >
-            <Download className="w-4 h-4 text-slate-950" />
-            <span>Ready to Download PDF</span>
+            <Save className="w-4 h-4" />
+            <span>{saving ? 'Saving...' : 'Save to DB'}</span>
           </button>
         </div>
       </div>
 
-      {toastMsg && (
-        <div className="bg-emerald-50 border border-emerald-300 text-emerald-900 px-4 py-3 rounded-xl flex items-center gap-2 shadow-xs text-xs font-bold animate-fade-in">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-          <span>{toastMsg}</span>
-        </div>
-      )}
-
-      {/* A4 Document Preview & Interactive Editor */}
-      <div className="bg-white rounded-xl shadow-xl border border-slate-200 p-8 sm:p-10 font-sans text-slate-800 relative">
+      {/* Main Quotation Document Sheet (A4 Styled Simulation) */}
+      <div className="bg-white border-2 border-slate-300 rounded-3xl shadow-xl overflow-hidden text-slate-800">
         
-        {/* 1. Automated Top Letterhead Banner */}
-        <div className="border-b-2 border-slate-900 pb-3 mb-6 text-center">
+        {/* 1. Authentic Kleanmax Pro Header Image */}
+        <div className="w-full bg-slate-900 border-b border-slate-200">
           <img
-            src="/letterhead_banner.png"
-            alt="Klean Max Pro Letterhead Banner"
-            className="w-full max-h-28 object-contain mx-auto"
+            src="/headers/header_kleanmaxpro.png"
+            alt="Kleanmax Pro Official Letterhead Header"
+            className="w-full h-auto max-h-36 object-contain mx-auto select-none"
             onError={(e) => {
+              // fallback if png missing
               (e.target as HTMLElement).style.display = 'none';
             }}
           />
         </div>
 
-        {/* 2. Quotation Title */}
-        <div className="text-center mb-6">
-          <h2 className="text-xl font-black text-slate-900 uppercase tracking-wide underline decoration-slate-900 underline-offset-4">
-            COMMERCIAL CLEANING & SCRUBBING QUOTATION
-          </h2>
-        </div>
-
-        {/* 3. Meta Information: Client & Quotation Info */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 pb-6 border-b border-slate-200 text-xs">
-          <div className="space-y-2">
-            <div className="font-bold text-slate-500 uppercase tracking-wider text-[11px]">To :-</div>
-            <div>
-              <label className="text-[10px] text-slate-500 font-bold block mb-1">Customer / Company Name:</label>
-              <input
-                type="text"
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-                className="w-full font-black text-sm p-2 rounded border border-slate-300 bg-slate-50 focus:bg-white text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-400"
-                placeholder="Enter client company name"
-              />
-            </div>
-            <div>
-              <label className="text-[10px] text-slate-500 font-bold block mb-1">Site Location / Address:</label>
-              <input
-                type="text"
-                value={customerLocation}
-                onChange={(e) => setCustomerLocation(e.target.value)}
-                className="w-full font-medium text-xs p-2 rounded border border-slate-300 bg-slate-50 focus:bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-amber-400"
-                placeholder="Enter site location"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-3 md:text-right flex flex-col justify-end">
-            <div className="flex items-center md:justify-end gap-2">
-              <span className="font-bold text-slate-600">Quotation No :-</span>
-              <input
-                type="text"
-                value={quotationNo}
-                onChange={(e) => setQuotationNo(e.target.value)}
-                className="w-48 font-mono font-bold text-xs p-1.5 rounded border border-slate-200 bg-slate-50 focus:bg-white text-right focus:outline-none"
-              />
-            </div>
-            <div className="flex items-center md:justify-end gap-2">
-              <span className="font-bold text-slate-600">Date :-</span>
-              <input
-                type="date"
-                value={quotationDate}
-                onChange={(e) => setQuotationDate(e.target.value)}
-                className="w-48 font-bold text-xs p-1.5 rounded border border-slate-200 bg-slate-50 focus:bg-white text-right focus:outline-none"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* 4. Fixed About Us Section */}
-        <div className="bg-slate-50 border-l-4 border-[#FED10C] p-3.5 rounded mb-6 text-xs text-slate-700 leading-relaxed space-y-2">
-          <div className="font-black text-slate-900 uppercase text-[11px] flex items-center justify-between">
-            <span>About Us — Kleanmax Pro</span>
-            <span className="text-[10px] bg-slate-200 text-slate-600 px-2 py-0.5 rounded font-bold">Fixed Automated Content</span>
-          </div>
-          <p>
-            Kleanmax Pro is South India’s premier facility restoration and commercial floor maintenance partner. We specialize in deep industrial rotary scrubbing, epoxy floor restoration, high-bay degreasing, and protective commercial coatings for warehouses, manufacturing plants, logistics hubs, and commercial complexes across Chennai, Bangalore, and Hyderabad.
-          </p>
-          <p>
-            Equipped with state-of-the-art heavy-duty ride-on scrubbers and eco-friendly industrial degreasers, our dedicated site supervisors and trained technicians deliver spotless, non-slip surfaces with zero operational downtime for your business.
-          </p>
-        </div>
-
-        {/* 5. Interactive Commercial Area Table (Employees enter dimensions & quantity) */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-2">
-            <span className="font-black text-xs text-slate-900 uppercase tracking-wider flex items-center gap-2">
-              <span>Billable Area & Scope of Work</span>
-              <span className="text-[11px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded">
-                Total: {totalArea.toLocaleString('en-IN')} sq ft
+        <div className="p-6 md:p-10 space-y-7">
+          
+          {/* 2. Heading Selector: 3 Options + Directly Editable Title */}
+          <div className="bg-amber-50/70 border border-amber-200 rounded-2xl p-4 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-[11px] font-black uppercase tracking-wider text-amber-900 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                Select Heading Type:
               </span>
-            </span>
-            <button
-              onClick={handleAddSection}
-              className="text-[11px] font-bold text-amber-600 hover:text-amber-700 flex items-center gap-1 bg-amber-50 px-2.5 py-1 rounded border border-amber-200"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Add Area Section</span>
-            </button>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {HEADING_OPTIONS.map((opt) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => handleSelectHeadingOption(opt)}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                      selectedHeadingOption === opt
+                        ? 'bg-amber-400 text-slate-950 font-black shadow-xs ring-2 ring-amber-500'
+                        : 'bg-white text-slate-700 hover:bg-amber-100 border border-amber-200'
+                    }`}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Editable Heading Display */}
+            <div>
+              <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">
+                Editable Document Heading (Centered on Document):
+              </label>
+              <input
+                type="text"
+                value={quotationTitle}
+                onChange={(e) => setQuotationTitle(e.target.value.toUpperCase())}
+                className="w-full text-center text-lg md:text-xl font-black text-slate-950 bg-white border border-amber-300 rounded-xl py-2 px-3 tracking-wide uppercase focus:ring-2 focus:ring-amber-500 shadow-2xs"
+              />
+            </div>
           </div>
 
-          <div className="overflow-x-auto border border-slate-300 rounded-lg">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-100 text-slate-800 uppercase font-extrabold text-[10px] border-b border-slate-300">
-                <tr>
-                  <th className="p-2.5 w-10 text-center">SL</th>
-                  <th className="p-2.5">AREA & SERVICE SCOPE</th>
-                  <th className="p-2.5 w-20 text-center bg-amber-50 text-amber-900 border-x border-amber-200">
-                    LENGTH (FT)
-                  </th>
-                  <th className="p-2.5 w-20 text-center bg-amber-50 text-amber-900 border-r border-amber-200">
-                    BREADTH (FT)
-                  </th>
-                  <th className="p-2.5 w-16 text-center">REPS</th>
-                  <th className="p-2.5 w-24 text-center font-bold">SQ FT</th>
-                  <th className="p-2.5 w-24 text-right">RATE (₹)</th>
-                  <th className="p-2.5 w-28 text-right font-black">TOTAL (₹)</th>
-                  <th className="p-2.5 w-8 text-center"></th>
+          {/* 3. Metadata & "To :-" Client Address Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 pb-4 border-b border-slate-200">
+            {/* Left: Client Address ("TO :-") */}
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black uppercase text-slate-900 tracking-wider">
+                  TO :-
+                </span>
+                {customerList.length > 0 && (
+                  <select
+                    value={selectedCustomerId}
+                    onChange={(e) => handleSelectCustomer(e.target.value)}
+                    className="text-[11px] font-bold border border-slate-200 rounded-lg px-2 py-1 bg-slate-50 text-slate-700 hover:bg-slate-100 cursor-pointer"
+                  >
+                    <option value="">Quick Pick Existing Client...</option>
+                    {customerList.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.company_name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
+              <div>
+                <input
+                  type="text"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  placeholder="Client / Company Name (e.g. ABANS FACILITY)"
+                  className="w-full text-sm font-black text-slate-900 border border-slate-300 rounded-xl p-2.5 focus:ring-1 focus:ring-amber-500 uppercase tracking-wide bg-slate-50/50"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                <input
+                  type="text"
+                  value={addressLine1}
+                  onChange={(e) => setAddressLine1(e.target.value)}
+                  placeholder="Address Line 1"
+                  className="w-full border border-slate-300 rounded-lg p-2 focus:ring-1 focus:ring-amber-500"
+                />
+                <input
+                  type="text"
+                  value={addressLine2}
+                  onChange={(e) => setAddressLine2(e.target.value)}
+                  placeholder="City, State - Pincode"
+                  className="w-full border border-slate-300 rounded-lg p-2 focus:ring-1 focus:ring-amber-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                <input
+                  type="text"
+                  value={contactPerson}
+                  onChange={(e) => setContactPerson(e.target.value)}
+                  placeholder="Attn: Person"
+                  className="w-full border border-slate-300 rounded-lg p-2"
+                />
+                <input
+                  type="text"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="Phone No"
+                  className="w-full border border-slate-300 rounded-lg p-2"
+                />
+                <input
+                  type="text"
+                  value={gstin}
+                  onChange={(e) => setGstin(e.target.value.toUpperCase())}
+                  placeholder="GSTIN No"
+                  className="w-full font-mono border border-slate-300 rounded-lg p-2 uppercase"
+                />
+              </div>
+            </div>
+
+            {/* Right: Quotation Number & Date (Editable & Auto-Incrementing) */}
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex flex-col justify-center space-y-3">
+              <div>
+                <label className="block text-[11px] font-black uppercase text-slate-700 mb-1">
+                  Quotation Number (e.g. KMP/0001) :-
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={quotationNo}
+                    onChange={(e) => setQuotationNo(e.target.value.toUpperCase())}
+                    className="w-full text-sm font-mono font-black text-slate-900 border border-slate-300 rounded-xl p-2 bg-white uppercase focus:ring-1 focus:ring-amber-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const res = await api.quotations.getNextNumber('kleanmaxpro', 'short');
+                      if (res?.next_number) setQuotationNo(res.next_number);
+                    }}
+                    className="p-2 bg-slate-200 hover:bg-slate-300 rounded-xl text-slate-700"
+                    title="Fetch latest sequence from database"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                  </button>
+                </div>
+                <span className="text-[10px] text-slate-500 block mt-0.5">
+                  Increments in DB automatically. Editable for manual numbering.
+                </span>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-black uppercase text-slate-700 mb-1">
+                  Quotation Date :-
+                </label>
+                <input
+                  type="date"
+                  value={quotationDate}
+                  onChange={(e) => setQuotationDate(e.target.value)}
+                  className="w-full text-xs font-bold text-slate-900 border border-slate-300 rounded-xl p-2 bg-white"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* 4. About Us (Authentic Kleanmax Pro text from PDF) */}
+          <div className="bg-slate-50/70 p-4 rounded-2xl border border-slate-200 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black uppercase text-slate-900">
+                About Us:
+              </span>
+              <span className="text-[10px] text-slate-400 font-mono">Official Company Profile</span>
+            </div>
+            <textarea
+              rows={4}
+              value={aboutUs}
+              onChange={(e) => setAboutUs(e.target.value)}
+              className="w-full text-xs text-slate-700 bg-white border border-slate-200 rounded-xl p-3 leading-relaxed focus:ring-1 focus:ring-amber-500"
+            />
+          </div>
+
+          {/* 5. Product Search Bar for Employee */}
+          <div className="space-y-2 relative" ref={searchContainerRef}>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-black uppercase tracking-wider text-slate-900 flex items-center gap-1.5">
+                <Search className="w-4 h-4 text-amber-500" />
+                <span>Search & Add Equipment / Machine:</span>
+              </label>
+              <button
+                type="button"
+                onClick={handleAddCustomItem}
+                className="text-xs font-bold text-amber-700 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-3 py-1 rounded-lg flex items-center gap-1"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>+ Custom Blank Item</span>
+              </button>
+            </div>
+
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Search Kleanmax Pro rental products (e.g. RB-800, RB-650, Vacuum, Single Disc, Scrubber)..."
+                value={productSearchQuery}
+                onFocus={() => setSearchDropdownOpen(true)}
+                onChange={(e) => {
+                  setProductSearchQuery(e.target.value);
+                  setSearchDropdownOpen(true);
+                }}
+                className="w-full pl-10 pr-4 py-2.5 text-xs font-bold bg-white border-2 border-amber-300 rounded-2xl shadow-xs focus:ring-2 focus:ring-amber-400 focus:outline-none"
+              />
+            </div>
+
+            {/* Instant Search Results Dropdown */}
+            {searchDropdownOpen && (
+              <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-2xl shadow-2xl z-40 max-h-72 overflow-y-auto p-2">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-3 py-1 border-b border-slate-100">
+                  Select Product to Add to Table:
+                </div>
+                {searchResults.length === 0 ? (
+                  <div className="p-4 text-center text-xs text-slate-400 font-bold">
+                    No matching machines found. Click "+ Custom Blank Item" to add custom row.
+                  </div>
+                ) : (
+                  searchResults.map((p) => (
+                    <div
+                      key={p.id}
+                      onClick={() => handleAddProduct(p)}
+                      className="p-3 hover:bg-amber-50 rounded-xl cursor-pointer transition-colors flex items-center justify-between border-b border-slate-50 last:border-none"
+                    >
+                      <div>
+                        <div className="font-black text-xs text-slate-900">{p.service_name}</div>
+                        <div className="text-[11px] text-slate-500 font-mono mt-0.5">
+                          Code: {p.service_code} • UOM: {p.default_uom}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-xs font-black text-amber-700">
+                          ₹{Number(p.standard_rate).toLocaleString('en-IN')}/{p.default_uom}
+                        </div>
+                        <span className="text-[10px] bg-amber-400 text-slate-950 px-2 py-0.5 rounded font-black uppercase">
+                          + Add Item
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* 6. Products Line Items Table (Matches PDF Columns) */}
+          <div className="border border-slate-300 rounded-2xl overflow-hidden shadow-xs">
+            <table className="w-full text-xs border-collapse">
+              <thead>
+                <tr className="bg-slate-900 text-white font-black uppercase text-[11px] tracking-wider">
+                  <th className="py-3 px-3 text-center w-14">SL NO</th>
+                  <th className="py-3 px-3 text-left">DESCRIPTION & TECHNICAL SPECIFICATIONS</th>
+                  <th className="py-3 px-2 text-center w-28">DAYS / QTY</th>
+                  <th className="py-3 px-2 text-center w-20">UOM</th>
+                  <th className="py-3 px-3 text-right w-36">MONTHLY RENT (₹)</th>
+                  <th className="py-3 px-3 text-right w-36">AMOUNT (₹)</th>
+                  <th className="py-3 px-2 text-center w-12"></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200">
-                {sections.map((sec, idx) => {
-                  const area = calculateArea(sec);
-                  const lTotal = calculateLineTotal(sec);
+              <tbody className="divide-y divide-slate-200 bg-white">
+                {items.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-8 text-center text-slate-400 font-bold">
+                      No products added yet. Use the search bar above to add machines.
+                    </td>
+                  </tr>
+                ) : (
+                  items.map((item, idx) => (
+                    <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
+                      {/* SL NO */}
+                      <td className="py-3 px-3 text-center font-bold text-slate-600 align-top">
+                        {idx + 1}.
+                      </td>
 
-                  return (
-                    <tr key={sec.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="p-2 text-center font-bold text-slate-500">
-                        {idx + 1}
-                      </td>
-                      <td className="p-2">
+                      {/* Description & Technical Specs */}
+                      <td className="py-3 px-3 align-top space-y-1.5">
                         <input
                           type="text"
-                          value={sec.name}
-                          onChange={(e) => handleUpdate(sec.id, 'name', e.target.value)}
-                          className="w-full font-bold text-xs text-slate-900 bg-transparent border-0 focus:ring-1 focus:ring-amber-400 rounded px-1"
+                          value={item.item_name}
+                          onChange={(e) => handleUpdateItem(item.id, 'item_name', e.target.value)}
+                          className="w-full font-black text-xs text-slate-900 border border-slate-300 rounded-lg p-1.5 focus:ring-1 focus:ring-amber-500 uppercase"
+                          placeholder="Machine Name"
                         />
-                        <input
-                          type="text"
-                          value={sec.service}
-                          onChange={(e) => handleUpdate(sec.id, 'service', e.target.value)}
-                          className="w-full text-[11px] text-slate-500 bg-transparent border-0 focus:ring-1 focus:ring-amber-400 rounded px-1 mt-0.5"
-                        />
-                      </td>
-                      {/* Length Input */}
-                      <td className="p-2 text-center bg-amber-50/50 border-x border-amber-200">
-                        <input
-                          type="number"
-                          min="1"
-                          value={sec.length}
-                          onChange={(e) => handleUpdate(sec.id, 'length', parseFloat(e.target.value) || 0)}
-                          className="w-16 font-black text-xs text-center p-1 rounded border border-amber-300 bg-white shadow-2xs focus:outline-none focus:ring-2 focus:ring-amber-500"
+                        <textarea
+                          rows={4}
+                          value={item.description}
+                          onChange={(e) => handleUpdateItem(item.id, 'description', e.target.value)}
+                          placeholder="Technical Specs (Brush width, suction width, coverage area, battery, tank, etc.)"
+                          className="w-full text-[11px] font-mono text-slate-600 border border-slate-200 rounded-lg p-2 leading-relaxed bg-slate-50/50"
                         />
                       </td>
-                      {/* Breadth Input */}
-                      <td className="p-2 text-center bg-amber-50/50 border-r border-amber-200">
-                        <input
-                          type="number"
-                          min="1"
-                          value={sec.breadth}
-                          onChange={(e) => handleUpdate(sec.id, 'breadth', parseFloat(e.target.value) || 0)}
-                          className="w-16 font-black text-xs text-center p-1 rounded border border-amber-300 bg-white shadow-2xs focus:outline-none focus:ring-2 focus:ring-amber-500"
-                        />
-                      </td>
-                      {/* Repetitions */}
-                      <td className="p-2 text-center">
-                        <input
-                          type="number"
-                          min="1"
-                          value={sec.repetitions}
-                          onChange={(e) => handleUpdate(sec.id, 'repetitions', parseInt(e.target.value) || 1)}
-                          className="w-12 font-bold text-xs text-center p-1 rounded border border-slate-200 bg-white focus:outline-none"
-                        />
-                      </td>
-                      {/* Billable Area in Sq Ft */}
-                      <td className="p-2 text-center font-bold text-slate-700 bg-slate-50">
-                        {area.toLocaleString('en-IN')}
-                      </td>
-                      {/* Rate per Sq Ft */}
-                      <td className="p-2 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <span className="text-[10px] text-slate-400">₹</span>
+
+                      {/* Days / Qty with + and - step buttons */}
+                      <td className="py-3 px-2 text-center align-top">
+                        <div className="flex items-center justify-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-300 w-fit mx-auto">
+                          <button
+                            type="button"
+                            onClick={() => handleStepQuantity(item.id, -1)}
+                            className="w-6 h-6 flex items-center justify-center bg-white rounded-lg text-slate-700 hover:bg-slate-200 font-bold text-xs"
+                          >
+                            -
+                          </button>
                           <input
                             type="number"
-                            step="0.1"
-                            value={sec.rate}
-                            onChange={(e) => handleUpdate(sec.id, 'rate', parseFloat(e.target.value) || 0)}
-                            className="w-16 font-bold text-xs text-right p-1 rounded border border-slate-200 bg-white focus:outline-none"
+                            min="1"
+                            value={item.days}
+                            onChange={(e) => handleUpdateItem(item.id, 'days', parseInt(e.target.value) || 1)}
+                            className="w-10 text-center font-black text-xs bg-transparent border-none focus:outline-none"
                           />
+                          <button
+                            type="button"
+                            onClick={() => handleStepQuantity(item.id, 1)}
+                            className="w-6 h-6 flex items-center justify-center bg-white rounded-lg text-slate-700 hover:bg-slate-200 font-bold text-xs"
+                          >
+                            +
+                          </button>
                         </div>
                       </td>
-                      {/* Total */}
-                      <td className="p-2 text-right font-black text-slate-900">
-                        ₹ {lTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+
+                      {/* UOM */}
+                      <td className="py-3 px-2 text-center align-top">
+                        <input
+                          type="text"
+                          value={item.uom}
+                          onChange={(e) => handleUpdateItem(item.id, 'uom', e.target.value.toUpperCase())}
+                          className="w-16 text-center font-bold text-xs border border-slate-300 rounded-lg p-1.5 uppercase"
+                        />
                       </td>
-                      <td className="p-2 text-center">
+
+                      {/* Monthly Rent / Rate */}
+                      <td className="py-3 px-3 text-right align-top">
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={item.rate}
+                          onChange={(e) => handleUpdateItem(item.id, 'rate', parseFloat(e.target.value) || 0)}
+                          className="w-28 text-right font-black text-xs border border-slate-300 rounded-lg p-1.5"
+                        />
+                      </td>
+
+                      {/* Line Amount */}
+                      <td className="py-3 px-3 text-right font-black text-slate-900 align-top text-sm">
+                        ₹ {Number(item.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      </td>
+
+                      {/* Delete */}
+                      <td className="py-3 px-2 text-center align-top">
                         <button
-                          onClick={() => handleRemoveSection(sec.id)}
-                          className="text-slate-400 hover:text-red-600 p-1"
-                          title="Remove Area"
+                          type="button"
+                          onClick={() => handleRemoveItem(item.id)}
+                          className="p-1.5 hover:bg-rose-100 text-slate-400 hover:text-rose-600 rounded-lg transition-colors"
+                          title="Remove Row"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </td>
                     </tr>
-                  );
-                })}
-
-                {/* Sub Total */}
-                <tr className="bg-slate-100 font-bold text-slate-800 border-t border-slate-300">
-                  <td colSpan={7} className="p-2.5 text-right uppercase tracking-wider text-xs">
-                    Sub Total ({totalArea.toLocaleString('en-IN')} sq ft):
-                  </td>
-                  <td className="p-2.5 text-right text-xs font-black text-slate-900">
-                    ₹ {subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                  </td>
-                  <td></td>
-                </tr>
-
-                {/* CGST */}
-                <tr className="text-slate-600 text-xs">
-                  <td colSpan={7} className="p-2 text-right">
-                    CGST ({cgstRate}%):
-                  </td>
-                  <td className="p-2 text-right font-bold text-slate-800">
-                    ₹ {cgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                  </td>
-                  <td></td>
-                </tr>
-
-                {/* SGST */}
-                <tr className="text-slate-600 text-xs">
-                  <td colSpan={7} className="p-2 text-right">
-                    SGST ({sgstRate}%):
-                  </td>
-                  <td className="p-2 text-right font-bold text-slate-800">
-                    ₹ {sgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                  </td>
-                  <td></td>
-                </tr>
-
-                {/* Grand Total */}
-                <tr className="bg-slate-900 text-white font-black text-sm border-t-2 border-slate-900">
-                  <td colSpan={7} className="p-3 text-right uppercase tracking-wider text-amber-400">
-                    Total Amount (Incl. 18% GST):
-                  </td>
-                  <td className="p-3 text-right text-base text-white">
-                    ₹ {totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                  </td>
-                  <td></td>
-                </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
+
+          {/* 7. Notes & Financial Totals Breakdown Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+            {/* Notes Section */}
+            <div className="space-y-2">
+              <label className="block text-xs font-black uppercase text-slate-900 tracking-wider">
+                NOTE :
+              </label>
+              <textarea
+                rows={5}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                className="w-full text-xs font-mono text-slate-700 bg-slate-50 border border-slate-200 rounded-2xl p-3 leading-relaxed focus:ring-1 focus:ring-amber-500 uppercase"
+              />
+            </div>
+
+            {/* Financial Summary Box */}
+            <div className="bg-slate-50 rounded-2xl p-5 border border-slate-300 space-y-3">
+              <div className="flex justify-between text-xs font-bold text-slate-600">
+                <span>SUB TOTAL:</span>
+                <span className="font-mono text-slate-900">
+                  ₹ {subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+
+              {applyTax ? (
+                <>
+                  <div className="flex justify-between text-xs text-slate-600">
+                    <span>CGST ({cgstRate}%):</span>
+                    <span className="font-mono text-slate-900">
+                      ₹ {cgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-xs text-slate-600">
+                    <span>SGST ({sgstRate}%):</span>
+                    <span className="font-mono text-slate-900">
+                      ₹ {sgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <div className="text-[11px] text-amber-700 italic">Tax excluded / Extra</div>
+              )}
+
+              <div className="pt-3 border-t-2 border-slate-300 flex justify-between items-center bg-[#FED10C]/20 p-2.5 rounded-xl">
+                <span className="text-sm font-black text-slate-950">TOTAL:</span>
+                <span className="text-lg font-black text-slate-950 font-mono">
+                  ₹ {totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+
+              <div className="text-[11px] text-slate-500 font-semibold italic">
+                Amount in Words: <strong>{numberToWords(totalAmount)}</strong>
+              </div>
+
+              <div className="pt-2 flex items-center justify-between text-xs">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={applyTax}
+                    onChange={(e) => setApplyTax(e.target.checked)}
+                    className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400"
+                  />
+                  <span className="font-bold text-slate-700">Include GST (18%) in Calculation</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          {/* 8. Advantages of Renting & Terms from PDF */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-200 text-xs">
+            {/* Advantages */}
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+              <div className="font-black text-xs text-slate-900 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                <Check className="w-4 h-4 text-emerald-600" />
+                <span>Advantages of Renting from Kleanmax Pro</span>
+              </div>
+              <ul className="space-y-1.5 text-slate-700 list-disc list-inside">
+                {ADVANTAGES.map((adv, i) => (
+                  <li key={i} className="leading-snug">{adv}</li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Terms & Conditions */}
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+              <div className="font-black text-xs text-slate-900 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-amber-600" />
+                <span>Terms & Conditions</span>
+              </div>
+              <ul className="space-y-1.5 text-slate-700 list-disc list-inside">
+                {TERMS_AND_CONDITIONS.map((term, i) => (
+                  <li key={i} className="leading-snug">{term}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          {/* 9. Other Services */}
+          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-xs">
+            <div className="font-black text-xs text-slate-900 uppercase tracking-wide mb-2">
+              Other Services
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-slate-700">
+              {OTHER_SERVICES.map((s, i) => (
+                <div key={i} className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                  <span>{s}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 10. Company Details & Bank Details (LOCKED for Employee, Editable in Admin Settings) */}
+          <div className="bg-slate-900 text-white p-5 rounded-2xl border border-slate-800 space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <Lock className="w-4 h-4 text-amber-400" />
+                <span className="font-black text-xs tracking-wider uppercase text-amber-400">
+                  Company's Bank Details & Signatory (Locked by Unified Admin)
+                </span>
+              </div>
+              <span className="text-[10px] text-slate-400">
+                To edit bank details, go to <strong>Unified Admin → Manage 4 Companies</strong>
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              <div className="space-y-1 text-slate-300">
+                <div>• A/c Holder's Name: <strong className="text-white">{company?.bank_account_name || company?.company_name || 'KLEAN MAX PRO'}</strong></div>
+                <div>• Bank Name: <strong className="text-white">{company?.bank_name || 'ICICI BANK KMP'}</strong></div>
+                <div>• A/c No.: <strong className="text-white font-mono">{company?.bank_account_no || '027505010327'}</strong></div>
+                <div>• Branch & IFS Code: <strong className="text-white font-mono">{company?.bank_branch || 'PORUR'} & {company?.bank_ifsc || 'ICIC0000275'}</strong></div>
+              </div>
+
+              <div className="text-right space-y-1">
+                <div className="text-xs font-bold text-slate-400">For {company?.company_name || 'Klean max pro'}</div>
+                <div className="text-sm font-black text-white pt-2">
+                  {company?.signatory_name || 'Mr. Manikandan'}
+                </div>
+                <div className="text-xs text-amber-400 font-semibold">
+                  {company?.signatory_designation || 'Service Head'}
+                </div>
+                <div className="text-xs text-slate-400">
+                  {company?.phone || company?.phone1 || '+ 91 7338882036'}
+                </div>
+                <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider pt-1">
+                  Authorised Signatory
+                </div>
+              </div>
+            </div>
+
+            <div className="text-[10px] text-slate-400 border-t border-slate-800 pt-2 italic">
+              "This is a computer generated document and authenticated by Klean max pro. Hence, it can be considered valid even if not signed manually"
+            </div>
+          </div>
         </div>
 
-        {/* 6. Fixed After-Table Content */}
-        <div className="border-t border-slate-200 pt-5 space-y-4 text-xs text-slate-700">
-          <div className="flex items-center justify-between">
-            <span className="font-black uppercase text-[11px] text-slate-900">Terms & Specifications</span>
-            <span className="text-[10px] bg-slate-200 text-slate-600 px-2 py-0.5 rounded font-bold">Fixed Automated Content</span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <div className="font-extrabold text-slate-900 uppercase text-[11px] mb-1">Scope of Operations</div>
-              <ul className="list-disc list-inside text-slate-600 space-y-0.5 text-[11px]">
-                <li>Commercial scrubbing using heavy-duty industrial rotary machines.</li>
-                <li>Single-disc scrubbing, slurry extraction & vacuum drying.</li>
-                <li>Eco-friendly biodegradable degreasing chemical agents.</li>
-                <li>Trained safety-compliant operators with full PPE.</li>
-              </ul>
-            </div>
-
-            <div>
-              <div className="font-extrabold text-slate-900 uppercase text-[11px] mb-1">Terms & Conditions</div>
-              <ul className="list-disc list-inside text-slate-600 space-y-0.5 text-[11px]">
-                <li>Continuous water supply and 3-phase/single-phase power to be provided by client.</li>
-                <li>Floor area must be cleared of loose cartons/obstacles prior to commencement.</li>
-                <li>Quotation validity: 30 days from the date of issue.</li>
-                <li>Payment: 50% advance along with work order, 50% upon handover.</li>
-              </ul>
-            </div>
-          </div>
-
-          {/* Bank Details Box */}
-          <div className="bg-slate-50 border border-slate-300 rounded-lg p-3 text-xs">
-            <div className="font-extrabold text-slate-900 uppercase text-[11px] mb-1.5">Company's Bank Details</div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-slate-700">
-              <div>• A/c Holder's Name : <strong>KLEAN MAX PRO</strong></div>
-              <div>• Bank Name : <strong>ICICI BANK KMP</strong></div>
-              <div>• A/c No. : <strong>027505010327</strong></div>
-              <div>• Branch & IFS Code: <strong>PORUR & ICIC0000275</strong></div>
-            </div>
-          </div>
-
-          {/* Signatory */}
-          <div className="flex justify-between items-end pt-3">
-            <div className="text-[10px] text-slate-400 italic max-w-sm">
-              This is a computer generated document and authenticated by Klean max pro. Hence, it can be considered valid even if not signed manually.
-            </div>
-
-            <div className="text-right">
-              <div className="font-bold text-xs text-slate-700">For Klean max pro</div>
-              <div className="font-black text-sm text-slate-900 mt-4">Mr. Manikandan</div>
-              <div className="text-[11px] text-slate-600">Service Head</div>
-              <div className="text-[11px] text-slate-600">+91 7338882036</div>
-              <div className="font-bold text-[11px] text-slate-800 uppercase mt-0.5">Authorised Signatory</div>
-            </div>
-          </div>
-
-          {/* Fixed Footer */}
-          <div className="border-t border-slate-300 pt-3 text-center text-[11px] font-black text-slate-800">
-            Contact :- 7338882036 / 9710148218 -- Website :- www.kleanmaxpro.com
-          </div>
+        {/* Bottom Authentic Footer */}
+        <div className="w-full bg-slate-900 border-t border-slate-200">
+          <img
+            src="/headers/footer_kleanmaxpro.png"
+            alt="Kleanmax Pro Official Letterhead Footer"
+            className="w-full h-auto max-h-12 object-contain mx-auto select-none"
+            onError={(e) => {
+              (e.target as HTMLElement).style.display = 'none';
+            }}
+          />
         </div>
       </div>
     </div>

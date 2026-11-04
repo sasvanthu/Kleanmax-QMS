@@ -227,7 +227,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => 
               <div className="text-left">
                 <div>1. Quotation Generator</div>
                 <div className={`text-[10px] ${currentPage === 'kleanmaxpro_area' ? 'text-slate-900 font-semibold' : 'text-slate-400'}`}>
-                  Area Scrubbing Estimator
+                  Rental, Sales & Service
                 </div>
               </div>
             </button>

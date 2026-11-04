@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from typing import List, Optional
 from backend.app.core.database import get_db
 from backend.app.core.security import get_current_user, require_roles
@@ -15,15 +16,29 @@ router = APIRouter(prefix="/services", tags=["Service Catalogue & Rates"])
 @router.get("", response_model=List[ServiceResponse])
 def get_services(
     category: Optional[str] = Query(None),
+    company_code: Optional[str] = Query(None, description="Filter by company: kleanmaxpro, kleanmax, uniquepainters, cleantech"),
+    search: Optional[str] = Query(None, description="Search service name, code, description"),
     is_active: Optional[bool] = Query(None),
     db: Session = Depends(get_db),
     current_user: Profile = Depends(get_current_user)
 ):
     query = db.query(Service)
+    if company_code:
+        # Match exact company_code or general services if None
+        query = query.filter(or_(Service.company_code == company_code, Service.company_code.is_(None)))
     if category:
         query = query.filter(Service.category == category)
     if is_active is not None:
         query = query.filter(Service.is_active == is_active)
+    if search:
+        pat = f"%{search.strip()}%"
+        query = query.filter(
+            or_(
+                Service.service_name.ilike(pat),
+                Service.service_code.ilike(pat),
+                Service.description.ilike(pat)
+            )
+        )
     return query.order_by(Service.service_name).all()
 
 
@@ -56,7 +71,7 @@ def create_service(
         entity_id=str(service.id),
         action="create_service",
         performed_by_id=current_user.id,
-        changes_json={"service_code": service.service_code, "rate": str(service.standard_rate)}
+        changes_json={"service_code": service.service_code, "rate": str(service.standard_rate), "company_code": service.company_code}
     )
     db.add(audit)
 
@@ -95,6 +110,21 @@ def update_service(
     db.commit()
     db.refresh(service)
     return service
+
+
+@router.delete("/{id}")
+def delete_service(
+    id: str,
+    db: Session = Depends(get_db),
+    current_user: Profile = Depends(require_roles(["admin"]))
+):
+    service = db.query(Service).filter(Service.id == id).first()
+    if not service:
+        raise HTTPException(status_code=404, detail="Service not found")
+
+    db.delete(service)
+    db.commit()
+    return {"message": "Service successfully deleted"}
 
 
 @router.get("/{id}/rates", response_model=List[ServiceRateResponse])
@@ -138,10 +168,10 @@ def add_service_rate(
 
     audit = AuditLog(
         entity_type="service_rate",
-        entity_id=str(id),
-        action="update_rate",
+        entity_id=str(service.id),
+        action="add_rate",
         performed_by_id=current_user.id,
-        changes_json={"new_rate": str(data.rate), "uom": data.uom}
+        changes_json={"rate": str(data.rate), "uom": data.uom}
     )
     db.add(audit)
 

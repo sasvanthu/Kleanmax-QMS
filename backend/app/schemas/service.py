@@ -32,6 +32,7 @@ class ServiceBase(BaseModel):
     standard_rate: Decimal = Field(..., ge=0)
     tax_category: str = "taxable"
     default_tax_rate: Decimal = Field(Decimal("18.00"), ge=0, le=100)
+    company_code: Optional[str] = "kleanmaxpro"
     is_active: bool = True
     internal_notes: Optional[str] = None
 
@@ -48,6 +49,7 @@ class ServiceUpdate(BaseModel):
     standard_rate: Optional[Decimal] = None
     tax_category: Optional[str] = None
     default_tax_rate: Optional[Decimal] = None
+    company_code: Optional[str] = None
     is_active: Optional[bool] = None
     internal_notes: Optional[str] = None
 

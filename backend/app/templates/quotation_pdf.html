@@ -430,7 +430,60 @@
     {% endif %}
 
     <!-- 6. Fixed After-Table Content -->
-    {% if quotation.quotation_type == 'item_based' or 'SALE' in quotation.job_description|default('')|upper %}
+    {% if 'RENTAL' in quotation.job_description|default('')|upper or quotation.quotation_type == 'rental' %}
+    <!-- Rental Quotation After-Table -->
+    {% if quotation.notes %}
+    <div style="margin-top: 10px; font-size: 8pt; font-weight: 700; color: #0f172a; line-height: 1.5;">
+        {{ quotation.notes|replace('\n', '<br/>') }}
+    </div>
+    {% else %}
+    <div style="margin-top: 10px; font-size: 8pt; font-weight: 700; color: #0f172a; line-height: 1.5;">
+        NOTE :<br/>
+        1. TRANSPORT IS CUSTOMER SCOPE.<br/>
+        2. TAX WILL BE EXTRA.<br/>
+        3. 2 MONTHS RENTAL AMOUNT DEPOSIT REQUIRED.<br/>
+        4. RENTAL PERIOD MAXIMUM 3 YEARS REQUIRED.
+    </div>
+    {% endif %}
+
+    <div style="margin-top: 10px;">
+        <div class="section-heading">Advantages of Renting from Kleanmax Pro</div>
+        <ul class="bullet-list">
+            <li>Access to a wide range of cleaning machines on demand.</li>
+            <li>Well-maintained, quality-checked equipment every time.</li>
+            <li>GPS tracking included for real-time usage monitoring.</li>
+            <li>On-call technical support throughout the rental period.</li>
+            <li>Zero maintenance worries — we handle all servicing.</li>
+            <li>Standby machine available (subject to availability).</li>
+            <li>Operator training support provided when needed.</li>
+            <li>Transparent pricing with no hidden charges.</li>
+        </ul>
+    </div>
+
+    <div style="margin-top: 8px;">
+        <div class="section-heading">Terms & Conditions</div>
+        <ul class="bullet-list">
+            <li>Consumables are included in the rental scope.</li>
+            <li>Machine maintenance and service spares are included in our scope.</li>
+            <li>Only depreciation parts are covered; broken parts due to misuse are not covered.</li>
+            <li>Preventive maintenance will be carried out once every two months.</li>
+            <li>Breakdown service will be provided within 24–48 hours, depending on location.</li>
+            <li>The renter is fully responsible for any damage or missing parts.</li>
+            <li>Payment terms: 30 days from the date of invoice submission.</li>
+        </ul>
+    </div>
+
+    <div style="margin-top: 8px;">
+        <div class="section-heading">Other Services</div>
+        <ul class="bullet-list">
+            <li>Repair & Maintenance of Cleaning Equipment</li>
+            <li>AMC / CMC Contracts</li>
+            <li>Sales of New & Used Machines</li>
+            <li>Housekeeping Material Supply</li>
+            <li>Commercial Cleaning & Painting Services</li>
+        </ul>
+    </div>
+    {% elif quotation.quotation_type == 'item_based' or 'SALE' in quotation.job_description|default('')|upper %}
     <!-- Equipment Sales After-Table -->
     <div style="margin-top: 10px;">
         <div class="section-heading">Advantages of Buying from Kleanmax</div>

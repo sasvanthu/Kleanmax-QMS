@@ -109,6 +109,7 @@ class Service(Base):
     standard_rate = Column(Numeric(14, 4), nullable=False, default=Decimal("0.0000"))
     tax_category = Column(String(50), nullable=False, default="taxable")  # taxable, exempt, nil_rated
     default_tax_rate = Column(Numeric(5, 2), nullable=False, default=Decimal("18.00"))
+    company_code = Column(String(50), nullable=True, default="kleanmaxpro", index=True)
     is_active = Column(Boolean, nullable=False, default=True)
     internal_notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)

@@ -82,9 +82,18 @@ export const api = {
   },
 
   services: {
-    list: (category?: string) => {
-      const q = category ? `?category=${encodeURIComponent(category)}` : '';
-      return request<Service[]>(`/services${q}`);
+    list: (params: { category?: string; company_code?: string; search?: string; is_active?: boolean } | string = {}) => {
+      const q = new URLSearchParams();
+      if (typeof params === 'string') {
+        if (params) q.append('category', params);
+      } else {
+        if (params.category) q.append('category', params.category);
+        if (params.company_code) q.append('company_code', params.company_code);
+        if (params.search) q.append('search', params.search);
+        if (params.is_active !== undefined) q.append('is_active', String(params.is_active));
+      }
+      const qs = q.toString();
+      return request<Service[]>(`/services${qs ? `?${qs}` : ''}`);
     },
     get: (id: string) => request<Service>(`/services/${id}`),
     create: (data: Partial<Service>) => request<Service>('/services', {
@@ -95,6 +104,9 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify(data),
     }),
+    delete: (id: string) => request<{ message: string }>(`/services/${id}`, {
+      method: 'DELETE',
+    }),
     addRate: (id: string, data: Partial<ServiceRate>) => request<ServiceRate>(`/services/${id}/rates`, {
       method: 'POST',
       body: JSON.stringify(data),
@@ -102,6 +114,10 @@ export const api = {
   },
 
   quotations: {
+    getNextNumber: (company_code: string = 'kleanmaxpro', format_style: string = 'short') =>
+      request<{ company_code: string; prefix: string; next_sequence: number; next_number: string }>(
+        `/quotations/next-number?company_code=${encodeURIComponent(company_code)}&format_style=${encodeURIComponent(format_style)}`
+      ),
     calculate: (payload: any) => request<CalculationResult>('/quotations/calculate', {
       method: 'POST',
       body: JSON.stringify(payload),

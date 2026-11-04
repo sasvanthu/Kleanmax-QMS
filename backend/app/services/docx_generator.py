@@ -179,7 +179,10 @@ def generate_quotation_docx_bytes(
     # 5. Data Table (Items or Sections)
     table = None
     if items_list and len(items_list) > 0:
-        headers = ["SL NO", "DESCRIPTION", "QTY", "UOM", "RATE (₹)", "AMOUNT (₹)"]
+        if 'RENTAL' in job_desc or q_type == 'rental':
+            headers = ["SL NO", "DESCRIPTION", "DAYS", "UOM", "PER MONTHLY RENT", "AMOUNT (₹)"]
+        else:
+            headers = ["SL NO", "DESCRIPTION", "QTY", "UOM", "RATE (₹)", "AMOUNT (₹)"]
         col_widths = [Inches(0.6), Inches(3.27), Inches(0.7), Inches(0.7), Inches(0.9), Inches(1.0)]
 
         table = doc.add_table(rows=1, cols=6)
@@ -386,14 +389,32 @@ def generate_quotation_docx_bytes(
     r_th.bold = True
     r_th.font.size = Pt(8.5)
 
-    default_terms = getattr(company, 'terms_and_conditions', None) or (
-        "1. GST: Prices are exclusive of GST (18%). GST charged extra.\n"
-        "2. Payment Terms: 100% advance or 50% advance & balance upon completion.\n"
-        "3. Water and electricity required for service to be supplied by customer at site.\n"
-        "4. Working Area Clearance: Client responsible for clearing working area.\n"
-        "5. Validity: Rates valid for 30 days from quotation date."
-    )
-    p_t.add_run(default_terms).font.size = Pt(7.5)
+    if 'RENTAL' in job_desc or q_type == 'rental':
+        rental_terms = (
+            "NOTE:\n"
+            "1. Transport is customer scope.\n"
+            "2. Tax will be extra.\n"
+            "3. 2 months rental amount deposit required.\n"
+            "4. Rental period maximum 3 years required.\n\n"
+            "TERMS & CONDITIONS:\n"
+            "• Consumables are included in rental scope.\n"
+            "• Machine maintenance and service spares included in our scope.\n"
+            "• Only depreciation parts covered; broken parts due to misuse not covered.\n"
+            "• Preventive maintenance once every two months.\n"
+            "• Breakdown service provided within 24-48 hours.\n"
+            "• Renter fully responsible for damage or missing parts.\n"
+            "• Payment terms: 30 days from date of invoice submission."
+        )
+        p_t.add_run(rental_terms).font.size = Pt(7.5)
+    else:
+        default_terms = getattr(company, 'terms_and_conditions', None) or (
+            "1. GST: Prices are exclusive of GST (18%). GST charged extra.\n"
+            "2. Payment Terms: 100% advance or 50% advance & balance upon completion.\n"
+            "3. Water and electricity required for service to be supplied by customer at site.\n"
+            "4. Working Area Clearance: Client responsible for clearing working area.\n"
+            "5. Validity: Rates valid for 30 days from quotation date."
+        )
+        p_t.add_run(default_terms).font.size = Pt(7.5)
 
     # Bank Details on right
     p_b = t_right.paragraphs[0]

@@ -62,6 +62,7 @@ class QuotationItemSchema(BaseModel):
 class QuotationCreate(BaseModel):
     customer_id: str
     company_code: Optional[str] = "kleanmaxpro"
+    quotation_number: Optional[str] = None
     quotation_type: str = "area_based"  # area_based, item_based, repair_service, rental, contract
     quotation_date: date = Field(default_factory=date.today)
     validity_date: Optional[date] = None

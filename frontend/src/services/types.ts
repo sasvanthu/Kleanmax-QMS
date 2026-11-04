@@ -59,6 +59,7 @@ export interface Service {
   default_uom: string;
   hsn_sac_code?: string;
   standard_rate: number;
+  company_code?: string;
   tax_category: string;
   default_tax_rate: number;
   is_active: boolean;
@@ -194,12 +195,16 @@ export interface CompanySetting {
   pincode: string;
   phone1?: string;
   phone2?: string;
+  phone?: string;
   email?: string;
   website?: string;
   bank_name?: string;
   bank_account_no?: string;
+  bank_account_name?: string;
   bank_ifsc?: string;
   bank_branch?: string;
+  signatory_name?: string;
+  signatory_designation?: string;
   logo_url?: string;
   quotation_prefix: string;
   default_validity_days: number;
