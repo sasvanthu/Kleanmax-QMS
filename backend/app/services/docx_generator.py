@@ -406,6 +406,17 @@ def generate_quotation_docx_bytes(
             "• Payment terms: 30 days from date of invoice submission."
         )
         p_t.add_run(rental_terms).font.size = Pt(7.5)
+    elif 'cleantech' in company_code:
+        cleantech_terms = (
+            "TERMS & CONDITIONS:\n"
+            "• Price Validity : Quoted prices are valid for 30 days from date of quotation.\n"
+            "• Payment Terms : 100% ADVANCE\n"
+            "• Delivery : Delivery within 1-2 working days from PO & payment.\n"
+            "• Transportation Charges : Freight charges additional unless specified.\n"
+            "• Installation : Basic installation/demo provided if applicable.\n"
+            "• Warranty : Warranty 1 Year."
+        )
+        p_t.add_run(cleantech_terms).font.size = Pt(7.5)
     else:
         default_terms = getattr(company, 'terms_and_conditions', None) or (
             "1. GST: Prices are exclusive of GST (18%). GST charged extra.\n"
@@ -423,18 +434,25 @@ def generate_quotation_docx_bytes(
     r_bh.bold = True
     r_bh.font.size = Pt(8.5)
 
-    bank_name = getattr(company, 'bank_name', 'HDFC Bank') or 'HDFC Bank'
-    bank_acc = getattr(company, 'bank_account_no', '50200088991122') or '50200088991122'
-    bank_ifsc = getattr(company, 'bank_ifsc', 'HDFC0001234') or 'HDFC0001234'
-    bank_branch = getattr(company, 'bank_branch', 'Chennai Branch') or 'Chennai Branch'
-    holder = getattr(company, 'company_name', 'KLEAN MAX PRO').upper()
-
-    bank_text = (
-        f"• A/c Holder: {holder}\n"
-        f"• Bank Name: {bank_name}\n"
-        f"• A/c No: {bank_acc}\n"
-        f"• Branch & IFSC: {bank_branch} & {bank_ifsc}"
-    )
+    if 'cleantech' in company_code:
+        bank_text = (
+            "• A/c Holder: CLEANTECH\n"
+            "• Bank Name: IDFC BANK\n"
+            "• A/c No: 73388820361\n"
+            "• Branch & IFSC: Chennai - Iyyapanthangal & IDFB0081831"
+        )
+    else:
+        bank_name = getattr(company, 'bank_name', 'HDFC Bank') or 'HDFC Bank'
+        bank_acc = getattr(company, 'bank_account_no', '50200088991122') or '50200088991122'
+        bank_ifsc = getattr(company, 'bank_ifsc', 'HDFC0001234') or 'HDFC0001234'
+        bank_branch = getattr(company, 'bank_branch', 'Chennai Branch') or 'Chennai Branch'
+        holder = getattr(company, 'company_name', 'KLEAN MAX PRO').upper()
+        bank_text = (
+            f"• A/c Holder: {holder}\n"
+            f"• Bank Name: {bank_name}\n"
+            f"• A/c No: {bank_acc}\n"
+            f"• Branch & IFSC: {bank_branch} & {bank_ifsc}"
+        )
     p_b.add_run(bank_text).font.size = Pt(7.5)
 
     # Signatory Block on LEFT
@@ -443,16 +461,29 @@ def generate_quotation_docx_bytes(
     p_sign.paragraph_format.space_before = Pt(14)
     p_sign.paragraph_format.space_after = Pt(2)
 
-    r_for = p_sign.add_run(f"For {company.company_name if company else 'Klean Max Pro'}\n\n\n")
-    r_for.bold = True
-    r_for.font.size = Pt(8.5)
+    if 'cleantech' in company_code:
+        r_for = p_sign.add_run("For Clean tech\n\n\n")
+        r_for.bold = True
+        r_for.font.size = Pt(8.5)
+        r_sig = p_sign.add_run("Mr. Manikandan Balamurugan\n")
+        r_sig.bold = True
+        r_sig.font.size = Pt(9)
+        p_sign.add_run("Sales and Service Head\n").font.size = Pt(8)
+        p_sign.add_run("+91 7338882036\n").font.size = Pt(7.5)
+        r_auth = p_sign.add_run("Authorised Signatory")
+        r_auth.bold = True
+        r_auth.font.size = Pt(8)
+    else:
+        r_for = p_sign.add_run(f"For {company.company_name if company else 'Klean Max Pro'}\n\n\n")
+        r_for.bold = True
+        r_for.font.size = Pt(8.5)
 
-    sig_name = "Mr. Manikandan" if "kleanmax" in company_code or "cleantech" in company_code else "Admin / Project Manager"
-    r_sig = p_sign.add_run(f"{sig_name}\n")
-    r_sig.bold = True
-    r_sig.font.size = Pt(9)
-    p_sign.add_run("Authorized Signatory\n").font.size = Pt(8)
-    p_sign.add_run(f"+91 7338882036 / {getattr(company, 'phone1', '') or ''}").font.size = Pt(7.5)
+        sig_name = "Mr. Manikandan" if "kleanmax" in company_code else "Admin / Project Manager"
+        r_sig = p_sign.add_run(f"{sig_name}\n")
+        r_sig.bold = True
+        r_sig.font.size = Pt(9)
+        p_sign.add_run("Authorized Signatory\n").font.size = Pt(8)
+        p_sign.add_run(f"+91 7338882036 / {getattr(company, 'phone1', '') or ''}").font.size = Pt(7.5)
 
     # Computer Notice
     p_notice = doc.add_paragraph()

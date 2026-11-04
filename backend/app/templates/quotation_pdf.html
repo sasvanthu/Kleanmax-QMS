@@ -258,15 +258,17 @@
 
     <!-- 2. Quotation Title -->
     <div class="quote-title">
-        {% if company_code == 'cleantech' or 'SOLAR' in quotation.job_description|default('')|upper %}
-            SOLAR PANEL CLEANING & AMC PROPOSAL
-        {% elif company_code == 'uniquepainters' or 'PAINT' in quotation.job_description|default('')|upper or 'COATING' in quotation.job_description|default('')|upper or 'EPOXY' in quotation.job_description|default('')|upper %}
+        {% if quotation.job_description %}
+            {{ quotation.job_description }}
+        {% elif company_code == 'cleantech' %}
+            SERVICE QUOTATION
+        {% elif company_code == 'uniquepainters' %}
             SURFACE COATING & PAINTING QUOTATION
-        {% elif quotation.quotation_type == 'repair_service' or 'SPARE' in quotation.job_description|default('')|upper %}
+        {% elif quotation.quotation_type == 'repair_service' %}
             SPARES AND SERVICE QUOTATION
-        {% elif quotation.quotation_type == 'item_based' or 'SALE' in quotation.job_description|default('')|upper %}
+        {% elif quotation.quotation_type == 'item_based' %}
             SALES QUOTATION
-        {% elif 'RENTAL' in quotation.job_description|default('')|upper or quotation.quotation_type == 'rental' %}
+        {% elif quotation.quotation_type == 'rental' %}
             MONTHLY RENTAL QUOTATION
         {% else %}
             COMMERCIAL QUOTATION
@@ -289,25 +291,40 @@
                 {% endif %}
             </td>
             <td class="meta-no-date">
-                <div>Revised Quotation No :- {{ quotation.quotation_number }}{% if quotation.revision_number > 0 %}-R{{ quotation.revision_number }}{% endif %}</div>
+                <div>Quotation No :- {{ quotation.quotation_number }}{% if quotation.revision_number > 0 %}-R{{ quotation.revision_number }}{% endif %}</div>
                 <div style="margin-top: 4px;">Date :- {{ quotation.quotation_date.strftime('%d/%m/%Y') if quotation.quotation_date else '' }}</div>
             </td>
         </tr>
     </table>
 
-    <!-- 4. About Us Section -->
+    <!-- 4. About Us / Why Choose Us Section -->
     <div class="about-us-box">
-        <div class="about-us-title">About us</div>
-        {% if company and company.about_us %}
+        {% if company_code == 'cleantech' %}
+        <div class="about-us-title">Why Choose Clean Tech?</div>
+        <ul style="margin: 4px 0 0 16px; padding: 0; font-size: 8pt; color: #334155; line-height: 1.45;">
+            <li>High-quality, performance-tested cleaning equipment.</li>
+            <li>Reliable and cost-effective solutions for every cleaning requirement.</li>
+            <li>Customized machine recommendations based on your application.</li>
+            <li>Competitive pricing with complete transparency.</li>
+            <li>Prompt delivery and professional installation support.</li>
+            <li>Dedicated after-sales service and technical assistance.</li>
+            <li>Genuine spare parts with quick availability.</li>
+            <li>Preventive maintenance support to maximize machine life.</li>
+            <li>Basic operator training for safe and efficient machine operation.</li>
+            <li>Commitment to customer satisfaction with dependable service and long-term support.</li>
+        </ul>
+        {% elif company and company.about_us %}
+            <div class="about-us-title">About us</div>
             {{ company.about_us|replace('\n', '<br/>') }}
-        {% elif company_code == 'cleantech' %}
-            Cleantech Services is a premier industrial cleaning and facility maintenance provider specializing in utility-scale and commercial rooftop solar panel cleaning, automated mechanized solar washing, and high-level architectural maintenance. We deploy cutting-edge technology and certified safety teams to maximize solar yield and asset longevity.
         {% elif company_code == 'uniquepainters' %}
+            <div class="about-us-title">About us</div>
             Unique Painters is a trusted contractor for commercial, industrial, and protective coatings with over a decade of hands-on expertise. We specialize in epoxy floor systems, chemical-resistant PU coatings, anti-fungal exterior finishes, and high-performance industrial repainting with zero compromise on surface preparation and finish durability.
         {% elif quotation.quotation_type == 'item_based' or 'SALE' in quotation.job_description|default('')|upper %}
+            <div class="about-us-title">About us</div>
             Kleanmax Pro is a leading provider of cleaning machine rental and sales services, offering a wide range of equipment — from vacuum cleaners to ride-on scrubbers — to industries, malls, commercial spaces, and facility management companies across Chennai, Bangalore, Hyderabad and Visakhapatnam.<br/><br/>
             Our rental machines are well-maintained, ready-to-use, and come with on-site delivery and pickup. We also offer on-call technical support throughout the rental period, ensuring seamless operations. Machines are equipped with GPS tracking devices to monitor usage, location, and efficiency in real-time.
         {% else %}
+            <div class="about-us-title">About us</div>
             Kleanmax is a trusted name in the repair and maintenance of all types of cleaning equipment — from vacuum cleaners to ride-on scrubbers. With 12+ years of experience since 2013, we serve clients across Chennai, Bangalore, Hyderabad, and Visakhapatnam.<br/><br/>
             We operate a large, fully equipped service center with a skilled technical team capable of handling both mechanical and electronic issues, including motherboard-level troubleshooting. We also offer custom fabrication of high-cost spare parts to reduce downtime and cost.
         {% endif %}
@@ -521,6 +538,30 @@
             <li>Commercial Cleaning & Painting Services</li>
         </ul>
     </div>
+    {% elif company_code == 'cleantech' %}
+    <!-- Cleantech Services After-Table matching authentic PDF -->
+    <div style="margin-top: 10px;">
+        <div class="section-heading">Terms & Conditions</div>
+        <ul class="bullet-list">
+            <li><strong>Price Validity :</strong> Quoted prices are valid for 30 days from the date of quotation.</li>
+            <li><strong>Payment Terms :</strong> 100 % ADVANCE</li>
+            <li><strong>Delivery :</strong> Delivery within 1–2 working days from receipt of purchase order and payment confirmation (subject to stock availability).</li>
+            <li><strong>Transportation Charges :</strong> Freight charges are additional unless mentioned otherwise.</li>
+            <li><strong>Installation :</strong> Basic installation/demo will be provided if applicable.</li>
+            <li><strong>Warranty :</strong> Warranty 1 Year.</li>
+        </ul>
+    </div>
+
+    <div style="margin-top: 8px;">
+        <div class="section-heading">Our Services</div>
+        <ul class="bullet-list">
+            <li>Rental of wide range of cleaning Equipments.</li>
+            <li>AMC / CMC Contracts</li>
+            <li>Sales of New & Used Machines</li>
+            <li>Housekeeping Material Supply</li>
+            <li>Commercial Cleaning & Painting Services</li>
+        </ul>
+    </div>
     {% else %}
     <!-- Spares and Service After-Table -->
     <div style="margin-top: 10px;">
@@ -547,19 +588,30 @@
     <!-- 5. Company's Bank Details (Always Rendered) -->
     <div class="bank-box">
         <div style="font-weight: 800; color: #0f172a; margin-bottom: 2px;">Company's Bank Details</div>
+        {% if company_code == 'cleantech' %}
+        <div>• A/c Holder's Name : <strong>CLEANTECH</strong></div>
+        <div>• Bank Name : <strong>IDFC BANK</strong></div>
+        <div>• A/c No. : <strong>73388820361</strong></div>
+        <div>• Branch & IFS Code: <strong>Chennai – Iyyapanthangal Branch & IDFB0081831</strong></div>
+        {% else %}
         <div>• A/c Holder's Name : <strong>{{ company.bank_account_name or company.company_name or 'KLEAN MAX PRO' }}</strong></div>
         <div>• Bank Name : <strong>{{ company.bank_name or 'ICICI BANK KMP' }}</strong></div>
         <div>• A/c No. : <strong>{{ company.bank_account_no or '027505010327' }}</strong></div>
         <div>• Branch & IFS Code: <strong>{{ company.bank_branch or 'PORUR' }} & {{ company.bank_ifsc or 'ICIC0000275' }}</strong></div>
+        {% endif %}
     </div>
 
     <div style="font-size: 7.5pt; font-weight: 600; color: #0f172a; margin-top: 6px;">
+        {% if company_code == 'cleantech' %}
+        Cleantech Services — Specialized Industrial Cleaning, Solar Yield Optimization & Facility Tech Solutions across South India.
+        {% else %}
         {{ company.company_name or 'Kleanmax Pro' }} — Your trusted service partner for complete cleaning equipment and facility solutions across South India.
+        {% endif %}
     </div>
 
     <!-- 6. Signatory (On Left like an official corporate letter) -->
     <div style="margin-top: 18px; text-align: left;">
-        <div style="font-weight: 700; font-size: 8.5pt;">For {{ company.company_name or 'Klean max pro' }}</div>
+        <div style="font-weight: 700; font-size: 8.5pt;">For {{ 'Clean tech' if company_code == 'cleantech' else (company.company_name or 'Klean max pro') }}</div>
         <div style="margin-top: 25px; font-weight: 800; font-size: 9pt; color: #0f172a;">
             {% if company_code == 'cleantech' %}
             Mr. Manikandan Balamurugan
@@ -570,7 +622,7 @@
             {% endif %}
         </div>
         <div style="font-size: 8pt; color: #475569;">
-            {% if company_code == 'cleantech' %}Sales & Service Head
+            {% if company_code == 'cleantech' %}Sales and Service Head
             {% elif 'kleanmax' in company_code %}Service Head
             {% else %}Project Estimations Head{% endif %}
         </div>
