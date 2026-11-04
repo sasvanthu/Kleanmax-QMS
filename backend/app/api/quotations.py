@@ -5,7 +5,7 @@ from sqlalchemy import or_
 from typing import List, Optional
 from datetime import date
 from backend.app.core.database import get_db
-from backend.app.core.security import get_current_user
+from backend.app.core.security import get_current_user, get_optional_current_user
 from backend.app.models.all_models import (
     Quotation, Customer, Profile, CompanySetting, QuotationSection, QuotationItem
 )
@@ -223,7 +223,7 @@ def revise_quotation(
 def view_quotation_html(
     id: str,
     db: Session = Depends(get_db),
-    current_user: Profile = Depends(get_current_user)
+    current_user: Optional[Profile] = Depends(get_optional_current_user)
 ):
     quotation = db.query(Quotation).filter(Quotation.id == id).first()
     if not quotation:
@@ -251,7 +251,7 @@ def view_quotation_html(
 async def download_quotation_pdf(
     id: str,
     db: Session = Depends(get_db),
-    current_user: Profile = Depends(get_current_user)
+    current_user: Optional[Profile] = Depends(get_optional_current_user)
 ):
     quotation = db.query(Quotation).filter(Quotation.id == id).first()
     if not quotation:
@@ -287,7 +287,7 @@ async def download_quotation_pdf(
 def download_quotation_docx(
     id: str,
     db: Session = Depends(get_db),
-    current_user: Profile = Depends(get_current_user)
+    current_user: Optional[Profile] = Depends(get_optional_current_user)
 ):
     quotation = db.query(Quotation).filter(Quotation.id == id).first()
     if not quotation:

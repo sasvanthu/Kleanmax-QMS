@@ -80,6 +80,23 @@ def get_current_user(
     return user
 
 
+def get_optional_current_user(
+    token: Optional[str] = Depends(oauth2_scheme),
+    db: Session = Depends(get_db)
+) -> Optional[Profile]:
+    if token:
+        try:
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+            email: str = payload.get("sub")
+            if email:
+                user = db.query(Profile).filter(Profile.email == email).first()
+                if user and user.is_active:
+                    return user
+        except Exception:
+            pass
+    return db.query(Profile).filter(Profile.is_active == True).first()
+
+
 def require_roles(allowed_roles: List[str]):
     def role_checker(current_user: Profile = Depends(get_current_user)) -> Profile:
         if current_user.role not in allowed_roles:

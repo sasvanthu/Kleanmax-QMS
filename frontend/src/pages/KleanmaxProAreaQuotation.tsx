@@ -5,12 +5,13 @@ import {
   Download, FileText, Printer, Save, CheckCircle2,
   Calendar, Layers, ShieldCheck, Sparkles, Plus, Trash2, ArrowLeft,
   Search, Lock, Eye, Check, ChevronDown, Building, Phone, Mail, MapPin,
-  RefreshCw, Info, HelpCircle
+  RefreshCw, Info, HelpCircle, Image as ImageIcon, X
 } from 'lucide-react';
 
 interface QuotationProductItem {
   id: string;
   item_name: string;
+  image_url?: string;
   description: string;
   days: number;
   uom: string;
@@ -36,7 +37,8 @@ Our rental machines are well-maintained, ready-to-use, and come with on-site del
 
 Machines are equipped with GPS tracking devices to monitor usage, location, and efficiency in real-time. For larger or longer projects, we provide custom rental packages, and where needed, can include standby machines and basic operator training. With flexible rental durations, affordable pricing, and transparent terms, our rental service is designed to deliver both performance and peace of mind.`;
 
-const DEFAULT_NOTES = `1. TRANSPORT IS CUSTOMER SCOPE.
+const DEFAULT_NOTES = `NOTE :
+1. TRANSPORT IS CUSTOMER SCOPE.
 2. TAX WILL BE EXTRA.
 3. 2 MONTHS RENTAL AMOUNT DEPOSIT REQUIRED.
 4. RENTAL PERIOD MAXIMUM 3 YEARS REQUIRED.`;
@@ -97,11 +99,12 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
   const [aboutUs, setAboutUs] = useState<string>(DEFAULT_ABOUT_US);
   const [notes, setNotes] = useState<string>(DEFAULT_NOTES);
 
-  // 5. Products & Items Table
+  // 5. Products & Items Table (With Machine Images)
   const [items, setItems] = useState<QuotationProductItem[]>([
     {
       id: 'item_1',
       item_name: 'RIDE ON SCRUBBER MACHINE RB-800',
+      image_url: '/products/rb800.png',
       description: 'BRUSH SCRUBBING WIDTH - 800mm\nSUCTION WIDTH - 1100mm\nCOVERAGE AREA - 4800M.SQ/HR\nWORKING SPEED - 6KM/HR\nAIRFLOW RATE - 33L/SEC\nVACCUM PRESSURE - 1650MM\nPOWER - 24V\nTOTAL POWER - 2400W\nBRUSH MOTOR - 2*550W\nVACCUM MOTOR - 550W\nPERFORMANCE - 1950 m2/hr\nTANK CAPACITY - 120LTRS\nDIAMETRE OF BRUSH - 405MM\nDRIVER MOTOR POWER - 750MM',
       days: 1,
       uom: 'NOS',
@@ -111,6 +114,7 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
     {
       id: 'item_2',
       item_name: 'RIDE ON SCRUBBER MACHINE RB-650',
+      image_url: '/products/rb650.png',
       description: 'Scrubbing Width: 650 mm\nSuction / Squeegee Width: 870 mm\nTheoretical Area Coverage: 4,225 m2/hr\nWorking Speed: Up to 6.5 km/hr (Travel speed up to 7 km/hr)\nPower Supply / Battery: 24 V DC / 200 Ah\nTotal Power: 1,600 W\nBrushes: 2 disc brushes, 333 mm diameter each, running at 180 RPM\nBrush Pressure: 25 kg (with additional brush pressure option)\nSolution / Fresh Water Tank: 100 L\nRecovery / Dirty Water Tank: 100 L',
       days: 1,
       uom: 'NOS',
@@ -138,6 +142,7 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
   const [saving, setSaving] = useState<boolean>(false);
   const [savedQuoteId, setSavedQuoteId] = useState<string | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [inPagePreviewOpen, setInPagePreviewOpen] = useState<boolean>(false);
 
   useEffect(() => {
     loadInitialData();
@@ -156,7 +161,7 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
 
   const loadInitialData = async () => {
     try {
-      // 1. Fetch Next Quotation Number for Kleanmax Pro (e.g. KMP/0001, KMP/0002)
+      // 1. Fetch Next Quotation Number for Kleanmax Pro
       try {
         const nextNumRes = await api.quotations.getNextNumber('kleanmaxpro', 'short');
         if (nextNumRes && nextNumRes.next_number) {
@@ -222,11 +227,21 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
     }
   };
 
+  // Associate product image automatically based on name/code
+  const getProductImage = (name: string, code?: string): string => {
+    const upper = (name + ' ' + (code || '')).toUpperCase();
+    if (upper.includes('800')) return '/products/rb800.png';
+    if (upper.includes('650')) return '/products/rb650.png';
+    if (upper.includes('BD') || upper.includes('SCRUBBER')) return '/products/bd5050.png';
+    return '/products/rb800.png';
+  };
+
   // Add product from search bar to table
   const handleAddProduct = (prod: Service) => {
     const newItem: QuotationProductItem = {
       id: `item_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
       item_name: prod.service_name,
+      image_url: getProductImage(prod.service_name, prod.service_code),
       description: prod.description || '',
       days: 1,
       uom: prod.default_uom || 'NOS',
@@ -243,6 +258,7 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
     const newItem: QuotationProductItem = {
       id: `item_${Date.now()}`,
       item_name: 'NEW CLEANING EQUIPMENT',
+      image_url: '/products/rb800.png',
       description: 'Technical specifications, power rating, brush size & tank capacity',
       days: 1,
       uom: 'NOS',
@@ -331,8 +347,13 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
     return `${inWords(n).trim()} Rupees Only`;
   };
 
-  // Save to Database
-  const handleSaveToDatabase = async (openPreviewAfter = false): Promise<string | null> => {
+  // Save to Database safely
+  const handleSaveToDatabase = async (): Promise<string | null> => {
+    if (items.length === 0) {
+      alert('Please add at least one product before saving or exporting.');
+      return null;
+    }
+
     setSaving(true);
     setToastMsg(null);
     try {
@@ -340,20 +361,21 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
       let targetCustId = selectedCustomerId;
       if (!targetCustId) {
         const newCust = await api.customers.create({
-          company_name: customerName,
-          billing_address_line1: addressLine1,
-          billing_address_line2: addressLine2,
-          contact_person: contactPerson,
-          phone: phone || '+91 00000 00000',
+          company_name: customerName || 'ABANS FACILITY MANAGEMENT',
+          billing_address_line1: addressLine1 || 'Perungudi Industrial Estate',
+          billing_address_line2: addressLine2 || undefined,
+          contact_person: contactPerson || 'Facility Head',
+          phone: phone || '+91 98840 12345',
           email: email || undefined,
           gstin: gstin || undefined,
           billing_city: 'Chennai',
           billing_state: 'Tamil Nadu',
           billing_state_code: '33',
-          billing_pincode: '600001',
+          billing_pincode: '600096',
           is_active: true,
         });
         targetCustId = newCust.id;
+        setSelectedCustomerId(newCust.id);
       }
 
       // Convert products to Quotation Items
@@ -376,7 +398,7 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
       const payload = {
         customer_id: targetCustId,
         company_code: 'kleanmaxpro',
-        quotation_number: quotationNo.trim(),
+        quotation_number: quotationNo.trim() || 'KMP/0001',
         quotation_type: 'rental',
         quotation_date: quotationDate,
         job_description: quotationTitle,
@@ -392,13 +414,9 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
       const res = await api.quotations.create(payload);
       setSavedQuoteId(res.id);
       setToastMsg(`Quotation ${res.quotation_number} saved successfully!`);
-
-      if (openPreviewAfter) {
-        onOpenPreview(res.id);
-      }
       return res.id;
     } catch (err: any) {
-      console.error(err);
+      console.error('Save quotation error:', err);
       alert(err.message || 'Failed to save quotation');
       return null;
     } finally {
@@ -409,9 +427,10 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
   const handleDownloadDocx = async () => {
     let quoteId = savedQuoteId;
     if (!quoteId) {
-      quoteId = await handleSaveToDatabase(false);
+      quoteId = await handleSaveToDatabase();
     }
     if (quoteId) {
+      setToastMsg('Generating Word (.docx) document with authentic letterhead...');
       await api.quotations.downloadDocx(quoteId, `${quotationNo.replace('/', '_')}_KleanmaxPro.docx`);
     }
   };
@@ -419,10 +438,19 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
   const handleDownloadPdf = async () => {
     let quoteId = savedQuoteId;
     if (!quoteId) {
-      quoteId = await handleSaveToDatabase(false);
+      quoteId = await handleSaveToDatabase();
     }
     if (quoteId) {
+      setToastMsg('Generating official PDF with authentic letterhead...');
       await api.quotations.downloadPdf(quoteId, `${quotationNo.replace('/', '_')}_KleanmaxPro.pdf`);
+    }
+  };
+
+  const handleOpenA4Preview = async () => {
+    setInPagePreviewOpen(true);
+    // Also save in background if not yet saved so server side preview is ready
+    if (!savedQuoteId) {
+      handleSaveToDatabase();
     }
   };
 
@@ -467,6 +495,7 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
         <div className="flex flex-wrap items-center gap-2">
           {/* 1-Click Word (.docx) */}
           <button
+            type="button"
             onClick={handleDownloadDocx}
             disabled={saving}
             className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-sm transition-all transform active:scale-95"
@@ -478,6 +507,7 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
 
           {/* 1-Click PDF */}
           <button
+            type="button"
             onClick={handleDownloadPdf}
             disabled={saving}
             className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-sm transition-all transform active:scale-95"
@@ -489,7 +519,8 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
 
           {/* Preview A4 */}
           <button
-            onClick={() => handleSaveToDatabase(true)}
+            type="button"
+            onClick={handleOpenA4Preview}
             disabled={saving}
             className="px-3.5 py-2 bg-white border border-slate-300 hover:border-slate-400 text-slate-800 font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-2xs transition-colors"
           >
@@ -499,7 +530,8 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
 
           {/* Save to DB */}
           <button
-            onClick={() => handleSaveToDatabase(false)}
+            type="button"
+            onClick={() => handleSaveToDatabase()}
             disabled={saving}
             className="px-4 py-2 bg-[#FED10C] hover:bg-[#E5BC07] text-slate-950 font-black text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all transform active:scale-95"
           >
@@ -509,19 +541,16 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
         </div>
       </div>
 
-      {/* Main Quotation Document Sheet (A4 Styled Simulation) */}
+      {/* Main Quotation Document Sheet (A4 Letterhead Flush Width) */}
       <div className="bg-white border-2 border-slate-300 rounded-3xl shadow-xl overflow-hidden text-slate-800">
         
-        {/* 1. Authentic Kleanmax Pro Header Image */}
-        <div className="w-full bg-slate-900 border-b border-slate-200">
+        {/* 1. Authentic Header Flush to the very ends of the page (Edge-to-Edge) */}
+        <div className="w-full bg-white border-b-2 border-slate-900 p-0 m-0">
           <img
             src="/headers/header_kleanmaxpro.png"
             alt="Kleanmax Pro Official Letterhead Header"
-            className="w-full h-auto max-h-36 object-contain mx-auto select-none"
-            onError={(e) => {
-              // fallback if png missing
-              (e.target as HTMLElement).style.display = 'none';
-            }}
+            className="w-full h-auto object-cover block select-none"
+            style={{ width: '100%', display: 'block' }}
           />
         </div>
 
@@ -646,7 +675,7 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex flex-col justify-center space-y-3">
               <div>
                 <label className="block text-[11px] font-black uppercase text-slate-700 mb-1">
-                  Quotation Number (e.g. KMP/0001) :-
+                  Quotation Date :-
                 </label>
                 <div className="flex items-center gap-2">
                   <input
@@ -668,13 +697,13 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
                   </button>
                 </div>
                 <span className="text-[10px] text-slate-500 block mt-0.5">
-                  Increments in DB automatically. Editable for manual numbering.
+                  Format: KMP/0001 (auto-increments in DB). Fully editable.
                 </span>
               </div>
 
               <div>
                 <label className="block text-[11px] font-black uppercase text-slate-700 mb-1">
-                  Quotation Date :-
+                  DATE :-
                 </label>
                 <input
                   type="date"
@@ -751,10 +780,17 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
                       onClick={() => handleAddProduct(p)}
                       className="p-3 hover:bg-amber-50 rounded-xl cursor-pointer transition-colors flex items-center justify-between border-b border-slate-50 last:border-none"
                     >
-                      <div>
-                        <div className="font-black text-xs text-slate-900">{p.service_name}</div>
-                        <div className="text-[11px] text-slate-500 font-mono mt-0.5">
-                          Code: {p.service_code} • UOM: {p.default_uom}
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={getProductImage(p.service_name, p.service_code)}
+                          alt={p.service_name}
+                          className="w-12 h-12 object-contain bg-white rounded-lg border border-slate-200 p-1 shrink-0"
+                        />
+                        <div>
+                          <div className="font-black text-xs text-slate-900">{p.service_name}</div>
+                          <div className="text-[11px] text-slate-500 font-mono mt-0.5">
+                            Code: {p.service_code} • UOM: {p.default_uom}
+                          </div>
                         </div>
                       </div>
                       <div className="text-right">
@@ -772,16 +808,16 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
             )}
           </div>
 
-          {/* 6. Products Line Items Table (Matches PDF Columns) */}
+          {/* 6. Products Line Items Table (With Machine Photos, Specs, Days, Monthly Rent) */}
           <div className="border border-slate-300 rounded-2xl overflow-hidden shadow-xs">
             <table className="w-full text-xs border-collapse">
               <thead>
                 <tr className="bg-slate-900 text-white font-black uppercase text-[11px] tracking-wider">
                   <th className="py-3 px-3 text-center w-14">SL NO</th>
-                  <th className="py-3 px-3 text-left">DESCRIPTION & TECHNICAL SPECIFICATIONS</th>
+                  <th className="py-3 px-3 text-left">DESCRIPTION & MACHINE PHOTO</th>
                   <th className="py-3 px-2 text-center w-28">DAYS / QTY</th>
                   <th className="py-3 px-2 text-center w-20">UOM</th>
-                  <th className="py-3 px-3 text-right w-36">MONTHLY RENT (₹)</th>
+                  <th className="py-3 px-3 text-right w-36">PER MONTHLY RENT (₹)</th>
                   <th className="py-3 px-3 text-right w-36">AMOUNT (₹)</th>
                   <th className="py-3 px-2 text-center w-12"></th>
                 </tr>
@@ -801,15 +837,43 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
                         {idx + 1}.
                       </td>
 
-                      {/* Description & Technical Specs */}
-                      <td className="py-3 px-3 align-top space-y-1.5">
-                        <input
-                          type="text"
-                          value={item.item_name}
-                          onChange={(e) => handleUpdateItem(item.id, 'item_name', e.target.value)}
-                          className="w-full font-black text-xs text-slate-900 border border-slate-300 rounded-lg p-1.5 focus:ring-1 focus:ring-amber-500 uppercase"
-                          placeholder="Machine Name"
-                        />
+                      {/* Description & Machine Photo */}
+                      <td className="py-3 px-3 align-top space-y-2">
+                        <div className="flex items-start gap-3">
+                          {/* Machine Photo */}
+                          <div className="shrink-0 w-20 h-20 bg-slate-50 border border-slate-200 rounded-xl p-1 flex items-center justify-center overflow-hidden">
+                            <img
+                              src={item.image_url || getProductImage(item.item_name)}
+                              alt={item.item_name}
+                              className="max-h-full max-w-full object-contain"
+                              onError={(e) => {
+                                (e.target as HTMLElement).style.display = 'none';
+                              }}
+                            />
+                          </div>
+                          
+                          <div className="flex-1 space-y-1">
+                            <input
+                              type="text"
+                              value={item.item_name}
+                              onChange={(e) => handleUpdateItem(item.id, 'item_name', e.target.value)}
+                              className="w-full font-black text-xs text-slate-900 border border-slate-300 rounded-lg p-1.5 focus:ring-1 focus:ring-amber-500 uppercase"
+                              placeholder="Machine Name"
+                            />
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[10px] text-slate-400">Photo:</span>
+                              <input
+                                type="text"
+                                value={item.image_url || ''}
+                                onChange={(e) => handleUpdateItem(item.id, 'image_url', e.target.value)}
+                                className="text-[10px] text-slate-500 border border-slate-200 rounded px-1.5 py-0.5 w-44"
+                                placeholder="/products/rb800.png"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Technical Specifications Textarea */}
                         <textarea
                           rows={4}
                           value={item.description}
@@ -890,26 +954,12 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
             </table>
           </div>
 
-          {/* 7. Notes & Financial Totals Breakdown Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-            {/* Notes Section */}
-            <div className="space-y-2">
-              <label className="block text-xs font-black uppercase text-slate-900 tracking-wider">
-                NOTE :
-              </label>
-              <textarea
-                rows={5}
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                className="w-full text-xs font-mono text-slate-700 bg-slate-50 border border-slate-200 rounded-2xl p-3 leading-relaxed focus:ring-1 focus:ring-amber-500 uppercase"
-              />
-            </div>
-
-            {/* Financial Summary Box */}
-            <div className="bg-slate-50 rounded-2xl p-5 border border-slate-300 space-y-3">
+          {/* Financial Summary Box */}
+          <div className="flex justify-end">
+            <div className="bg-slate-50 rounded-2xl p-5 border border-slate-300 w-full sm:w-96 space-y-2.5">
               <div className="flex justify-between text-xs font-bold text-slate-600">
                 <span>SUB TOTAL:</span>
-                <span className="font-mono text-slate-900">
+                <span className="font-mono text-slate-900 font-black">
                   ₹ {subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </span>
               </div>
@@ -933,18 +983,18 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
                 <div className="text-[11px] text-amber-700 italic">Tax excluded / Extra</div>
               )}
 
-              <div className="pt-3 border-t-2 border-slate-300 flex justify-between items-center bg-[#FED10C]/20 p-2.5 rounded-xl">
+              <div className="pt-2 border-t-2 border-slate-300 flex justify-between items-center bg-[#FED10C]/25 p-2.5 rounded-xl">
                 <span className="text-sm font-black text-slate-950">TOTAL:</span>
-                <span className="text-lg font-black text-slate-950 font-mono">
+                <span className="text-base font-black text-slate-950 font-mono">
                   ₹ {totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </span>
               </div>
 
-              <div className="text-[11px] text-slate-500 font-semibold italic">
+              <div className="text-[10px] text-slate-500 font-semibold italic">
                 Amount in Words: <strong>{numberToWords(totalAmount)}</strong>
               </div>
 
-              <div className="pt-2 flex items-center justify-between text-xs">
+              <div className="pt-1 flex items-center justify-between text-xs">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
@@ -958,41 +1008,56 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
             </div>
           </div>
 
-          {/* 8. Advantages of Renting & Terms from PDF */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-200 text-xs">
-            {/* Advantages */}
-            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
-              <div className="font-black text-xs text-slate-900 uppercase tracking-wide mb-2 flex items-center gap-1.5">
-                <Check className="w-4 h-4 text-emerald-600" />
-                <span>Advantages of Renting from Kleanmax Pro</span>
-              </div>
-              <ul className="space-y-1.5 text-slate-700 list-disc list-inside">
-                {ADVANTAGES.map((adv, i) => (
-                  <li key={i} className="leading-snug">{adv}</li>
-                ))}
-              </ul>
-            </div>
+          {/* ============================================================== */}
+          {/* EXACT LAST SECTION: ORDERED ONE BY ONE STACKED BELOW EACH OTHER */}
+          {/* 1. NOTE -> 2. Advantages -> 3. Terms -> 4. Other Services -> 5. Company Details & Signatory (ON LEFT) */}
+          {/* ============================================================== */}
 
-            {/* Terms & Conditions */}
-            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
-              <div className="font-black text-xs text-slate-900 uppercase tracking-wide mb-2 flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-amber-600" />
-                <span>Terms & Conditions</span>
-              </div>
-              <ul className="space-y-1.5 text-slate-700 list-disc list-inside">
-                {TERMS_AND_CONDITIONS.map((term, i) => (
-                  <li key={i} className="leading-snug">{term}</li>
-                ))}
-              </ul>
-            </div>
+          {/* 1. NOTE */}
+          <div className="space-y-1.5 pt-4 border-t border-slate-200">
+            <label className="block text-xs font-black uppercase text-slate-900 tracking-wider">
+              NOTE :
+            </label>
+            <textarea
+              rows={4}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="w-full text-xs font-mono font-bold text-slate-800 bg-slate-50 border border-slate-300 rounded-xl p-3 leading-relaxed focus:ring-1 focus:ring-amber-500 uppercase"
+            />
           </div>
 
-          {/* 9. Other Services */}
-          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-xs">
-            <div className="font-black text-xs text-slate-900 uppercase tracking-wide mb-2">
+          {/* 2. Advantages of Renting from Kleanmax Pro */}
+          <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-2">
+            <div className="font-black text-xs text-slate-900 uppercase tracking-wide flex items-center gap-1.5">
+              <Check className="w-4 h-4 text-emerald-600" />
+              <span>Advantages of Renting from Kleanmax Pro</span>
+            </div>
+            <ul className="space-y-1.5 text-xs text-slate-700 list-disc list-inside">
+              {ADVANTAGES.map((adv, i) => (
+                <li key={i} className="leading-snug">{adv}</li>
+              ))}
+            </ul>
+          </div>
+
+          {/* 3. Terms & Conditions */}
+          <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-2">
+            <div className="font-black text-xs text-slate-900 uppercase tracking-wide flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4 text-amber-600" />
+              <span>Terms & Conditions</span>
+            </div>
+            <ul className="space-y-1.5 text-xs text-slate-700 list-disc list-inside">
+              {TERMS_AND_CONDITIONS.map((term, i) => (
+                <li key={i} className="leading-snug">{term}</li>
+              ))}
+            </ul>
+          </div>
+
+          {/* 4. Other Services */}
+          <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-2">
+            <div className="font-black text-xs text-slate-900 uppercase tracking-wide">
               Other Services
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-slate-700">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-xs text-slate-700">
               {OTHER_SERVICES.map((s, i) => (
                 <div key={i} className="flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
@@ -1002,8 +1067,8 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
             </div>
           </div>
 
-          {/* 10. Company Details & Bank Details (LOCKED for Employee, Editable in Admin Settings) */}
-          <div className="bg-slate-900 text-white p-5 rounded-2xl border border-slate-800 space-y-4">
+          {/* 5. Company's Bank Details & Signatory ON THE LEFT LIKE A LETTER */}
+          <div className="bg-slate-900 text-white p-6 rounded-2xl border border-slate-800 space-y-5">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2">
                 <Lock className="w-4 h-4 text-amber-400" />
@@ -1016,49 +1081,207 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
               </span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-              <div className="space-y-1 text-slate-300">
-                <div>• A/c Holder's Name: <strong className="text-white">{company?.bank_account_name || company?.company_name || 'KLEAN MAX PRO'}</strong></div>
-                <div>• Bank Name: <strong className="text-white">{company?.bank_name || 'ICICI BANK KMP'}</strong></div>
-                <div>• A/c No.: <strong className="text-white font-mono">{company?.bank_account_no || '027505010327'}</strong></div>
-                <div>• Branch & IFS Code: <strong className="text-white font-mono">{company?.bank_branch || 'PORUR'} & {company?.bank_ifsc || 'ICIC0000275'}</strong></div>
-              </div>
+            {/* Bank Details Block */}
+            <div className="space-y-1.5 text-xs text-slate-200">
+              <div className="font-black text-sm text-white mb-2">Company's Bank Details</div>
+              <div>• A/c Holder's Name : <strong className="text-white">{company?.bank_account_name || company?.company_name || 'KLEAN MAX PRO'}</strong></div>
+              <div>• Bank Name : <strong className="text-white">{company?.bank_name || 'ICICI BANK KMP'}</strong></div>
+              <div>• A/c No. : <strong className="text-white font-mono">{company?.bank_account_no || '027505010327'}</strong></div>
+              <div>• Branch & IFS Code: <strong className="text-white font-mono">{company?.bank_branch || 'PORUR'} & {company?.bank_ifsc || 'ICIC0000275'}</strong></div>
+            </div>
 
-              <div className="text-right space-y-1">
-                <div className="text-xs font-bold text-slate-400">For {company?.company_name || 'Klean max pro'}</div>
-                <div className="text-sm font-black text-white pt-2">
-                  {company?.signatory_name || 'Mr. Manikandan'}
-                </div>
-                <div className="text-xs text-amber-400 font-semibold">
-                  {company?.signatory_designation || 'Service Head'}
-                </div>
-                <div className="text-xs text-slate-400">
-                  {company?.phone || company?.phone1 || '+ 91 7338882036'}
-                </div>
-                <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider pt-1">
-                  Authorised Signatory
-                </div>
+            {/* Partner Statement */}
+            <div className="text-xs font-semibold text-slate-300 border-t border-slate-800 pt-3">
+              {company?.company_name || 'Kleanmax Pro'} — Your trusted service partner for complete cleaning equipment solutions across South India.
+            </div>
+
+            {/* Klean Max Pro Signatory ON THE LEFT LIKE A LETTER */}
+            <div className="pt-2 text-left space-y-1">
+              <div className="text-xs font-bold text-slate-300">
+                For {company?.company_name || 'Klean max pro'}
+              </div>
+              <div className="text-base font-black text-white pt-3">
+                {company?.signatory_name || 'Mr. Manikandan'}
+              </div>
+              <div className="text-xs text-amber-400 font-semibold">
+                {company?.signatory_designation || 'Service Head'}
+              </div>
+              <div className="text-xs text-slate-300">
+                {company?.phone || company?.phone1 || '+ 91 7338882036'}
+              </div>
+              <div className="text-xs font-bold text-slate-200 uppercase tracking-wider pt-2">
+                Authorised Signatory
               </div>
             </div>
 
-            <div className="text-[10px] text-slate-400 border-t border-slate-800 pt-2 italic">
-              "This is a computer generated document and authenticated by Klean max pro. Hence, it can be considered valid even if not signed manually"
+            <div className="text-[10px] text-slate-400 border-t border-slate-800 pt-3 italic text-left">
+              This is a computer generated document and authenticated by {company?.company_name || 'Klean max pro'}. Hence, it can be considered valid even if not signed manually.
             </div>
           </div>
         </div>
 
-        {/* Bottom Authentic Footer */}
-        <div className="w-full bg-slate-900 border-t border-slate-200">
+        {/* Bottom Authentic Footer Flush to Edges */}
+        <div className="w-full bg-white border-t border-slate-200 p-0 m-0">
           <img
             src="/headers/footer_kleanmaxpro.png"
             alt="Kleanmax Pro Official Letterhead Footer"
-            className="w-full h-auto max-h-12 object-contain mx-auto select-none"
-            onError={(e) => {
-              (e.target as HTMLElement).style.display = 'none';
-            }}
+            className="w-full h-auto object-cover block select-none"
+            style={{ width: '100%', display: 'block' }}
           />
         </div>
       </div>
+
+      {/* In-Page Instant A4 Preview Modal */}
+      {inPagePreviewOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full border border-slate-300 overflow-hidden my-6">
+            <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Eye className="w-5 h-5 text-amber-400" />
+                <h3 className="font-black text-sm tracking-wide">
+                  A4 Proposal Live Preview — {quotationNo}
+                </h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleDownloadPdf}
+                  className="px-3 py-1.5 bg-[#FED10C] hover:bg-[#E5BC07] text-slate-950 font-bold text-xs rounded-lg flex items-center gap-1 shadow-sm"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download PDF</span>
+                </button>
+                <button
+                  onClick={handleDownloadDocx}
+                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg flex items-center gap-1 shadow-sm"
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  <span>Word</span>
+                </button>
+                <button onClick={() => setInPagePreviewOpen(false)} className="text-slate-400 hover:text-white p-1">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* A4 Sheet Preview Body */}
+            <div className="p-8 max-h-[80vh] overflow-y-auto space-y-6 bg-slate-100">
+              <div className="bg-white p-6 shadow-md rounded-2xl space-y-6 max-w-3xl mx-auto border border-slate-200">
+                <img src="/headers/header_kleanmaxpro.png" className="w-full block" alt="Header" />
+                
+                <div className="text-center font-black text-lg text-slate-950 uppercase underline">
+                  {quotationTitle}
+                </div>
+
+                <div className="flex justify-between text-xs">
+                  <div>
+                    <div className="font-black text-slate-900">TO :-</div>
+                    <div className="font-black text-sm text-slate-900 uppercase">{customerName}</div>
+                    <div>{addressLine1}</div>
+                    <div>{addressLine2}</div>
+                    {contactPerson && <div>Attn: {contactPerson}</div>}
+                    {phone && <div>Ph: {phone}</div>}
+                  </div>
+                  <div className="text-right">
+                    <div>Quotation Date :- <strong>{quotationNo}</strong></div>
+                    <div>DATE :- <strong>{quotationDate}</strong></div>
+                  </div>
+                </div>
+
+                <div className="text-xs bg-slate-50 p-3 rounded-lg border border-slate-200">
+                  <div className="font-bold mb-1">About Us:</div>
+                  <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">{aboutUs}</p>
+                </div>
+
+                <table className="w-full text-xs border border-slate-300 border-collapse">
+                  <thead>
+                    <tr className="bg-slate-900 text-white font-bold">
+                      <th className="p-2 text-center">SL NO</th>
+                      <th className="p-2 text-left">DESCRIPTION</th>
+                      <th className="p-2 text-center">Days</th>
+                      <th className="p-2 text-center">UOM</th>
+                      <th className="p-2 text-right">PER MONTHLY RENT</th>
+                      <th className="p-2 text-right">AMOUNT</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map((it, idx) => (
+                      <tr key={it.id} className="border-t border-slate-200">
+                        <td className="p-2 text-center">{idx + 1}.</td>
+                        <td className="p-2">
+                          <div className="font-bold text-slate-900">{it.item_name}</div>
+                          {it.image_url && (
+                            <img src={it.image_url} alt={it.item_name} className="h-16 my-1 object-contain" />
+                          )}
+                          <pre className="text-[10px] font-mono text-slate-600 whitespace-pre-wrap font-sans">{it.description}</pre>
+                        </td>
+                        <td className="p-2 text-center font-bold">{it.days}</td>
+                        <td className="p-2 text-center">{it.uom}</td>
+                        <td className="p-2 text-right">₹{Number(it.rate).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                        <td className="p-2 text-right font-bold">₹{Number(it.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                      </tr>
+                    ))}
+                    <tr className="border-t-2 border-slate-300 font-bold bg-slate-50">
+                      <td colSpan={5} className="p-2 text-right">SUB TOTAL:</td>
+                      <td className="p-2 text-right">₹{subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                    </tr>
+                    {applyTax && (
+                      <>
+                        <tr className="border-t border-slate-200 text-slate-700">
+                          <td colSpan={5} className="p-1.5 text-right">CGST (9%):</td>
+                          <td className="p-1.5 text-right">₹{cgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                        </tr>
+                        <tr className="border-t border-slate-200 text-slate-700">
+                          <td colSpan={5} className="p-1.5 text-right">SGST (9%):</td>
+                          <td className="p-1.5 text-right">₹{sgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                        </tr>
+                      </>
+                    )}
+                    <tr className="border-t-2 border-slate-900 font-black bg-amber-100 text-sm">
+                      <td colSpan={5} className="p-2 text-right">TOTAL:</td>
+                      <td className="p-2 text-right">₹{totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <div className="text-xs font-mono font-bold whitespace-pre-wrap">{notes}</div>
+
+                <div className="text-xs space-y-1">
+                  <div className="font-bold">Advantages of Renting from Kleanmax Pro:</div>
+                  <ul className="list-disc list-inside text-slate-700">
+                    {ADVANTAGES.map((a, i) => <li key={i}>{a}</li>)}
+                  </ul>
+                </div>
+
+                <div className="text-xs space-y-1">
+                  <div className="font-bold">Terms & Conditions:</div>
+                  <ul className="list-disc list-inside text-slate-700">
+                    {TERMS_AND_CONDITIONS.map((t, i) => <li key={i}>{t}</li>)}
+                  </ul>
+                </div>
+
+                <div className="text-xs bg-slate-50 p-3 rounded-lg border border-slate-200">
+                  <div className="font-bold">Company's Bank Details</div>
+                  <div>• A/c Holder's Name : KLEAN MAX PRO</div>
+                  <div>• Bank Name : ICICI BANK KMP</div>
+                  <div>• A/c No. : 027505010327</div>
+                  <div>• Branch & IFS Code: PORUR & ICIC0000275</div>
+                </div>
+
+                {/* Signatory on LEFT */}
+                <div className="text-left text-xs pt-2">
+                  <div className="font-bold">For Klean max pro</div>
+                  <div className="font-black text-sm pt-4">Mr. Manikandan</div>
+                  <div className="text-slate-600">Service Head</div>
+                  <div className="text-slate-600">+ 91 7338882036</div>
+                  <div className="font-bold pt-1">Authorised Signatory</div>
+                </div>
+
+                <img src="/headers/footer_kleanmaxpro.png" className="w-full block" alt="Footer" />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

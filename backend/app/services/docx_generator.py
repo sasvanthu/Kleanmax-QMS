@@ -437,9 +437,9 @@ def generate_quotation_docx_bytes(
     )
     p_b.add_run(bank_text).font.size = Pt(7.5)
 
-    # Signatory Block
+    # Signatory Block on LEFT
     p_sign = doc.add_paragraph()
-    p_sign.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    p_sign.alignment = WD_ALIGN_PARAGRAPH.LEFT
     p_sign.paragraph_format.space_before = Pt(14)
     p_sign.paragraph_format.space_after = Pt(2)
 

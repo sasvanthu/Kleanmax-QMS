@@ -38,6 +38,9 @@ def render_quotation_html(
     header_b64 = get_file_base64(f"headers/header_{company_code}.png") or get_file_base64("letterhead_banner.png") or get_logo_base64()
     footer_b64 = get_file_base64(f"headers/footer_{company_code}.png")
     machine_b64 = get_file_base64("karcher_scrubber.png")
+    rb800_b64 = get_file_base64("products/rb800.png")
+    rb650_b64 = get_file_base64("products/rb650.png")
+    bd5050_b64 = get_file_base64("products/bd5050.png")
 
     prepared_by_name = quotation.prepared_by.full_name if quotation.prepared_by else "Admin"
 
@@ -53,6 +56,9 @@ def render_quotation_html(
         footer_base64=footer_b64,
         banner_base64=header_b64,
         machine_base64=machine_b64,
+        rb800_base64=rb800_b64,
+        rb650_base64=rb650_b64,
+        bd5050_base64=bd5050_b64,
         prepared_by_name=prepared_by_name
     )
     return html_content

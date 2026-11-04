@@ -150,23 +150,47 @@ export const api = {
     getPdfUrl: (id: string) => `${BASE_URL}/quotations/${id}/pdf`,
     getDocxUrl: (id: string) => `${BASE_URL}/quotations/${id}/docx`,
     getHtmlUrl: (id: string) => `${BASE_URL}/quotations/${id}/html`,
-    downloadPdf: (id: string, filename?: string) => {
-      const link = document.createElement('a');
-      link.href = `${BASE_URL}/quotations/${id}/pdf`;
-      link.target = '_blank';
-      if (filename) link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+    downloadPdf: async (id: string, filename?: string) => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${BASE_URL}/quotations/${id}/pdf`, {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        });
+        if (!res.ok) throw new Error('PDF generation response not OK');
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename || `Quotation_${id}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      } catch (err) {
+        console.warn('Blob download fallback, opening direct link:', err);
+        window.open(`${BASE_URL}/quotations/${id}/pdf`, '_blank');
+      }
     },
-    downloadDocx: (id: string, filename?: string) => {
-      const link = document.createElement('a');
-      link.href = `${BASE_URL}/quotations/${id}/docx`;
-      link.target = '_blank';
-      if (filename) link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+    downloadDocx: async (id: string, filename?: string) => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${BASE_URL}/quotations/${id}/docx`, {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        });
+        if (!res.ok) throw new Error('Word generation response not OK');
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename || `Quotation_${id}.docx`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      } catch (err) {
+        console.warn('Blob docx download fallback, opening direct link:', err);
+        window.open(`${BASE_URL}/quotations/${id}/docx`, '_blank');
+      }
     },
   },
 

@@ -338,9 +338,19 @@
                 <tr>
                     <td class="text-center">{{ loop.index }}</td>
                     <td>
-                        <div style="font-weight: 700; color: #0f172a;">{{ item.item_name }}</div>
-                        {% if machine_base64 and ('SCRUBBER' in item.item_name|upper or 'KARCHER' in item.item_name|upper) %}
-                        <img src="data:image/png;base64,{{ machine_base64 }}" class="machine-img" alt="Machine Photo" />
+                        <div style="font-weight: 700; color: #0f172a; font-size: 9pt;">{{ item.item_name }}</div>
+                        {% if 'RB-800' in item.item_name|upper or '800' in item.item_name %}
+                            {% if rb800_base64 %}
+                            <div style="margin: 6px 0;"><img src="data:image/png;base64,{{ rb800_base64 }}" style="max-height: 85px; width: auto; border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px;" alt="RB-800" /></div>
+                            {% endif %}
+                        {% elif 'RB-650' in item.item_name|upper or '650' in item.item_name %}
+                            {% if rb650_base64 %}
+                            <div style="margin: 6px 0;"><img src="data:image/png;base64,{{ rb650_base64 }}" style="max-height: 85px; width: auto; border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px;" alt="RB-650" /></div>
+                            {% endif %}
+                        {% elif 'BD-50' in item.item_name|upper or 'BD50' in item.item_name|upper or 'KARCHER' in item.item_name|upper %}
+                            {% if bd5050_base64 or machine_base64 %}
+                            <div style="margin: 6px 0;"><img src="data:image/png;base64,{{ bd5050_base64 or machine_base64 }}" style="max-height: 85px; width: auto; border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px;" alt="Scrubber" /></div>
+                            {% endif %}
                         {% endif %}
                         {% if item.description and not item.description.startswith('HEADER:') %}
                         <div class="machine-specs">{{ item.description }}</div>
@@ -473,6 +483,7 @@
         </ul>
     </div>
 
+    <!-- 4. Other Services -->
     <div style="margin-top: 8px;">
         <div class="section-heading">Other Services</div>
         <ul class="bullet-list">
@@ -531,8 +542,9 @@
             <li>Only listed services and parts are covered in this quotation.</li>
         </ul>
     </div>
+    {% endif %}
 
-    <!-- Bank Details -->
+    <!-- 5. Company's Bank Details (Always Rendered) -->
     <div class="bank-box">
         <div style="font-weight: 800; color: #0f172a; margin-bottom: 2px;">Company's Bank Details</div>
         <div>• A/c Holder's Name : <strong>{{ company.bank_account_name or company.company_name or 'KLEAN MAX PRO' }}</strong></div>
@@ -545,34 +557,26 @@
         {{ company.company_name or 'Kleanmax Pro' }} — Your trusted service partner for complete cleaning equipment and facility solutions across South India.
     </div>
 
-    <!-- Signatory -->
-    <table class="signature-block">
-        <tr>
-            <td class="sign-left">
-                &nbsp;
-            </td>
-            <td class="sign-right">
-                <div style="font-weight: 700;">For {{ company.company_name or 'Klean max pro' }}</div>
-                <div style="margin-top: 25px; font-weight: 800; color: #0f172a;">
-                    {% if company_code == 'cleantech' %}
-                    Mr. Manikandan Balamurugan
-                    {% elif 'kleanmax' in company_code %}
-                    Mr. Manikandan
-                    {% else %}
-                    {{ prepared_by_name or 'Authorised Signatory' }}
-                    {% endif %}
-                </div>
-                <div style="font-size: 7.5pt; color: #475569;">
-                    {% if company_code == 'cleantech' %}Sales & Service Head
-                    {% elif 'kleanmax' in company_code %}Service Head
-                    {% else %}Project Estimations Head{% endif %}
-                </div>
-                <div style="font-size: 7.5pt; color: #475569;">{{ company.phone or '+91 7338882036' }}</div>
-                <div style="font-weight: 700; color: #0f172a; margin-top: 2px;">Authorised Signatory</div>
-            </td>
-        </tr>
-    </table>
-    {% endif %}
+    <!-- 6. Signatory (On Left like an official corporate letter) -->
+    <div style="margin-top: 18px; text-align: left;">
+        <div style="font-weight: 700; font-size: 8.5pt;">For {{ company.company_name or 'Klean max pro' }}</div>
+        <div style="margin-top: 25px; font-weight: 800; font-size: 9pt; color: #0f172a;">
+            {% if company_code == 'cleantech' %}
+            Mr. Manikandan Balamurugan
+            {% elif 'kleanmax' in company_code %}
+            Mr. Manikandan
+            {% else %}
+            {{ prepared_by_name or 'Authorised Signatory' }}
+            {% endif %}
+        </div>
+        <div style="font-size: 8pt; color: #475569;">
+            {% if company_code == 'cleantech' %}Sales & Service Head
+            {% elif 'kleanmax' in company_code %}Service Head
+            {% else %}Project Estimations Head{% endif %}
+        </div>
+        <div style="font-size: 8pt; color: #475569;">{{ company.phone or '+91 7338882036' }}</div>
+        <div style="font-weight: 700; color: #0f172a; margin-top: 3px; font-size: 8.5pt;">Authorised Signatory</div>
+    </div>
 
     <!-- 7. Computer Notice & Footer -->
     <div class="computer-notice">
