@@ -1,9 +1,14 @@
 import os
 import base64
+import logging
+import tempfile
+import subprocess
 from pathlib import Path
 from typing import Optional, List
 from jinja2 import Environment, FileSystemLoader
 from backend.app.models.all_models import Quotation, CompanySetting, Customer, QuotationSection, QuotationItem
+
+logger = logging.getLogger(__name__)
 
 TEMPLATE_DIR = Path(__file__).parent.parent / "templates"
 STATIC_DIR = Path(__file__).parent.parent / "static"
@@ -41,6 +46,10 @@ def render_quotation_html(
     rb800_b64 = get_file_base64("products/rb800.png")
     rb650_b64 = get_file_base64("products/rb650.png")
     bd5050_b64 = get_file_base64("products/bd5050.png")
+    wall_printing_1_b64 = get_file_base64("unique_painters/wall_printing_machine_1.jpeg")
+    wall_printing_2_b64 = get_file_base64("unique_painters/wall_printing_machine_2.jpeg")
+    robotic_1_b64 = get_file_base64("unique_painters/robotic_plastering_1.jpeg")
+    robotic_2_b64 = get_file_base64("unique_painters/robotic_plastering_2.jpeg")
 
     prepared_by_name = quotation.prepared_by.full_name if quotation.prepared_by else "Admin"
 
@@ -59,6 +68,10 @@ def render_quotation_html(
         rb800_base64=rb800_b64,
         rb650_base64=rb650_b64,
         bd5050_base64=bd5050_b64,
+        wall_printing_1_base64=wall_printing_1_b64,
+        wall_printing_2_base64=wall_printing_2_b64,
+        robotic_1_base64=robotic_1_b64,
+        robotic_2_base64=robotic_2_b64,
         prepared_by_name=prepared_by_name
     )
     return html_content

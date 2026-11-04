@@ -34,6 +34,521 @@ def _set_cell_margins(cell, top=100, bottom=100, left=150, right=150):
     tc_pr.append(tc_mar)
 
 
+
+def _add_unp_section_header(sec, img_path):
+    sec.header_distance = Inches(0.15)
+    sec.top_margin = Inches(1.35)
+    sec.bottom_margin = Inches(0.4)
+    sec.left_margin = Inches(0.5)
+    sec.right_margin = Inches(0.5)
+    sec.page_width = Inches(8.27)
+    sec.page_height = Inches(11.69)
+    
+    header = sec.header
+    header.is_linked_to_previous = False
+    p = header.paragraphs[0]
+    p.text = ""
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p.paragraph_format.space_before = Pt(0)
+    p.paragraph_format.space_after = Pt(0)
+    if os.path.exists(img_path):
+        r = p.add_run()
+        r.add_picture(str(img_path), width=Inches(7.27))
+
+
+def _generate_uniquepainters_docx(
+    quotation,
+    company,
+    customer,
+    sections: list = None,
+    items: list = None
+) -> bytes:
+    """Generates an authentic 3-page quotation document for Unique Painters.
+    Features equal balanced margins, letterhead header on Page 1 ONLY,
+    and neat professional table formatting.
+    """
+    doc = docx.Document()
+    header_img = STATIC_DIR / "headers" / "header_uniquepainters.png"
+    if not header_img.exists():
+        header_img = STATIC_DIR / "unique_painters" / "header_sec0_image1.jpeg"
+
+    # Balanced, equal corner margins: 0.7 inches on all sides
+    sec = doc.sections[0]
+    sec.top_margin = Inches(0.65)
+    sec.bottom_margin = Inches(0.65)
+    sec.left_margin = Inches(0.7)
+    sec.right_margin = Inches(0.7)
+    sec.page_width = Inches(8.27)
+    sec.page_height = Inches(11.69)
+
+    # Clear header paragraphs so header banner is in body on Page 1 alone
+    for p in sec.header.paragraphs:
+        p.text = ""
+
+    # ==================== PAGE 1 ====================
+    # 1. Header Banner Image (Page 1 ONLY, centered, equal corner margins)
+    if os.path.exists(header_img):
+        p_hdr = doc.add_paragraph()
+        p_hdr.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p_hdr.paragraph_format.space_before = Pt(0)
+        p_hdr.paragraph_format.space_after = Pt(12)
+        r_hdr = p_hdr.add_run()
+        r_hdr.add_picture(str(header_img), width=Inches(6.87))
+
+    # 2. Quotation Title
+    p_title = doc.add_paragraph()
+    p_title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p_title.paragraph_format.space_before = Pt(2)
+    p_title.paragraph_format.space_after = Pt(10)
+    r_t = p_title.add_run("SURFACE COATING & PAINTING PROPOSAL")
+    r_t.bold = True
+    r_t.underline = True
+    r_t.font.size = Pt(13)
+    r_t.font.name = "Arial"
+    r_t.font.color.rgb = RGBColor(15, 23, 42)
+
+    # 3. Meta Table (To & Date) - Equal 2-Column Grid
+    meta_tbl = doc.add_table(rows=1, cols=2)
+    meta_tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
+    meta_tbl.autofit = False
+    c_left, c_right = meta_tbl.cell(0, 0), meta_tbl.cell(0, 1)
+    c_left.width = Inches(4.3)
+    c_right.width = Inches(2.57)
+
+    # Left: Client Address ("TO :-")
+    p_to = c_left.paragraphs[0]
+    p_to.paragraph_format.space_before = Pt(0)
+    p_to.paragraph_format.space_after = Pt(2)
+    p_to.paragraph_format.line_spacing = 1.15
+
+    r = p_to.add_run("To,\n")
+    r.bold = True
+    r.font.size = Pt(11)
+    r.font.name = "Arial"
+
+    c_name = (getattr(customer, 'company_name', None) or 'TRUE NUTRITION').upper()
+    r = p_to.add_run(f"{c_name}\n")
+    r.bold = True
+    r.font.size = Pt(11.5)
+    r.font.name = "Arial"
+    r.font.color.rgb = RGBColor(15, 23, 42)
+
+    addr_parts = []
+    if getattr(customer, 'billing_address_line1', None):
+        addr_parts.append(customer.billing_address_line1)
+    if getattr(customer, 'billing_city', None):
+        addr_parts.append(customer.billing_city)
+    addr_str = ", ".join(addr_parts) if addr_parts else "KODUNGAIYUR"
+    r = p_to.add_run(f"{addr_str}\n")
+    r.font.size = Pt(10)
+    r.font.name = "Arial"
+    r.font.color.rgb = RGBColor(51, 65, 85)
+
+    c_phone = getattr(customer, 'phone', None) or "07676131368"
+    r = p_to.add_run(f"Contact: {c_phone}\n\n")
+    r.font.size = Pt(10)
+    r.font.name = "Arial"
+    r.font.color.rgb = RGBColor(51, 65, 85)
+
+    r = p_to.add_run("DEAR SIR;")
+    r.bold = True
+    r.font.size = Pt(11)
+    r.font.name = "Arial"
+
+    # Right: Date & Quotation No
+    p_date = c_right.paragraphs[0]
+    p_date.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    p_date.paragraph_format.space_before = Pt(0)
+    p_date.paragraph_format.space_after = Pt(2)
+    p_date.paragraph_format.line_spacing = 1.25
+
+    q_date = getattr(quotation, 'quotation_date', None) or ""
+    if hasattr(q_date, 'strftime'):
+        q_date = q_date.strftime('%d/%m/%Y')
+    else:
+        q_date = str(q_date) if q_date else "21/10/2025"
+    q_num = getattr(quotation, 'quotation_number', None) or "UNP/2026/001"
+
+    r = p_date.add_run("DATE: ")
+    r.bold = True
+    r.font.size = Pt(10.5)
+    r.font.name = "Arial"
+    r = p_date.add_run(f"{q_date}\n")
+    r.font.size = Pt(10.5)
+    r.font.name = "Arial"
+
+    r = p_date.add_run("QUOTATION NO: ")
+    r.bold = True
+    r.font.size = Pt(10.5)
+    r.font.name = "Arial"
+    r = p_date.add_run(f"{q_num}\n")
+    r.font.size = Pt(10.5)
+    r.font.name = "Arial"
+
+    # 4. Introductory Paragraphs
+    p_intro1 = doc.add_paragraph()
+    p_intro1.paragraph_format.space_before = Pt(8)
+    p_intro1.paragraph_format.space_after = Pt(4)
+    p_intro1.paragraph_format.line_spacing = 1.2
+    r = p_intro1.add_run(
+        "We are glad to inform you that we are in the Painting and Cleaning industry for the past 12 years "
+        "and we do Interior and exterior painting, wall graphics, 3D paintings, starting from 900 to 100000 Sq. "
+        "using traditional and latest technology Unifying Expertise."
+    )
+    r.font.size = Pt(10)
+    r.font.name = "Arial"
+    r.font.color.rgb = RGBColor(30, 41, 59)
+
+    p_intro2 = doc.add_paragraph()
+    p_intro2.paragraph_format.space_before = Pt(2)
+    p_intro2.paragraph_format.space_after = Pt(10)
+    p_intro2.paragraph_format.line_spacing = 1.2
+    r = p_intro2.add_run(
+        "After a through survey of your site we are herewith submitting our proposal for the painting of your above property."
+    )
+    r.font.size = Pt(10)
+    r.font.name = "Arial"
+    r.font.color.rgb = RGBColor(30, 41, 59)
+
+    # 5. Neat Proposal Table (Equal Page Margin Width: 6.87 in)
+    col_widths = [Inches(0.6), Inches(4.67), Inches(1.60)]
+    tbl = doc.add_table(rows=1, cols=3)
+    tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
+    tbl.autofit = False
+
+    # Header Row
+    headers = ["S. No", "Description", "Amount in INR"]
+    hdr_cells = tbl.rows[0].cells
+    for i, h in enumerate(headers):
+        hdr_cells[i].width = col_widths[i]
+        _set_cell_background(hdr_cells[i], "1E293B")
+        _set_cell_margins(hdr_cells[i], top=120, bottom=120, left=120, right=120)
+        p = hdr_cells[i].paragraphs[0]
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER if i == 0 else (WD_ALIGN_PARAGRAPH.RIGHT if i == 2 else WD_ALIGN_PARAGRAPH.LEFT)
+        r = p.add_run(h)
+        r.bold = True
+        r.font.size = Pt(10)
+        r.font.name = "Arial"
+        r.font.color.rgb = RGBColor(255, 255, 255)
+
+    sections_list = sections or []
+    items_list = items or []
+    subtotal = Decimal(str(getattr(quotation, 'subtotal', 0)))
+    final_amount = Decimal(str(getattr(quotation, 'final_amount', subtotal)))
+
+    data_rows = []
+    if sections_list:
+        for idx, s in enumerate(sections_list, 1):
+            title = (s.section_name or "INTERIOR WALL PAINTING").upper()
+            svc = (s.service_name or "ASIAN PAINT TRACTOR EMULSION").upper()
+            notes = getattr(s, 'notes', '') or ""
+            dim_str = ""
+            if s.billable_area:
+                dim_str = f"Area: {Decimal(str(s.billable_area)):,.0f} sq.ft @ Rs.{Decimal(str(s.applied_rate)):,.2f} / sq.ft"
+            amt = Decimal(str(s.line_total or 0))
+            data_rows.append((idx, title, svc, notes, dim_str, amt))
+    elif items_list:
+        for idx, itm in enumerate(items_list, 1):
+            title = itm.item_name.upper()
+            desc = itm.description or ""
+            amt = Decimal(str(itm.line_total or 0))
+            data_rows.append((idx, title, "", desc, "", amt))
+    else:
+        title = "INTERIOR WALL PAINTING"
+        svc = "ASIAN PAINT TRACTOR EMULSION"
+        notes = "APPLY TWO CODE PREMIER EMULSION SHYNE INTERIOR WALLS CEILING WALL PUTTY AREA TWO CODE"
+        dim_str = "Area: 4,200 sq.ft @ Rs.22.14 / sq.ft"
+        data_rows.append((1, title, svc, notes, dim_str, final_amount or Decimal("93000")))
+
+    # Populate Data Rows
+    for idx, title, svc, notes, dim_str, amt in data_rows:
+        row_cells = tbl.add_row().cells
+        for c_i in range(3):
+            row_cells[c_i].width = col_widths[c_i]
+            _set_cell_margins(row_cells[c_i], top=100, bottom=100, left=120, right=120)
+            if idx % 2 == 0:
+                _set_cell_background(row_cells[c_i], "F8FAFC")
+
+        # Col 0: S. No
+        p_idx = row_cells[0].paragraphs[0]
+        p_idx.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        r = p_idx.add_run(f"{idx}.")
+        r.bold = True
+        r.font.size = Pt(10)
+        r.font.name = "Arial"
+        r.font.color.rgb = RGBColor(71, 85, 105)
+
+        # Col 1: Description
+        p_desc = row_cells[1].paragraphs[0]
+        p_desc.paragraph_format.line_spacing = 1.2
+        p_desc.paragraph_format.space_after = Pt(2)
+
+        r_title = p_desc.add_run(f"{title}")
+        r_title.bold = True
+        r_title.font.size = Pt(10)
+        r_title.font.name = "Arial"
+        r_title.font.color.rgb = RGBColor(15, 23, 42)
+
+        if svc:
+            r_svc = p_desc.add_run(f": {svc}\n")
+            r_svc.bold = True
+            r_svc.font.size = Pt(9.5)
+            r_svc.font.name = "Arial"
+            r_svc.font.color.rgb = RGBColor(88, 28, 135)
+        else:
+            p_desc.add_run("\n")
+
+        if notes:
+            r_notes = p_desc.add_run(f"{notes}\n")
+            r_notes.font.size = Pt(8.5)
+            r_notes.font.name = "Arial"
+            r_notes.font.color.rgb = RGBColor(71, 85, 105)
+
+        if dim_str:
+            r_dim = p_desc.add_run(f"{dim_str}")
+            r_dim.bold = True
+            r_dim.font.size = Pt(8.5)
+            r_dim.font.name = "Arial"
+            r_dim.font.color.rgb = RGBColor(124, 58, 237)
+
+        # Col 2: Amount in INR
+        p_amt = row_cells[2].paragraphs[0]
+        p_amt.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        r = p_amt.add_run(f"RS.{amt:,.0f}" if amt == amt.to_integral() else f"RS.{amt:,.2f}")
+        r.bold = True
+        r.font.size = Pt(10.5)
+        r.font.name = "Arial"
+        r.font.color.rgb = RGBColor(15, 23, 42)
+
+    # Total Project Value Row
+    tot_row = tbl.add_row().cells
+    tot_row[0].width = col_widths[0]
+    tot_row[1].width = col_widths[1]
+    tot_row[2].width = col_widths[2]
+    _set_cell_background(tot_row[0], "F3E8FF")
+    _set_cell_background(tot_row[1], "F3E8FF")
+    _set_cell_background(tot_row[2], "F3E8FF")
+    _set_cell_margins(tot_row[0], top=100, bottom=100, left=120, right=120)
+    _set_cell_margins(tot_row[1], top=100, bottom=100, left=120, right=120)
+    _set_cell_margins(tot_row[2], top=100, bottom=100, left=120, right=120)
+
+    p_t1 = tot_row[1].paragraphs[0]
+    p_t1.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    r = p_t1.add_run("TOTAL PROJECT VALUE :")
+    r.bold = True
+    r.font.size = Pt(10.5)
+    r.font.name = "Arial"
+    r.font.color.rgb = RGBColor(15, 23, 42)
+
+    p_t2 = tot_row[2].paragraphs[0]
+    p_t2.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    r = p_t2.add_run(f"RS.{final_amount:,.0f}" if final_amount == final_amount.to_integral() else f"RS.{final_amount:,.2f}")
+    r.bold = True
+    r.font.size = Pt(11)
+    r.font.name = "Arial"
+    r.font.color.rgb = RGBColor(88, 28, 135)
+
+    # ==================== PAGE 2 (NO HEADER BANNER) ====================
+    doc.add_page_break()
+
+    # Machineries Heading
+    p_m_title = doc.add_paragraph()
+    p_m_title.paragraph_format.space_before = Pt(12)
+    p_m_title.paragraph_format.space_after = Pt(8)
+    r = p_m_title.add_run("List of Machineries and consumables")
+    r.bold = True
+    r.underline = True
+    r.font.size = Pt(12)
+    r.font.name = "Arial"
+    r.font.color.rgb = RGBColor(15, 23, 42)
+
+    machineries = [
+        "Airless Sprayer with latest technology",
+        "Sanding Machine",
+        "Vacuum Cleaner",
+        "Putty blades",
+        "Sanding paper",
+        "Leveling tool",
+        "Ladders or Scissor Lift",
+        "Banian waste",
+        "Metal paste",
+        "Wall putty",
+        "Primer",
+        "Thinner",
+        "Brush and rollers",
+        "Masking papers",
+        "Safety equipment.",
+    ]
+
+    for m in machineries:
+        p_m = doc.add_paragraph()
+        p_m.paragraph_format.space_before = Pt(1)
+        p_m.paragraph_format.space_after = Pt(1)
+        p_m.paragraph_format.left_indent = Inches(0.25)
+        r = p_m.add_run(f"•  {m}")
+        r.font.size = Pt(9.5)
+        r.font.name = "Arial"
+        r.font.color.rgb = RGBColor(30, 41, 59)
+
+    # Call note
+    p_call = doc.add_paragraph()
+    p_call.paragraph_format.space_before = Pt(10)
+    p_call.paragraph_format.space_after = Pt(12)
+    r = p_call.add_run("Looking forward for your favourable orders. Please call - 9500065813 / 9710148218.")
+    r.font.size = Pt(10)
+    r.bold = True
+    r.font.name = "Arial"
+    r.font.color.rgb = RGBColor(15, 23, 42)
+
+    # Terms & Conditions Heading
+    p_tc_title = doc.add_paragraph()
+    p_tc_title.paragraph_format.space_before = Pt(6)
+    p_tc_title.paragraph_format.space_after = Pt(6)
+    r = p_tc_title.add_run("Terms & Conditions")
+    r.bold = True
+    r.underline = True
+    r.font.size = Pt(12)
+    r.font.name = "Arial"
+    r.font.color.rgb = RGBColor(15, 23, 42)
+
+    terms = [
+        "GST 18% Extra",
+        "50% Payment in Advance and the balance on completion of work.",
+        "Water and power supply to be provided by you.",
+        "Apart from the above mentioned jobs, if yours require additional services Please inform before the issuing work order.",
+        "Scaffolding charges will Extra",
+    ]
+
+    for t in terms:
+        p_t = doc.add_paragraph()
+        p_t.paragraph_format.space_before = Pt(1)
+        p_t.paragraph_format.space_after = Pt(1)
+        p_t.paragraph_format.left_indent = Inches(0.25)
+        r = p_t.add_run(f"•  {t}")
+        r.font.size = Pt(9.5)
+        r.font.name = "Arial"
+        r.font.color.rgb = RGBColor(30, 41, 59)
+
+    # Satisfaction statement
+    p_sat = doc.add_paragraph()
+    p_sat.paragraph_format.space_before = Pt(10)
+    p_sat.paragraph_format.space_after = Pt(16)
+    r = p_sat.add_run("Your satisfaction is our Goal. Looking forward for your favourable orders.")
+    r.font.size = Pt(10)
+    r.font.name = "Arial"
+    r.font.color.rgb = RGBColor(30, 41, 59)
+
+    # Signatory block table
+    sig_tbl = doc.add_table(rows=1, cols=2)
+    sig_tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
+    sig_tbl.autofit = False
+    s_left, s_right = sig_tbl.cell(0, 0), sig_tbl.cell(0, 1)
+    s_left.width = Inches(4.3)
+    s_right.width = Inches(2.57)
+
+    p_sl = s_left.paragraphs[0]
+    p_sl.paragraph_format.space_after = Pt(2)
+    p_sl.paragraph_format.line_spacing = 1.2
+
+    r = p_sl.add_run("Regards\n")
+    r.font.size = Pt(10.5)
+    r.font.name = "Arial"
+
+    r = p_sl.add_run("Unique Painters\n\n")
+    r.bold = True
+    r.font.size = Pt(11.5)
+    r.font.name = "Arial"
+    r.font.color.rgb = RGBColor(88, 28, 135)
+
+    r = p_sl.add_run("K. SRIDHAR\n")
+    r.bold = True
+    r.font.size = Pt(10.5)
+    r.font.name = "Arial"
+
+    r = p_sl.add_run("Operations Head\n")
+    r.font.size = Pt(9.5)
+    r.font.name = "Arial"
+
+    r = p_sl.add_run("9710148218 / 7338882034")
+    r.font.size = Pt(9.5)
+    r.font.name = "Arial"
+
+    p_sr = s_right.paragraphs[0]
+    p_sr.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    p_sr.paragraph_format.space_after = Pt(2)
+    p_sr.paragraph_format.line_spacing = 1.2
+
+    r = p_sr.add_run("\nClient Signature\n\n\n\n______________________")
+    r.bold = True
+    r.font.size = Pt(10.5)
+    r.font.name = "Arial"
+
+    # ==================== PAGE 3 (NO HEADER BANNER) ====================
+    doc.add_page_break()
+
+    p_f1 = doc.add_paragraph()
+    p_f1.paragraph_format.space_before = Pt(12)
+    p_f1.paragraph_format.space_after = Pt(8)
+    r = p_f1.add_run("UPCOMING OUR FUTURE TECHNOLOGY; 3D WALL PRINTING MACHINE:")
+    r.bold = True
+    r.underline = True
+    r.font.size = Pt(11.5)
+    r.font.name = "Arial"
+    r.font.color.rgb = RGBColor(124, 58, 237)
+
+    # 3D Wall Printing Images Table
+    img_tbl1 = doc.add_table(rows=1, cols=2)
+    img_tbl1.alignment = WD_TABLE_ALIGNMENT.CENTER
+    img_tbl1.autofit = False
+    c1, c2 = img_tbl1.cell(0, 0), img_tbl1.cell(0, 1)
+    c1.width = Inches(3.43)
+    c2.width = Inches(3.43)
+
+    img_w1 = STATIC_DIR / "unique_painters" / "wall_printing_machine_1.jpeg"
+    img_w2 = STATIC_DIR / "unique_painters" / "wall_printing_machine_2.jpeg"
+    if img_w1.exists():
+        p1 = c1.paragraphs[0]
+        p1.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p1.add_run().add_picture(str(img_w1), width=Inches(3.2))
+    if img_w2.exists():
+        p2 = c2.paragraphs[0]
+        p2.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p2.add_run().add_picture(str(img_w2), width=Inches(3.2))
+
+    p_f2 = doc.add_paragraph()
+    p_f2.paragraph_format.space_before = Pt(16)
+    p_f2.paragraph_format.space_after = Pt(8)
+    r = p_f2.add_run("ROBOTIC PLASTERING AND PAINTING MACHINE ;")
+    r.bold = True
+    r.underline = True
+    r.font.size = Pt(11.5)
+    r.font.name = "Arial"
+    r.font.color.rgb = RGBColor(124, 58, 237)
+
+    img_tbl2 = doc.add_table(rows=1, cols=2)
+    img_tbl2.alignment = WD_TABLE_ALIGNMENT.CENTER
+    img_tbl2.autofit = False
+    c3, c4 = img_tbl2.cell(0, 0), img_tbl2.cell(0, 1)
+    c3.width = Inches(3.43)
+    c4.width = Inches(3.43)
+
+    img_r1 = STATIC_DIR / "unique_painters" / "robotic_plastering_1.jpeg"
+    img_r2 = STATIC_DIR / "unique_painters" / "robotic_plastering_2.jpeg"
+    if img_r1.exists():
+        p3 = c3.paragraphs[0]
+        p3.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p3.add_run().add_picture(str(img_r1), width=Inches(3.2))
+    if img_r2.exists():
+        p4 = c4.paragraphs[0]
+        p4.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p4.add_run().add_picture(str(img_r2), width=Inches(3.2))
+
+    buf = io.BytesIO()
+    doc.save(buf)
+    buf.seek(0)
+    return buf.getvalue()
+
+
 def generate_quotation_docx_bytes(
     quotation,
     company,
@@ -55,7 +570,10 @@ def generate_quotation_docx_bytes(
         sec.page_width = Inches(8.27)  # A4 width
         sec.page_height = Inches(11.69) # A4 height
 
-    company_code = (getattr(company, 'company_code', None) or 'kleanmaxpro').lower()
+    company_code = (getattr(company, 'company_code', None) or getattr(quotation, 'company_code', None) or 'kleanmaxpro').lower()
+
+    if company_code == 'uniquepainters':
+        return _generate_uniquepainters_docx(quotation, company, customer, sections=sections_list, items=items_list)
 
     # Brand color mapping
     brand_hex_map = {

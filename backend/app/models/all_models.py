@@ -47,6 +47,7 @@ class CompanySetting(Base):
     email = Column(String(255), default="info@kleanmaxpro.com")
     website = Column(String(255), default="www.kleanmaxpro.com")
     bank_name = Column(String(255), default="HDFC Bank Limited")
+    bank_account_name = Column(String(255), nullable=True)
     bank_account_no = Column(String(100), default="50200088991122")
     bank_ifsc = Column(String(50), default="HDFC0001234")
     bank_branch = Column(String(255), default="Porur Branch, Chennai")

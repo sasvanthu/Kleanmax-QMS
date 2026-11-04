@@ -4,6 +4,7 @@ setlocal
 
 :: Set working directory to project root
 cd /d "%~dp0"
+set "ROOT_DIR=%cd%"
 
 echo =====================================================================
 echo                KLEAN MAX PRO - QMS LOCAL LAUNCHER
@@ -23,18 +24,18 @@ if not exist "backend\.venv\Scripts\python.exe" (
 :: 2. Check Frontend node_modules
 if not exist "frontend\node_modules" (
     echo [NOTICE] frontend\node_modules not found. Installing npm dependencies...
-    cd /d "%~dp0frontend"
+    cd /d "%ROOT_DIR%\frontend"
     call npm install
-    cd /d "%~dp0"
+    cd /d "%ROOT_DIR%"
 )
 
 :: 3. Launch Backend in a new window
 echo [1/2] Launching Backend API (Port 8000)...
-start "Klean Max Pro - Backend (Port 8000)" cmd /k "cd /d "%~dp0" && call backend\.venv\Scripts\activate.bat && uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --reload"
+start "Klean Max Pro - Backend (Port 8000)" cmd /k "cd /d "%ROOT_DIR%" && call backend\.venv\Scripts\activate.bat && uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --reload"
 
 :: 4. Launch Frontend in a new window
 echo [2/2] Launching Frontend Dev Server (Port 5173)...
-start "Klean Max Pro - Frontend (Port 5173)" cmd /k "cd /d "%~dp0frontend" && npm run dev"
+start "Klean Max Pro - Frontend (Port 5173)" cmd /k "cd /d "%ROOT_DIR%\frontend" && npm run dev"
 
 :: 5. Wait briefly for servers to initialize, then launch the browser
 echo.

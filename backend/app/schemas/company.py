@@ -21,6 +21,7 @@ class CompanySettingSchema(BaseModel):
     email: Optional[str] = None
     website: Optional[str] = None
     bank_name: Optional[str] = None
+    bank_account_name: Optional[str] = None
     bank_account_no: Optional[str] = None
     bank_ifsc: Optional[str] = None
     bank_branch: Optional[str] = None
