@@ -30,17 +30,21 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   });
 
   if (!response.ok) {
-    let errorDetail = 'An unexpected error occurred';
+    let errorDetail = `HTTP ${response.status}: ${response.statusText}`;
     try {
-      const text = await response.text();
+      // Clone response to avoid stream already read errors
+      const cloned = response.clone();
+      const text = await cloned.text();
       try {
         const errJson = JSON.parse(text);
         errorDetail = errJson.detail || errJson.message || text;
       } catch {
-        errorDetail = text || `HTTP ${response.status}: ${response.statusText}`;
+        if (text && text.length < 500) {
+          errorDetail = text;
+        }
       }
-    } catch (e: any) {
-      errorDetail = `HTTP ${response.status}: ${e.message || response.statusText}`;
+    } catch {
+      // Keep default errorDetail
     }
     throw new ApiError(errorDetail, response.status);
   }
