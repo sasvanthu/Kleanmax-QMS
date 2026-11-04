@@ -32,10 +32,15 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   if (!response.ok) {
     let errorDetail = 'An unexpected error occurred';
     try {
-      const errJson = await response.json();
-      errorDetail = errJson.detail || errJson.message || JSON.stringify(errJson);
-    } catch {
-      errorDetail = await response.text();
+      const text = await response.text();
+      try {
+        const errJson = JSON.parse(text);
+        errorDetail = errJson.detail || errJson.message || text;
+      } catch {
+        errorDetail = text || `HTTP ${response.status}: ${response.statusText}`;
+      }
+    } catch (e: any) {
+      errorDetail = `HTTP ${response.status}: ${e.message || response.statusText}`;
     }
     throw new ApiError(errorDetail, response.status);
   }

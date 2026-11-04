@@ -341,15 +341,15 @@
                         <div style="font-weight: 700; color: #0f172a; font-size: 9pt;">{{ item.item_name }}</div>
                         {% if 'RB-800' in item.item_name|upper or '800' in item.item_name %}
                             {% if rb800_base64 %}
-                            <div style="margin: 6px 0;"><img src="data:image/png;base64,{{ rb800_base64 }}" style="max-height: 85px; width: auto; border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px;" alt="RB-800" /></div>
+                            <div style="margin: 8px 0;"><img src="data:image/png;base64,{{ rb800_base64 }}" style="max-height: 140px; max-width: 220px; width: auto; height: auto; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px; background: #ffffff; display: block;" alt="RB-800" /></div>
                             {% endif %}
                         {% elif 'RB-650' in item.item_name|upper or '650' in item.item_name %}
                             {% if rb650_base64 %}
-                            <div style="margin: 6px 0;"><img src="data:image/png;base64,{{ rb650_base64 }}" style="max-height: 85px; width: auto; border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px;" alt="RB-650" /></div>
+                            <div style="margin: 8px 0;"><img src="data:image/png;base64,{{ rb650_base64 }}" style="max-height: 140px; max-width: 220px; width: auto; height: auto; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px; background: #ffffff; display: block;" alt="RB-650" /></div>
                             {% endif %}
                         {% elif 'BD-50' in item.item_name|upper or 'BD50' in item.item_name|upper or 'KARCHER' in item.item_name|upper %}
                             {% if bd5050_base64 or machine_base64 %}
-                            <div style="margin: 6px 0;"><img src="data:image/png;base64,{{ bd5050_base64 or machine_base64 }}" style="max-height: 85px; width: auto; border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px;" alt="Scrubber" /></div>
+                            <div style="margin: 8px 0;"><img src="data:image/png;base64,{{ bd5050_base64 or machine_base64 }}" style="max-height: 140px; max-width: 220px; width: auto; height: auto; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px; background: #ffffff; display: block;" alt="Scrubber" /></div>
                             {% endif %}
                         {% endif %}
                         {% if item.description and not item.description.startswith('HEADER:') %}

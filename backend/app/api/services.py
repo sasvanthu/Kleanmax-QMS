@@ -24,8 +24,7 @@ def get_services(
 ):
     query = db.query(Service)
     if company_code:
-        # Match exact company_code or general services if None
-        query = query.filter(or_(Service.company_code == company_code, Service.company_code.is_(None)))
+        query = query.filter(Service.company_code == company_code)
     if category:
         query = query.filter(Service.category == category)
     if is_active is not None:

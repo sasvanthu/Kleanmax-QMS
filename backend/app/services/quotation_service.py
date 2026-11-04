@@ -126,6 +126,65 @@ def create_quotation(
     # Generate sequential number safely or use custom specified number
     if getattr(data, 'quotation_number', None) and data.quotation_number.strip():
         quotation_number = data.quotation_number.strip()
+        existing = db.query(Quotation).filter(
+            Quotation.quotation_number == quotation_number,
+            Quotation.revision_number == 0
+        ).first()
+        if existing and existing.status == "draft":
+            # Update existing draft seamlessly without UniqueConstraint collision
+            existing.customer_id = customer.id
+            existing.company_code = data.company_code or existing.company_code
+            existing.quotation_type = data.quotation_type or existing.quotation_type
+            existing.quotation_date = data.quotation_date
+            existing.validity_date = validity_date
+            existing.job_description = data.job_description
+            existing.notes = data.notes
+            existing.terms_and_conditions = data.terms_and_conditions or existing.terms_and_conditions
+            existing.subtotal = calc_res.subtotal
+            existing.discount_type = data.discount_type
+            existing.discount_value = data.discount_value
+            existing.total_discount = calc_res.total_discount
+            existing.taxable_amount = calc_res.taxable_amount
+            existing.cgst_rate = calc_res.cgst_rate
+            existing.cgst_amount = calc_res.cgst_amount
+            existing.sgst_rate = calc_res.sgst_rate
+            existing.sgst_amount = calc_res.sgst_amount
+            existing.total_tax = calc_res.total_tax
+            existing.final_amount = calc_res.final_amount
+            existing.amount_in_words = calc_res.amount_in_words
+            existing.updated_at = datetime.utcnow()
+
+            # Replace items
+            db.query(QuotationItem).filter(QuotationItem.quotation_id == existing.id).delete()
+            for idx, (item_input, item_calc) in enumerate(zip(data.items, calc_res.items), start=1):
+                item_row = QuotationItem(
+                    quotation_id=existing.id,
+                    item_order=idx,
+                    service_id=item_input.service_id,
+                    item_code=item_input.item_code,
+                    item_name=item_input.item_name,
+                    description=item_input.description,
+                    hsn_sac=item_input.hsn_sac,
+                    quotation_type=item_input.quotation_type,
+                    quantity=item_calc.quantity,
+                    uom=item_calc.uom,
+                    unit_price=item_calc.unit_price,
+                    rate_source=item_input.rate_source,
+                    original_catalogue_rate=item_input.original_catalogue_rate,
+                    applied_rate=item_input.applied_rate,
+                    taxable_value=item_calc.taxable_value,
+                    tax_rate=item_calc.tax_rate,
+                    line_total=item_calc.line_total,
+                    notes=item_input.notes,
+                )
+                db.add(item_row)
+
+            db.commit()
+            db.refresh(existing)
+            return existing
+        elif existing:
+            prefix = company.quotation_prefix if company and company.quotation_prefix else "KMP"
+            quotation_number = generate_next_quotation_number(db, data.quotation_date, prefix=prefix)
     else:
         prefix = company.quotation_prefix if company and company.quotation_prefix else "KMP"
         quotation_number = generate_next_quotation_number(db, data.quotation_date, prefix=prefix)

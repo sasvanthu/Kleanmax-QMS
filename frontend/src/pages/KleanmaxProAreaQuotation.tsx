@@ -72,6 +72,144 @@ const OTHER_SERVICES = [
   'Commercial Cleaning & Painting Services',
 ];
 
+// Helper to format Date to DD/MM/YYYY (Indian standard)
+export const formatToIndianDate = (dateObj: Date = new Date()): string => {
+  const d = String(dateObj.getDate()).padStart(2, '0');
+  const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const y = dateObj.getFullYear();
+  return `${d}/${m}/${y}`;
+};
+
+// Helper to convert DD/MM/YYYY or DD-MM-YYYY to ISO YYYY-MM-DD
+export const toISODate = (dateStr: string): string => {
+  if (!dateStr) return new Date().toISOString().split('T')[0];
+  const cleaned = dateStr.trim();
+  const match = cleaned.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+  if (match) {
+    const day = match[1].padStart(2, '0');
+    const month = match[2].padStart(2, '0');
+    const year = match[3];
+    return `${year}-${month}-${day}`;
+  }
+  return dateStr;
+};
+
+// Helper to convert ISO YYYY-MM-DD to DD/MM/YYYY
+export const fromISODate = (isoStr: string): string => {
+  if (!isoStr) return formatToIndianDate();
+  const match = isoStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (match) {
+    return `${match[3]}/${match[2]}/${match[1]}`;
+  }
+  return isoStr;
+};
+
+// Default Kleanmax Pro rental products ready immediately in search bar
+const DEFAULT_KLEANMAXPRO_PRODUCTS: Partial<Service>[] = [
+  {
+    id: 'kmp-rb800-seed',
+    service_code: 'KMP-RENT-RB800',
+    service_name: 'RIDE ON SCRUBBER MACHINE RB-800',
+    category: 'rental',
+    company_code: 'kleanmaxpro',
+    default_uom: 'NOS',
+    standard_rate: 32000.0,
+    is_active: true,
+    description: `BRUSH SCRUBBING WIDTH - 800mm
+SUCTION WIDTH - 1100mm
+COVERAGE AREA - 4800M.SQ/HR
+WORKING SPEED - 6KM/HR
+AIRFLOW RATE - 33L/SEC
+VACCUM PRESSURE - 1650MM
+POWER - 24V
+TOTAL POWER - 2400W
+BRUSH MOTOR - 2*550W
+VACCUM MOTOR - 550W
+PERFORMANCE - 1950 m2/hr
+TANK CAPACITY - 120LTRS
+DIAMETRE OF BRUSH - 405MM
+DRIVER MOTOR POWER - 750MM`,
+  },
+  {
+    id: 'kmp-rb650-seed',
+    service_code: 'KMP-RENT-RB650',
+    service_name: 'RIDE ON SCRUBBER MACHINE RB-650',
+    category: 'rental',
+    company_code: 'kleanmaxpro',
+    default_uom: 'NOS',
+    standard_rate: 27000.0,
+    is_active: true,
+    description: `Scrubbing Width: 650 mm
+Suction / Squeegee Width: 870 mm
+Theoretical Area Coverage: 4,225 m2/hr
+Working Speed: Up to 6.5 km/hr (Travel speed up to 7 km/hr)
+Power Supply / Battery: 24 V DC / 200 Ah
+Total Power: 1,600 W
+Brushes: 2 disc brushes, 333 mm diameter each, running at 180 RPM
+Brush Pressure: 25 kg (with additional brush pressure option)
+Solution / Fresh Water Tank: 100 L
+Recovery / Dirty Water Tank: 100 L`,
+  },
+  {
+    id: 'kmp-bd5050-seed',
+    service_code: 'KMP-RENT-BD5050',
+    service_name: 'WALK BEHIND SCRUBBER DRYER BD-50/50',
+    category: 'rental',
+    company_code: 'kleanmaxpro',
+    default_uom: 'NOS',
+    standard_rate: 18000.0,
+    is_active: true,
+    description: `Working Width: 510 mm
+Suction Width: 850 mm
+Fresh / Dirty Water Tank: 50L / 50L
+Theoretical Area Performance: 2000 m2/hr
+Power: 24V Battery Operated`,
+  },
+  {
+    id: 'kmp-bds43150-seed',
+    service_code: 'KMP-RENT-BDS43150',
+    service_name: 'SINGLE DISC SCRUBBER MACHINE BDS 43/150',
+    category: 'rental',
+    company_code: 'kleanmaxpro',
+    default_uom: 'NOS',
+    standard_rate: 8500.0,
+    is_active: true,
+    description: `Working Width: 430 mm
+Brush Speed: 150 RPM
+Power Rating: 1500 W
+Cable Length: 15 m
+Ideal for floor scrubbing, buffing, and crystallizing`,
+  },
+  {
+    id: 'kmp-nt702-seed',
+    service_code: 'KMP-RENT-NT702',
+    service_name: 'INDUSTRIAL WET & DRY VACUUM CLEANER NT 70/2',
+    category: 'rental',
+    company_code: 'kleanmaxpro',
+    default_uom: 'NOS',
+    standard_rate: 6500.0,
+    is_active: true,
+    description: `Container Capacity: 70 L Stainless Steel
+Motors: 2 x 1200 W Heavy Duty Bypass Motors
+Air Flow: 2 x 74 L/s
+Vacuum: 254 mbar`,
+  },
+  {
+    id: 'kmp-hd615-seed',
+    service_code: 'KMP-RENT-HD615',
+    service_name: 'HIGH PRESSURE WASHER HD 6/15',
+    category: 'rental',
+    company_code: 'kleanmaxpro',
+    default_uom: 'NOS',
+    standard_rate: 9000.0,
+    is_active: true,
+    description: `Operating Pressure: 150 Bar
+Max Pressure: 190 Bar
+Flow Rate: 560 L/hr
+Power Rating: 3.1 kW single phase`,
+  },
+];
+
 export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> = ({
   currentUser,
   onNavigate,
@@ -81,9 +219,9 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
   const [selectedHeadingOption, setSelectedHeadingOption] = useState<string>('MONTHLY RENTAL QUOTATION');
   const [quotationTitle, setQuotationTitle] = useState<string>('MONTHLY RENTAL QUOTATION');
 
-  // 2. Metadata: Quotation Number & Date (Editable & Auto-Incrementing)
+  // 2. Metadata: Quotation Number & Date in DD/MM/YYYY (Indian Format)
   const [quotationNo, setQuotationNo] = useState<string>('KMP/0001');
-  const [quotationDate, setQuotationDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [quotationDate, setQuotationDate] = useState<string>(formatToIndianDate());
 
   // 3. "TO :-" Client Address Details (Editable)
   const [customerName, setCustomerName] = useState<string>('ABANS FACILITY MANAGEMENT');
@@ -105,21 +243,43 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
       id: 'item_1',
       item_name: 'RIDE ON SCRUBBER MACHINE RB-800',
       image_url: '/products/rb800.png',
-      description: 'BRUSH SCRUBBING WIDTH - 800mm\nSUCTION WIDTH - 1100mm\nCOVERAGE AREA - 4800M.SQ/HR\nWORKING SPEED - 6KM/HR\nAIRFLOW RATE - 33L/SEC\nVACCUM PRESSURE - 1650MM\nPOWER - 24V\nTOTAL POWER - 2400W\nBRUSH MOTOR - 2*550W\nVACCUM MOTOR - 550W\nPERFORMANCE - 1950 m2/hr\nTANK CAPACITY - 120LTRS\nDIAMETRE OF BRUSH - 405MM\nDRIVER MOTOR POWER - 750MM',
+      description: `BRUSH SCRUBBING WIDTH - 800mm
+SUCTION WIDTH - 1100mm
+COVERAGE AREA - 4800M.SQ/HR
+WORKING SPEED - 6KM/HR
+AIRFLOW RATE - 33L/SEC
+VACCUM PRESSURE - 1650MM
+POWER - 24V
+TOTAL POWER - 2400W
+BRUSH MOTOR - 2*550W
+VACCUM MOTOR - 550W
+PERFORMANCE - 1950 m2/hr
+TANK CAPACITY - 120LTRS
+DIAMETRE OF BRUSH - 405MM
+DRIVER MOTOR POWER - 750MM`,
       days: 1,
       uom: 'NOS',
-      rate: 32000.00,
-      amount: 32000.00,
+      rate: 32000.0,
+      amount: 32000.0,
     },
     {
       id: 'item_2',
       item_name: 'RIDE ON SCRUBBER MACHINE RB-650',
       image_url: '/products/rb650.png',
-      description: 'Scrubbing Width: 650 mm\nSuction / Squeegee Width: 870 mm\nTheoretical Area Coverage: 4,225 m2/hr\nWorking Speed: Up to 6.5 km/hr (Travel speed up to 7 km/hr)\nPower Supply / Battery: 24 V DC / 200 Ah\nTotal Power: 1,600 W\nBrushes: 2 disc brushes, 333 mm diameter each, running at 180 RPM\nBrush Pressure: 25 kg (with additional brush pressure option)\nSolution / Fresh Water Tank: 100 L\nRecovery / Dirty Water Tank: 100 L',
+      description: `Scrubbing Width: 650 mm
+Suction / Squeegee Width: 870 mm
+Theoretical Area Coverage: 4,225 m2/hr
+Working Speed: Up to 6.5 km/hr (Travel speed up to 7 km/hr)
+Power Supply / Battery: 24 V DC / 200 Ah
+Total Power: 1,600 W
+Brushes: 2 disc brushes, 333 mm diameter each, running at 180 RPM
+Brush Pressure: 25 kg (with additional brush pressure option)
+Solution / Fresh Water Tank: 100 L
+Recovery / Dirty Water Tank: 100 L`,
       days: 1,
       uom: 'NOS',
-      rate: 27000.00,
-      amount: 27000.00,
+      rate: 27000.0,
+      amount: 27000.0,
     },
   ]);
 
@@ -127,10 +287,10 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
   const [applyTax, setApplyTax] = useState<boolean>(true);
   const [taxPercent, setTaxPercent] = useState<number>(18);
 
-  // 6. Product Search Bar State
+  // 6. Product Search Bar State (Pre-populated with Kleanmax Pro products)
   const [productSearchQuery, setProductSearchQuery] = useState<string>('');
-  const [availableProducts, setAvailableProducts] = useState<Service[]>([]);
-  const [searchResults, setSearchResults] = useState<Service[]>([]);
+  const [availableProducts, setAvailableProducts] = useState<Service[]>(DEFAULT_KLEANMAXPRO_PRODUCTS as Service[]);
+  const [searchResults, setSearchResults] = useState<Service[]>(DEFAULT_KLEANMAXPRO_PRODUCTS as Service[]);
   const [searchDropdownOpen, setSearchDropdownOpen] = useState<boolean>(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
@@ -180,7 +340,16 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
 
       setCustomerList(custs);
       setCompany(comp);
-      setAvailableProducts(services);
+
+      // Merge backend services with default machines, keeping RB-800 & RB-650 prioritized at top
+      const combinedMap = new Map<string, Service>();
+      (DEFAULT_KLEANMAXPRO_PRODUCTS as Service[]).forEach((p) => combinedMap.set(p.service_code, p));
+      if (Array.isArray(services) && services.length > 0) {
+        services.forEach((s) => combinedMap.set(s.service_code, s));
+      }
+      const combinedList = Array.from(combinedMap.values());
+      setAvailableProducts(combinedList);
+      setSearchResults(combinedList);
 
       if (custs.length > 0) {
         setSelectedCustomerId(custs[0].id);
@@ -193,7 +362,7 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
   // Filter products as employee types in search bar
   useEffect(() => {
     if (!productSearchQuery.trim()) {
-      setSearchResults(availableProducts.slice(0, 8));
+      setSearchResults(availableProducts);
     } else {
       const q = productSearchQuery.toLowerCase();
       const filtered = availableProducts.filter((p) =>
@@ -400,7 +569,7 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
         company_code: 'kleanmaxpro',
         quotation_number: quotationNo.trim() || 'KMP/0001',
         quotation_type: 'rental',
-        quotation_date: quotationDate,
+        quotation_date: toISODate(quotationDate),
         job_description: quotationTitle,
         notes: notes,
         terms_and_conditions: TERMS_AND_CONDITIONS.join('\n'),
@@ -425,24 +594,36 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
   };
 
   const handleDownloadDocx = async () => {
-    let quoteId = savedQuoteId;
-    if (!quoteId) {
-      quoteId = await handleSaveToDatabase();
-    }
-    if (quoteId) {
-      setToastMsg('Generating Word (.docx) document with authentic letterhead...');
-      await api.quotations.downloadDocx(quoteId, `${quotationNo.replace('/', '_')}_KleanmaxPro.docx`);
+    try {
+      let quoteId = savedQuoteId;
+      if (!quoteId) {
+        quoteId = await handleSaveToDatabase();
+      }
+      if (quoteId) {
+        setToastMsg('Generating Word (.docx) document with authentic letterhead...');
+        await api.quotations.downloadDocx(quoteId, `${quotationNo.replace('/', '_')}_KleanmaxPro.docx`);
+        setToastMsg('Word document (.docx) downloaded successfully!');
+      }
+    } catch (err: any) {
+      console.error('Download docx error:', err);
+      alert(err.message || 'Failed to download Word document');
     }
   };
 
   const handleDownloadPdf = async () => {
-    let quoteId = savedQuoteId;
-    if (!quoteId) {
-      quoteId = await handleSaveToDatabase();
-    }
-    if (quoteId) {
-      setToastMsg('Generating official PDF with authentic letterhead...');
-      await api.quotations.downloadPdf(quoteId, `${quotationNo.replace('/', '_')}_KleanmaxPro.pdf`);
+    try {
+      let quoteId = savedQuoteId;
+      if (!quoteId) {
+        quoteId = await handleSaveToDatabase();
+      }
+      if (quoteId) {
+        setToastMsg('Generating official PDF with authentic letterhead...');
+        await api.quotations.downloadPdf(quoteId, `${quotationNo.replace('/', '_')}_KleanmaxPro.pdf`);
+        setToastMsg('Official PDF downloaded successfully!');
+      }
+    } catch (err: any) {
+      console.error('Download PDF error:', err);
+      alert(err.message || 'Failed to download PDF');
     }
   };
 
@@ -671,11 +852,11 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
               </div>
             </div>
 
-            {/* Right: Quotation Number & Date (Editable & Auto-Incrementing) */}
+            {/* Right: Quotation Number & Date in DD/MM/YYYY (Indian Standard) */}
             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex flex-col justify-center space-y-3">
               <div>
                 <label className="block text-[11px] font-black uppercase text-slate-700 mb-1">
-                  Quotation Date :-
+                  Revised Quotation No :-
                 </label>
                 <div className="flex items-center gap-2">
                   <input
@@ -705,12 +886,26 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
                 <label className="block text-[11px] font-black uppercase text-slate-700 mb-1">
                   DATE :-
                 </label>
-                <input
-                  type="date"
-                  value={quotationDate}
-                  onChange={(e) => setQuotationDate(e.target.value)}
-                  className="w-full text-xs font-bold text-slate-900 border border-slate-300 rounded-xl p-2 bg-white"
-                />
+                <div className="relative flex items-center">
+                  <input
+                    type="text"
+                    value={quotationDate}
+                    onChange={(e) => setQuotationDate(e.target.value)}
+                    placeholder="DD/MM/YYYY (e.g. 04/11/2026)"
+                    className="w-full text-xs font-bold text-slate-900 border border-slate-300 rounded-xl p-2.5 bg-white pr-9 focus:ring-1 focus:ring-amber-500"
+                  />
+                  <input
+                    type="date"
+                    tabIndex={-1}
+                    value={toISODate(quotationDate)}
+                    onChange={(e) => setQuotationDate(fromISODate(e.target.value))}
+                    className="absolute right-2 opacity-60 hover:opacity-100 cursor-pointer w-6 h-6 border-none bg-transparent"
+                    title="Select date from calendar"
+                  />
+                </div>
+                <span className="text-[10px] text-slate-500 block mt-0.5">
+                  Indian order: DD/MM/YYYY. Directly editable or click calendar icon.
+                </span>
               </div>
             </div>
           </div>
@@ -813,9 +1008,10 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
             <table className="w-full text-xs border-collapse">
               <thead>
                 <tr className="bg-slate-900 text-white font-black uppercase text-[11px] tracking-wider">
-                  <th className="py-3 px-3 text-center w-14">SL NO</th>
-                  <th className="py-3 px-3 text-left">DESCRIPTION & MACHINE PHOTO</th>
-                  <th className="py-3 px-2 text-center w-28">DAYS / QTY</th>
+                  <th className="py-3 px-3 text-center w-12">SL NO</th>
+                  <th className="py-3 px-3 text-center w-48 md:w-56">MACHINE PHOTO</th>
+                  <th className="py-3 px-3 text-left">DESCRIPTION & TECHNICAL SPECIFICATIONS</th>
+                  <th className="py-3 px-2 text-center w-24">DAYS / QTY</th>
                   <th className="py-3 px-2 text-center w-20">UOM</th>
                   <th className="py-3 px-3 text-right w-36">PER MONTHLY RENT (₹)</th>
                   <th className="py-3 px-3 text-right w-36">AMOUNT (₹)</th>
@@ -825,7 +1021,7 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
               <tbody className="divide-y divide-slate-200 bg-white">
                 {items.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-8 text-center text-slate-400 font-bold">
+                    <td colSpan={8} className="py-8 text-center text-slate-400 font-bold">
                       No products added yet. Use the search bar above to add machines.
                     </td>
                   </tr>
@@ -833,54 +1029,59 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
                   items.map((item, idx) => (
                     <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
                       {/* SL NO */}
-                      <td className="py-3 px-3 text-center font-bold text-slate-600 align-top">
+                      <td className="py-4 px-3 text-center font-bold text-slate-600 align-top">
                         {idx + 1}.
                       </td>
 
-                      {/* Description & Machine Photo */}
-                      <td className="py-3 px-3 align-top space-y-2">
-                        <div className="flex items-start gap-3">
-                          {/* Machine Photo */}
-                          <div className="shrink-0 w-20 h-20 bg-slate-50 border border-slate-200 rounded-xl p-1 flex items-center justify-center overflow-hidden">
-                            <img
-                              src={item.image_url || getProductImage(item.item_name)}
-                              alt={item.item_name}
-                              className="max-h-full max-w-full object-contain"
-                              onError={(e) => {
-                                (e.target as HTMLElement).style.display = 'none';
-                              }}
-                            />
-                          </div>
-                          
-                          <div className="flex-1 space-y-1">
-                            <input
-                              type="text"
-                              value={item.item_name}
-                              onChange={(e) => handleUpdateItem(item.id, 'item_name', e.target.value)}
-                              className="w-full font-black text-xs text-slate-900 border border-slate-300 rounded-lg p-1.5 focus:ring-1 focus:ring-amber-500 uppercase"
-                              placeholder="Machine Name"
-                            />
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-[10px] text-slate-400">Photo:</span>
-                              <input
-                                type="text"
-                                value={item.image_url || ''}
-                                onChange={(e) => handleUpdateItem(item.id, 'image_url', e.target.value)}
-                                className="text-[10px] text-slate-500 border border-slate-200 rounded px-1.5 py-0.5 w-44"
-                                placeholder="/products/rb800.png"
-                              />
-                            </div>
-                          </div>
+                      {/* MACHINE PHOTO - Prominent and filling the column */}
+                      <td className="py-4 px-3 align-top text-center w-48 md:w-56 bg-slate-50/40">
+                        <div className="w-full h-36 md:h-44 bg-white border-2 border-slate-200 rounded-2xl p-2.5 flex items-center justify-center overflow-hidden shadow-xs hover:border-amber-400 transition-colors">
+                          <img
+                            src={item.image_url || getProductImage(item.item_name)}
+                            alt={item.item_name}
+                            className="w-full h-full object-contain"
+                            onError={(e) => {
+                              (e.target as HTMLElement).style.display = 'none';
+                            }}
+                          />
+                        </div>
+                        <div className="mt-2">
+                          <input
+                            type="text"
+                            value={item.image_url || ''}
+                            onChange={(e) => handleUpdateItem(item.id, 'image_url', e.target.value)}
+                            className="text-[10px] text-slate-500 border border-slate-200 rounded-lg px-2 py-1 w-full text-center bg-white"
+                            placeholder="Image URL (/products/rb800.png)"
+                            title="Machine Photo URL or Path"
+                          />
+                        </div>
+                      </td>
+
+                      {/* Description & Technical Specifications */}
+                      <td className="py-4 px-3 align-top space-y-2">
+                        <div>
+                          <input
+                            type="text"
+                            value={item.item_name}
+                            onChange={(e) => handleUpdateItem(item.id, 'item_name', e.target.value)}
+                            className="w-full font-black text-xs md:text-sm text-slate-900 border border-slate-300 rounded-xl p-2 focus:ring-1 focus:ring-amber-500 uppercase tracking-wide bg-slate-50/40"
+                            placeholder="Machine Name / Title"
+                          />
                         </div>
 
                         {/* Technical Specifications Textarea */}
-                        <textarea
-                          rows={4}
-                          value={item.description}
-                          onChange={(e) => handleUpdateItem(item.id, 'description', e.target.value)}
-                          placeholder="Technical Specs (Brush width, suction width, coverage area, battery, tank, etc.)"
-                          className="w-full text-[11px] font-mono text-slate-600 border border-slate-200 rounded-lg p-2 leading-relaxed bg-slate-50/50"
-                        />
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">
+                            Technical Specifications:
+                          </label>
+                          <textarea
+                            rows={7}
+                            value={item.description}
+                            onChange={(e) => handleUpdateItem(item.id, 'description', e.target.value)}
+                            placeholder="Technical Specs (Brush width, suction width, coverage area, battery, tank, etc.)"
+                            className="w-full text-[11px] font-mono text-slate-800 bg-white border border-slate-300 rounded-xl p-2.5 leading-relaxed focus:ring-1 focus:ring-amber-500"
+                          />
+                        </div>
                       </td>
 
                       {/* Days / Qty with + and - step buttons */}
@@ -1182,7 +1383,7 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
                     {phone && <div>Ph: {phone}</div>}
                   </div>
                   <div className="text-right">
-                    <div>Quotation Date :- <strong>{quotationNo}</strong></div>
+                    <div>Revised Quotation No :- <strong>{quotationNo}</strong></div>
                     <div>DATE :- <strong>{quotationDate}</strong></div>
                   </div>
                 </div>
@@ -1195,49 +1396,54 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
                 <table className="w-full text-xs border border-slate-300 border-collapse">
                   <thead>
                     <tr className="bg-slate-900 text-white font-bold">
-                      <th className="p-2 text-center">SL NO</th>
-                      <th className="p-2 text-left">DESCRIPTION</th>
-                      <th className="p-2 text-center">Days</th>
-                      <th className="p-2 text-center">UOM</th>
-                      <th className="p-2 text-right">PER MONTHLY RENT</th>
-                      <th className="p-2 text-right">AMOUNT</th>
+                      <th className="p-2 text-center w-12">SL NO</th>
+                      <th className="p-2 text-center w-36">MACHINE PHOTO</th>
+                      <th className="p-2 text-left">DESCRIPTION & SPECIFICATIONS</th>
+                      <th className="p-2 text-center w-16">Days</th>
+                      <th className="p-2 text-center w-16">UOM</th>
+                      <th className="p-2 text-right w-28">PER MONTHLY RENT</th>
+                      <th className="p-2 text-right w-28">AMOUNT</th>
                     </tr>
                   </thead>
                   <tbody>
                     {items.map((it, idx) => (
                       <tr key={it.id} className="border-t border-slate-200">
-                        <td className="p-2 text-center">{idx + 1}.</td>
-                        <td className="p-2">
-                          <div className="font-bold text-slate-900">{it.item_name}</div>
+                        <td className="p-2 text-center align-top font-bold">{idx + 1}.</td>
+                        <td className="p-2 text-center align-top w-36 bg-slate-50/50">
                           {it.image_url && (
-                            <img src={it.image_url} alt={it.item_name} className="h-16 my-1 object-contain" />
+                            <div className="w-32 h-28 mx-auto bg-white border border-slate-200 rounded-xl p-1.5 flex items-center justify-center overflow-hidden">
+                              <img src={it.image_url} alt={it.item_name} className="w-full h-full object-contain" />
+                            </div>
                           )}
-                          <pre className="text-[10px] font-mono text-slate-600 whitespace-pre-wrap font-sans">{it.description}</pre>
                         </td>
-                        <td className="p-2 text-center font-bold">{it.days}</td>
-                        <td className="p-2 text-center">{it.uom}</td>
-                        <td className="p-2 text-right">₹{Number(it.rate).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                        <td className="p-2 text-right font-bold">₹{Number(it.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                        <td className="p-2 align-top">
+                          <div className="font-bold text-slate-900 text-sm uppercase">{it.item_name}</div>
+                          <pre className="text-[10px] font-mono text-slate-700 whitespace-pre-wrap mt-1 leading-snug">{it.description}</pre>
+                        </td>
+                        <td className="p-2 text-center font-bold align-top">{it.days}</td>
+                        <td className="p-2 text-center align-top">{it.uom}</td>
+                        <td className="p-2 text-right align-top">₹{Number(it.rate).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                        <td className="p-2 text-right font-bold align-top">₹{Number(it.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                       </tr>
                     ))}
                     <tr className="border-t-2 border-slate-300 font-bold bg-slate-50">
-                      <td colSpan={5} className="p-2 text-right">SUB TOTAL:</td>
+                      <td colSpan={6} className="p-2 text-right">SUB TOTAL:</td>
                       <td className="p-2 text-right">₹{subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                     </tr>
                     {applyTax && (
                       <>
                         <tr className="border-t border-slate-200 text-slate-700">
-                          <td colSpan={5} className="p-1.5 text-right">CGST (9%):</td>
+                          <td colSpan={6} className="p-1.5 text-right">CGST (9%):</td>
                           <td className="p-1.5 text-right">₹{cgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                         </tr>
                         <tr className="border-t border-slate-200 text-slate-700">
-                          <td colSpan={5} className="p-1.5 text-right">SGST (9%):</td>
+                          <td colSpan={6} className="p-1.5 text-right">SGST (9%):</td>
                           <td className="p-1.5 text-right">₹{sgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                         </tr>
                       </>
                     )}
                     <tr className="border-t-2 border-slate-900 font-black bg-amber-100 text-sm">
-                      <td colSpan={5} className="p-2 text-right">TOTAL:</td>
+                      <td colSpan={6} className="p-2 text-right">TOTAL:</td>
                       <td className="p-2 text-right">₹{totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                     </tr>
                   </tbody>

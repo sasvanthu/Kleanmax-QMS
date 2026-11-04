@@ -65,28 +65,72 @@ def render_quotation_html(
 
 
 async def generate_pdf_bytes_async(html_content: str) -> bytes:
-    """Uses Playwright to render pixel-perfect A4 PDF with background graphics enabled."""
+    """Uses Playwright or native Edge Chromium to render pixel-perfect A4 PDF with background graphics enabled."""
+    edge_paths = [
+        r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+        r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
+        r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+        r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+    ]
+    exec_path = None
+    for p in edge_paths:
+        if os.path.exists(p):
+            exec_path = p
+            break
+
+    # 1. Try Playwright with native Edge or installed Chromium
     try:
         from playwright.async_api import async_playwright
         async with async_playwright() as p:
-            browser = await p.chromium.launch(headless=True)
+            launch_kwargs = {"headless": True}
+            if exec_path:
+                launch_kwargs["executable_path"] = exec_path
+            browser = await p.chromium.launch(**launch_kwargs)
             page = await browser.new_page()
             await page.set_content(html_content, wait_until="networkidle")
             pdf_bytes = await page.pdf(
                 format="A4",
                 print_background=True,
-                margin={"top": "12mm", "right": "15mm", "bottom": "15mm", "left": "15mm"}
+                margin={"top": "10mm", "right": "12mm", "bottom": "12mm", "left": "12mm"}
             )
             await browser.close()
             return pdf_bytes
     except Exception as e:
-        # Fallback to generating printable HTML converted with weasyprint or returning bytes
+        logger.warning(f"Playwright PDF generation failed: {e}, falling back to system browser CLI")
+
+    # 2. Rock-solid fallback using Edge/Chrome CLI --print-to-pdf
+    if exec_path:
+        temp_html = None
+        temp_pdf = None
         try:
-            import weasyprint
-            return weasyprint.HTML(string=html_content).write_pdf()
-        except Exception:
-            # If Playwright browser isn't installed and weasyprint isn't present, return html as bytes
-            return html_content.encode("utf-8")
+            with tempfile.NamedTemporaryFile(suffix=".html", delete=False, mode="w", encoding="utf-8") as f:
+                f.write(html_content)
+                temp_html = f.name
+            temp_pdf = temp_html.replace(".html", ".pdf")
+            cmd = [
+                exec_path,
+                "--headless",
+                "--disable-gpu",
+                "--no-pdf-header-footer",
+                f"--print-to-pdf={temp_pdf}",
+                temp_html
+            ]
+            res = subprocess.run(cmd, capture_output=True, timeout=25)
+            if os.path.exists(temp_pdf) and os.path.getsize(temp_pdf) > 1000:
+                with open(temp_pdf, "rb") as pf:
+                    return pf.read()
+        except Exception as cli_err:
+            logger.error(f"Edge CLI PDF fallback error: {cli_err}")
+        finally:
+            if temp_html and os.path.exists(temp_html):
+                try: os.remove(temp_html)
+                except Exception: pass
+            if temp_pdf and os.path.exists(temp_pdf):
+                try: os.remove(temp_pdf)
+                except Exception: pass
+
+    # 3. Final fallback: return html as bytes
+    return html_content.encode("utf-8")
 
 
 def generate_quotation_pdf(
