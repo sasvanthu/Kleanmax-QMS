@@ -143,6 +143,7 @@ export interface Quotation {
   warranty_terms?: string;
   terms_and_conditions?: string;
   notes?: string;
+  snapshot_json?: string;
   
   subtotal: number;
   discount_type: 'none' | 'percentage' | 'fixed';

@@ -330,8 +330,52 @@
         {% endif %}
     </div>
 
-    <!-- 5. Items / Spares / Services Table -->
-    {% if items and items|length > 0 %}
+    <!-- 5. Items / Spares / Services Table or Dynamic Word Scope -->
+    {% if company_code == 'kleanmax' and ('CLEANING' in quotation.job_description|default('')|upper or quotation.notes) %}
+    <!-- DYNAMIC WORD-PROCESSOR SCOPE OF WORK (CONTINUOUS NATURAL FLOW) -->
+    <div style="margin: 15px 0; font-size: 8.5pt; line-height: 1.55; color: #1e293b;">
+        {% set scope_lines = quotation.notes.split('\n') if quotation.notes else [] %}
+        {% for line in scope_lines %}
+            {% set trimmed = line.strip() %}
+            {% if trimmed.endswith('SCOPE') or trimmed.startswith('HAND OVER') or trimmed.startswith('PLANT') %}
+                <div style="font-weight: 800; font-size: 9.5pt; color: #0284c7; margin-top: 14px; margin-bottom: 4px; text-transform: uppercase; border-bottom: 1.5px solid #e0f2fe; padding-bottom: 2px; page-break-after: avoid;">
+                    {{ trimmed }}
+                </div>
+            {% elif trimmed.startswith('•') or trimmed.startswith('-') %}
+                <div style="margin-left: 12px; margin-bottom: 4px;">
+                    <span style="color: #0284c7; font-weight: bold;">•</span> {{ trimmed[1:].strip() }}
+                </div>
+            {% elif trimmed %}
+                <div style="margin-bottom: 6px;">{{ trimmed }}</div>
+            {% else %}
+                <div style="height: 6px;"></div>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    <!-- COMMERCIALS & APPROXIMATE AREA CARD -->
+    <div style="background-color: #fefce8; border: 1.5px solid #fde047; border-radius: 6px; padding: 12px; margin: 15px 0; page-break-inside: avoid;">
+        <div style="font-weight: 800; color: #854d0e; font-size: 9pt; margin-bottom: 4px;">COMMERCIAL DETAILS & APPROXIMATE CLEANABLE AREA</div>
+        <div style="font-size: 8pt; color: #451a03; margin-bottom: 6px;">
+            <strong>NOTE :</strong> THIS PRICE NOT INCLUDING OF BOOM LIFT. ITS CUSTOMER SCOPE. WHAT CHARGES WILL BE ADDED WE WILL RAISE THE INVOICE SEPARATELY.
+        </div>
+        <table style="width: 100%; border-collapse: collapse; margin-top: 6px;">
+            <tr>
+                <td style="font-weight: 700; color: #0f172a; font-size: 8.5pt;">TOTAL CLEANABLE SQFT (APPROX) :</td>
+                <td style="font-weight: 800; font-size: 9pt; text-align: right; color: #0369a1;">{{ quotation.customer_ref or '1,38,000 SQFT' }}</td>
+            </tr>
+            <tr style="border-top: 1px solid #fef08a;">
+                <td style="font-weight: 800; font-size: 10pt; color: #0f172a; padding-top: 4px;">TOTAL PROJECT VALUE :</td>
+                <td style="font-weight: 900; font-size: 11pt; text-align: right; color: #0f172a; padding-top: 4px;">₹ {{ "%.2f"|format(quotation.final_amount) }}</td>
+            </tr>
+        </table>
+        {% if quotation.amount_in_words %}
+        <div style="font-size: 8pt; font-style: italic; color: #475569; margin-top: 4px;">
+            Amount in words: {{ quotation.amount_in_words }}
+        </div>
+        {% endif %}
+    </div>
+    {% elif items and items|length > 0 %}
     <table class="data-table">
         <thead>
             <tr>
@@ -562,6 +606,22 @@
             <li>Commercial Cleaning & Painting Services</li>
         </ul>
     </div>
+    {% elif company_code == 'kleanmax' %}
+    <!-- Kleanmax Authentic Terms from Wilston Power Plant Proposal -->
+    <div style="margin-top: 10px;">
+        <div class="section-heading">TERMS AND CONDITIONS</div>
+        <ol style="margin: 4px 0 0 16px; padding: 0; font-size: 8pt; color: #334155; line-height: 1.5;">
+            <li><strong>GST :</strong> PRICES ARE EXCLUSIVE OF GST (18%). GST WILL BE CHARGED EXTRA.</li>
+            <li><strong>RECLEANING POLICY :</strong> ONCE THE FLOOR IS HANDED OVER, ANY REQUEST FOR RECLEANING WILL BE SUBJECT TO ADDITIONAL CHARGES.</li>
+            <li><strong>UTILITIES :</strong> THE CLIENT MUST ARRANGE FOR A WATER AND ELECTRICITY SUPPLY DURING THE SERVICE.</li>
+            <li><strong>WORKING AREA CLEARANCE :</strong> THE CLIENT IS RESPONSIBLE FOR CLEARING THE WORKING AREA. CARE MUST BE TAKEN DURING SERVICE HOURS TO AVOID SPOILING THE CLEANED SURFACES.</li>
+            <li><strong>PAYMENT TERMS :</strong> A 50% ADVANCE PAYMENT IS REQUIRED. THE REMAINING BALANCE IS DUE UPON COMPLETION OF THE WORK. NO CREDIT TERMS ARE OFFERED.</li>
+            <li><strong>ADDITIONAL SERVICES :</strong> INFORM US IN ADVANCE IF ANY ADDITIONAL SERVICES ARE REQUIRED BEYOND THE SCOPE MENTIONED.</li>
+        </ol>
+        <div style="margin-top: 8px; font-weight: 700; color: #0284c7; font-size: 8pt; font-style: italic;">
+            YOUR SATISFACTION IS OUR GOAL. LOOKING FORWARD TO YOUR FAVORABLE ORDERS.
+        </div>
+    </div>
     {% else %}
     <!-- Spares and Service After-Table -->
     <div style="margin-top: 10px;">
@@ -593,6 +653,11 @@
         <div>• Bank Name : <strong>IDFC BANK</strong></div>
         <div>• A/c No. : <strong>73388820361</strong></div>
         <div>• Branch & IFS Code: <strong>Chennai – Iyyapanthangal Branch & IDFB0081831</strong></div>
+        {% elif company_code == 'kleanmax' %}
+        <div>• A/c Holder's Name : <strong>KLEAN MAX BANK</strong></div>
+        <div>• Bank Name : <strong>KVB BANK A/C 1278135000007113</strong></div>
+        <div>• A/c No. : <strong>1278135000007113</strong></div>
+        <div>• Branch & IFS Code: <strong>ASHOK NAGAR & KVBL0001278</strong></div>
         {% else %}
         <div>• A/c Holder's Name : <strong>{{ company.bank_account_name or company.company_name or 'KLEAN MAX PRO' }}</strong></div>
         <div>• Bank Name : <strong>{{ company.bank_name or 'ICICI BANK KMP' }}</strong></div>
@@ -634,6 +699,13 @@
     <div class="computer-notice">
         This is a computer generated document and authenticated by {{ company.company_name or 'Klean max pro' }}. Hence, it can be considered valid even if not signed manually.
     </div>
+
+    {% if company_code == 'kleanmax' %}
+    <div style="margin-top: 30px; text-align: center; border-top: 2px dashed #cbd5e1; padding-top: 20px; page-break-inside: avoid;">
+        <div style="font-size: 16pt; font-weight: 900; letter-spacing: 6px; color: #0f172a;">T H A N K &nbsp; Y O U</div>
+        <div style="font-size: 8pt; color: #64748b; margin-top: 4px;">KLEAN MAX • NO 6, B6, JAYAM INDUSTRIAL ESTATE, VANAGARAM, CHENNAI - 600077</div>
+    </div>
+    {% endif %}
 
     {% if footer_base64 %}
     <div style="text-align: center; margin-top: 10px;">

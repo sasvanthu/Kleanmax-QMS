@@ -77,7 +77,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => 
             </button>
 
             <button
-              onClick={() => onNavigate('kleanmax_spares')}
+              onClick={() => onNavigate('kleanmax_generator')}
               className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 currentWorkspace === 'kleanmax'
                   ? 'bg-sky-400 text-slate-950 font-black shadow-xs'
@@ -88,7 +88,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => 
                 <span className="w-2 h-2 rounded-full bg-sky-400" />
                 <span>🔧 Kleanmax</span>
               </div>
-              <span className="text-[9px] opacity-75">Spares</span>
+              <span className="text-[9px] opacity-75">Cleaning</span>
             </button>
 
             <button
@@ -275,18 +275,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => 
 
             {/* Page 1: Quotation Generator */}
             <button
-              onClick={() => onNavigate('kleanmax_spares')}
+              onClick={() => onNavigate('kleanmax_generator')}
               className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${
-                currentPage === 'kleanmax_spares' || currentPage === 'kleanmax_sales'
+                currentPage === 'kleanmax_generator' || currentPage === 'kleanmax_spares' || currentPage === 'kleanmax_sales'
                   ? 'bg-sky-400 text-slate-950 font-black shadow-xs'
                   : 'text-slate-300 hover:bg-slate-800 hover:text-white'
               }`}
             >
-              <Wrench className={`w-4 h-4 ${currentPage === 'kleanmax_spares' ? 'text-slate-950' : 'text-sky-400'}`} />
+              <FileText className={`w-4 h-4 ${currentPage === 'kleanmax_generator' ? 'text-slate-950' : 'text-sky-400'}`} />
               <div className="text-left">
-                <div>1. Quotation Generator</div>
-                <div className={`text-[10px] ${currentPage === 'kleanmax_spares' ? 'text-slate-900 font-semibold' : 'text-slate-400'}`}>
-                  Spares & Equipment Sales
+                <div>1. Proposal Generator</div>
+                <div className={`text-[10px] ${currentPage === 'kleanmax_generator' ? 'text-slate-900 font-semibold' : 'text-slate-400'}`}>
+                  Commercial Cleaning Proposals
                 </div>
               </div>
             </button>

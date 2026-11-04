@@ -21,6 +21,7 @@ import { CompanySettings } from './pages/CompanySettings';
 import { KleanmaxProAreaQuotation } from './pages/KleanmaxProAreaQuotation';
 import { KleanmaxSparesQuotation } from './pages/KleanmaxSparesQuotation';
 import { KleanmaxSalesQuotation } from './pages/KleanmaxSalesQuotation';
+import { KleanmaxGenerator } from './pages/KleanmaxGenerator';
 import { UniquePaintersGenerator } from './pages/UniquePaintersGenerator';
 import { CleantechGenerator } from './pages/CleantechGenerator';
 import { PdfPreviewModal } from './components/quotation/PdfPreviewModal';
@@ -105,9 +106,10 @@ export const App: React.FC = () => {
 
       // DASHBOARD 3: COMPANY 2 - KLEANMAX (3 Pages: Generator, Past Quotes, Editor)
       case 'kleanmax_dash':
+      case 'kleanmax_generator':
       case 'kleanmax_spares':
         return (
-          <KleanmaxSparesQuotation
+          <KleanmaxGenerator
             currentUser={currentUser}
             onNavigate={handleNavigate}
             onOpenPreview={handleOpenPreview}

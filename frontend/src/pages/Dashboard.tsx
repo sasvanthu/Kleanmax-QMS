@@ -29,6 +29,61 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // Add Product for Kleanmax Pro Modal State
+  const [kmpModalOpen, setKmpModalOpen] = useState(false);
+  const [kmpProdName, setKmpProdName] = useState('');
+  const [kmpProdCode, setKmpProdCode] = useState('');
+  const [kmpCategory, setKmpCategory] = useState<'rental' | 'equipment_sales' | 'cleaning' | 'spare_parts'>('rental');
+  const [kmpRate, setKmpRate] = useState<number>(30000.0);
+  const [kmpUom, setKmpUom] = useState('NOS');
+  const [kmpDescription, setKmpDescription] = useState('');
+  const [kmpSaving, setKmpSaving] = useState(false);
+  const [kmpSuccess, setKmpSuccess] = useState('');
+
+  const openAddKmpModal = () => {
+    setKmpProdName('');
+    setKmpProdCode(`KMP-PROD-${Math.floor(100 + Math.random() * 900)}`);
+    setKmpCategory('rental');
+    setKmpRate(30000.0);
+    setKmpUom('NOS');
+    setKmpDescription('');
+    setKmpSuccess('');
+    setKmpModalOpen(true);
+  };
+
+  const handleCreateKmpProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!kmpProdName.trim()) {
+      alert('Please enter a product / machine name');
+      return;
+    }
+    setKmpSaving(true);
+    try {
+      await api.services.create({
+        service_name: kmpProdName.trim(),
+        service_code: kmpProdCode.trim() || `KMP-PROD-${Date.now()}`,
+        company_code: 'kleanmaxpro',
+        category: kmpCategory,
+        quotation_type: kmpCategory === 'rental' ? 'rental' : 'item_based',
+        standard_rate: Number(kmpRate) || 0,
+        default_uom: kmpUom,
+        hsn_sac_code: '8479',
+        default_tax_rate: 18.0,
+        description: kmpDescription.trim(),
+        is_active: true,
+      });
+      setKmpSuccess(`Product "${kmpProdName}" added successfully to Kleanmax Pro!`);
+      setTimeout(() => {
+        setKmpSuccess('');
+        setKmpModalOpen(false);
+      }, 1500);
+    } catch (err: any) {
+      alert(err.message || 'Failed to add product');
+    } finally {
+      setKmpSaving(false);
+    }
+  };
+
   useEffect(() => {
     loadData();
   }, []);
@@ -288,6 +343,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <span>3. Editor</span>
                 </button>
               </div>
+              {/* Direct Add Product for Kleanmax Pro */}
+              <button
+                onClick={openAddKmpModal}
+                className="w-full py-1.5 bg-slate-900 hover:bg-slate-800 text-amber-400 font-extrabold text-[11px] rounded-lg flex items-center justify-center gap-1 border border-amber-400/40 shadow-2xs transition-all"
+              >
+                <PlusCircle className="w-3.5 h-3.5 text-amber-400" />
+                <span>+ Add Product (Kleanmax Pro)</span>
+              </button>
             </div>
           </div>
 
@@ -321,11 +384,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
             <div className="mt-5 space-y-1.5">
               <button
-                onClick={() => onNavigate('kleanmax_spares')}
+                onClick={() => onNavigate('kleanmax_generator')}
                 className="w-full py-2 bg-sky-500 hover:bg-sky-400 text-slate-950 font-black text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-xs transition-all"
               >
-                <Wrench className="w-3.5 h-3.5" />
-                <span>1. Quotation Generator</span>
+                <FileText className="w-3.5 h-3.5" />
+                <span>1. Proposal Generator</span>
               </button>
               <div className="grid grid-cols-2 gap-1.5">
                 <button
@@ -609,6 +672,144 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
         )}
       </div>
+
+      {/* ADD PRODUCT FOR KLEANMAX PRO MODAL */}
+      {kmpModalOpen && (
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 relative">
+            <button
+              onClick={() => setKmpModalOpen(false)}
+              className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+            >
+              <AlertCircle className="w-5 h-5 hidden" />
+              <span className="text-xl font-bold">×</span>
+            </button>
+
+            <div className="flex items-center gap-2 mb-4">
+              <span className="w-3 h-3 rounded-full bg-amber-400 animate-pulse" />
+              <h2 className="text-lg font-black text-slate-900 tracking-tight">
+                Add New Product / Machine for Klean Max Pro
+              </h2>
+            </div>
+            <p className="text-xs text-slate-500 mb-5">
+              Newly created products will immediately appear in the Kleanmax Pro search catalogue and quotation dropdowns.
+            </p>
+
+            {kmpSuccess && (
+              <div className="mb-4 p-3 bg-emerald-50 border border-emerald-300 text-emerald-800 rounded-xl text-xs font-bold flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                <span>{kmpSuccess}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleCreateKmpProduct} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                  Product / Machine Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={kmpProdName}
+                  onChange={e => setKmpProdName(e.target.value)}
+                  placeholder="e.g. RIDE ON SCRUBBER DRYER RB-800"
+                  className="w-full text-xs font-semibold p-2.5 border border-slate-300 rounded-xl focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                    Product SKU / Code
+                  </label>
+                  <input
+                    type="text"
+                    value={kmpProdCode}
+                    onChange={e => setKmpProdCode(e.target.value)}
+                    className="w-full text-xs font-mono p-2 border border-slate-300 rounded-xl"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                    Category
+                  </label>
+                  <select
+                    value={kmpCategory}
+                    onChange={e => setKmpCategory(e.target.value as any)}
+                    className="w-full text-xs font-semibold p-2 border border-slate-300 rounded-xl"
+                  >
+                    <option value="rental">Rental Machine</option>
+                    <option value="equipment_sales">Equipment Sale</option>
+                    <option value="spare_parts">Spare Part / Accessory</option>
+                    <option value="cleaning">Cleaning Service</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                    Standard Rate (₹) *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    required
+                    value={kmpRate}
+                    onChange={e => setKmpRate(parseFloat(e.target.value) || 0)}
+                    className="w-full text-xs font-bold p-2 border border-slate-300 rounded-xl"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                    Unit of Measurement
+                  </label>
+                  <select
+                    value={kmpUom}
+                    onChange={e => setKmpUom(e.target.value)}
+                    className="w-full text-xs font-semibold p-2 border border-slate-300 rounded-xl"
+                  >
+                    <option value="NOS">NOS (Units)</option>
+                    <option value="MONTH">MONTH (Rental)</option>
+                    <option value="DAY">DAY (Daily Rental)</option>
+                    <option value="SET">SET</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                  Machine Specifications / Description
+                </label>
+                <textarea
+                  rows={3}
+                  value={kmpDescription}
+                  onChange={e => setKmpDescription(e.target.value)}
+                  placeholder="e.g. Tank capacity: 120L, Coverage: 4800 m2/hr, 24V battery, includes 2 disc brushes."
+                  className="w-full text-xs p-2.5 border border-slate-300 rounded-xl focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              <div className="pt-3 border-t border-slate-200 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setKmpModalOpen(false)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={kmpSaving}
+                  className="px-5 py-2 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs rounded-xl shadow-sm flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  {kmpSaving ? 'Adding...' : 'Save Product to Kleanmax Pro'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

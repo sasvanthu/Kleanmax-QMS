@@ -4,7 +4,7 @@ import { api } from '../services/api';
 import {
   FileText, Search, PlusCircle, Filter, Eye, Printer, Download,
   CheckCircle2, Send, RotateCcw, AlertTriangle, ChevronRight, X,
-  Wrench, ShoppingCart, Layers, Edit
+  Wrench, ShoppingCart, Layers, Edit, Trash2, ShieldAlert
 } from 'lucide-react';
 
 interface QuotationsListProps {
@@ -61,6 +61,18 @@ export const QuotationsList: React.FC<QuotationsListProps> = ({
     }
   };
 
+  const handleDelete = async (id: string, quotationNumber: string) => {
+    if (!window.confirm(`Are you sure you want to delete quotation ${quotationNumber}? This action is permanent.`)) {
+      return;
+    }
+    try {
+      await api.quotations.delete(id);
+      setQuotations(prev => prev.filter(q => q.id !== id));
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete quotation. Super Admin privileges required.');
+    }
+  };
+
   // Filter by brand division
   const filteredQuotations = quotations.filter((q) => {
     if (brandFilter === 'all') return true;
@@ -110,7 +122,7 @@ export const QuotationsList: React.FC<QuotationsListProps> = ({
               : 'Quotations Directory'}
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            1-click instant PDF download and official records authenticated by Admin.
+            Employees can view, edit, and download official records. Deletion is strictly reserved for Super Admin.
           </p>
         </div>
 
@@ -389,6 +401,17 @@ export const QuotationsList: React.FC<QuotationsListProps> = ({
                           >
                             View
                           </button>
+
+                          {/* Super Admin Delete Option ONLY */}
+                          {currentUser?.role === 'admin' && (
+                            <button
+                              onClick={() => handleDelete(q.id, q.quotation_number)}
+                              className="p-1 hover:bg-rose-100 text-rose-500 hover:text-rose-700 rounded transition-colors"
+                              title="Delete Quotation (Super Admin Only)"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

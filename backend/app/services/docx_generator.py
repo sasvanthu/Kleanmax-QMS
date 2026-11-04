@@ -417,6 +417,18 @@ def generate_quotation_docx_bytes(
             "• Warranty : Warranty 1 Year."
         )
         p_t.add_run(cleantech_terms).font.size = Pt(7.5)
+    elif 'kleanmax' in company_code:
+        kleanmax_terms = (
+            "TERMS AND CONDITIONS:\n"
+            "1. GST: PRICES ARE EXCLUSIVE OF GST (18%). GST WILL BE CHARGED EXTRA.\n"
+            "2. RECLEANING POLICY: ONCE THE FLOOR IS HANDED OVER, ANY REQUEST FOR RECLEANING WILL BE SUBJECT TO ADDITIONAL CHARGES.\n"
+            "3. UTILITIES: THE CLIENT MUST ARRANGE FOR WATER AND ELECTRICITY SUPPLY DURING THE SERVICE.\n"
+            "4. WORKING AREA CLEARANCE: THE CLIENT IS RESPONSIBLE FOR CLEARING THE WORKING AREA.\n"
+            "5. PAYMENT TERMS: A 50% ADVANCE PAYMENT IS REQUIRED. REMAINING BALANCE DUE UPON COMPLETION. NO CREDIT TERMS OFFERED.\n"
+            "6. ADDITIONAL SERVICES: INFORM US IN ADVANCE IF ANY ADDITIONAL SERVICES ARE REQUIRED BEYOND THE SCOPE MENTIONED.\n\n"
+            "YOUR SATISFACTION IS OUR GOAL. LOOKING FORWARD TO YOUR FAVORABLE ORDERS."
+        )
+        p_t.add_run(kleanmax_terms).font.size = Pt(7.5)
     else:
         default_terms = getattr(company, 'terms_and_conditions', None) or (
             "1. GST: Prices are exclusive of GST (18%). GST charged extra.\n"
@@ -440,6 +452,13 @@ def generate_quotation_docx_bytes(
             "• Bank Name: IDFC BANK\n"
             "• A/c No: 73388820361\n"
             "• Branch & IFSC: Chennai - Iyyapanthangal & IDFB0081831"
+        )
+    elif 'kleanmax' in company_code:
+        bank_text = (
+            "• A/c Holder: KLEAN MAX BANK\n"
+            "• Bank Name: KVB BANK A/C 1278135000007113\n"
+            "• A/c No: 1278135000007113\n"
+            "• Branch & IFSC: ASHOK NAGAR & KVBL0001278"
         )
     else:
         bank_name = getattr(company, 'bank_name', 'HDFC Bank') or 'HDFC Bank'
@@ -506,6 +525,18 @@ def generate_quotation_docx_bytes(
         p_footer.paragraph_format.space_before = Pt(4)
         run_footer = p_footer.add_run()
         run_footer.add_picture(str(footer_img_path), width=Inches(7.07))
+
+    if 'kleanmax' in company_code:
+        p_ty = doc.add_paragraph()
+        p_ty.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p_ty.paragraph_format.space_before = Pt(24)
+        r_ty = p_ty.add_run("T H A N K   Y O U\n")
+        r_ty.bold = True
+        r_ty.font.size = Pt(15)
+        r_ty.font.color.rgb = RGBColor(15, 23, 42)
+        r_ty_sub = p_ty.add_run("KLEAN MAX • NO 6, B6, JAYAM INDUSTRIAL ESTATE, VANAGARAM, CHENNAI - 600077")
+        r_ty_sub.font.size = Pt(8)
+        r_ty_sub.font.color.rgb = RGBColor(100, 116, 139)
 
     # Save to buffer
     buf = io.BytesIO()

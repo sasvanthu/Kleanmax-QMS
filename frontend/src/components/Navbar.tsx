@@ -94,12 +94,12 @@ export const Navbar: React.FC<NavbarProps> = ({ currentUser, currentPage, onNavi
               </button>
 
               <button
-                onClick={() => onNavigate('kleanmax_spares')}
+                onClick={() => onNavigate('kleanmax_generator')}
                 className="w-full text-left px-3 py-2 text-xs font-bold text-slate-800 hover:bg-sky-50 rounded-lg flex items-center justify-between"
               >
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-sky-500" />
-                  <span>🔧 Kleanmax Hub</span>
+                  <span>🔧 Kleanmax Cleaning Hub</span>
                 </div>
                 <span className="text-[10px] bg-sky-100 text-sky-800 px-1.5 py-0.5 rounded font-mono">KLM</span>
               </button>

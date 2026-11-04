@@ -80,11 +80,11 @@ export const KleanmaxDashboard: React.FC<KleanmaxDashboardProps> = ({
 
           <div className="flex items-center gap-3">
             <button
-              onClick={() => onNavigate('kleanmax_spares')}
+              onClick={() => onNavigate('kleanmax_generator')}
               className="px-4 py-2.5 bg-sky-500 hover:bg-sky-400 text-slate-950 font-black text-xs rounded-xl shadow-md flex items-center gap-2 transition-all transform active:scale-95"
             >
-              <Wrench className="w-4 h-4" />
-              <span>Spares & Repair Quote</span>
+              <FileText className="w-4 h-4" />
+              <span>Cleaning Proposal Generator</span>
             </button>
             <button
               onClick={() => onNavigate('kleanmax_sales')}

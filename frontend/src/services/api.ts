@@ -148,6 +148,7 @@ export const api = {
     approve: (id: string) => request<Quotation>(`/quotations/${id}/approve`, { method: 'POST' }),
     issue: (id: string) => request<Quotation>(`/quotations/${id}/issue`, { method: 'POST' }),
     cancel: (id: string) => request<Quotation>(`/quotations/${id}/cancel`, { method: 'POST' }),
+    delete: (id: string) => request<{ message: string; id: string }>(`/quotations/${id}`, { method: 'DELETE' }),
     revise: (id: string, reason: string) => request<Quotation>(`/quotations/${id}/revise`, {
       method: 'POST',
       body: JSON.stringify({ revision_reason: reason }),

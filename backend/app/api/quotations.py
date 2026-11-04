@@ -5,7 +5,7 @@ from sqlalchemy import or_
 from typing import List, Optional
 from datetime import date
 from backend.app.core.database import get_db
-from backend.app.core.security import get_current_user, get_optional_current_user
+from backend.app.core.security import get_current_user, get_optional_current_user, require_roles
 from backend.app.models.all_models import (
     Quotation, Customer, Profile, CompanySetting, QuotationSection, QuotationItem
 )
@@ -315,3 +315,23 @@ def download_quotation_docx(
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'}
     )
+
+
+@router.delete("/{id}")
+def delete_quotation_endpoint(
+    id: str,
+    db: Session = Depends(get_db),
+    current_user: Profile = Depends(require_roles(["admin"]))
+):
+    """Only Super Admin can delete a quotation."""
+    quotation = db.query(Quotation).filter(Quotation.id == id).first()
+    if not quotation:
+        raise HTTPException(status_code=404, detail="Quotation not found")
+
+    # Clean up associated items and sections
+    db.query(QuotationItem).filter(QuotationItem.quotation_id == id).delete()
+    db.query(QuotationSection).filter(QuotationSection.quotation_id == id).delete()
+    db.delete(quotation)
+    db.commit()
+
+    return {"message": "Quotation deleted successfully", "id": id}

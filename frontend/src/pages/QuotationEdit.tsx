@@ -1,37 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { Customer, Service, Quotation, User } from '../services/types';
+import React, { useState, useEffect, useRef } from 'react';
+import { Customer, Service, Quotation, User, CompanySetting } from '../services/types';
 import { api } from '../services/api';
 import {
-  ArrowLeft, Save, Eye, Download, FileText, Plus, Trash2,
-  Building, Calendar, DollarSign, Percent, ShieldCheck, Truck,
-  AlertCircle, CheckCircle2, RotateCcw, HelpCircle, Layers
+  FileText, Download, Eye, Save, Sparkles, Plus, Trash2,
+  RefreshCw, CheckCircle2, ArrowLeft, Search, Check,
+  ShieldCheck, Lock, X, Layers, AlignLeft, Calculator,
+  Wrench, Building2
 } from 'lucide-react';
 
-interface EditableItem {
-  id: string;
-  item_name: string;
-  description?: string;
-  hsn_sac?: string;
-  quantity: number;
-  uom: string;
-  unit_price: number;
-  line_total: number;
-}
-
-interface EditableSection {
-  id: string;
-  section_name: string;
-  service_name?: string;
-  length: number;
-  breadth: number;
-  measurement_unit: string;
-  repetitions: number;
-  billable_area: number;
-  applied_rate: number;
-  line_total: number;
-}
-
-interface QuotationEditProps {
+export interface QuotationEditProps {
   quotationId?: string | null;
   initialCompanyCode?: string;
   currentUser: User | null;
@@ -39,12 +16,121 @@ interface QuotationEditProps {
   onOpenPreview: (quotationId: string) => void;
 }
 
+export interface EditableItem {
+  id: string;
+  is_header?: boolean;
+  item_name: string;
+  description?: string;
+  quantity: number;
+  uom: string;
+  rate: number;
+  total: number;
+  hsn_sac?: string;
+}
+
 const COMPANIES = [
-  { code: 'kleanmaxpro', name: 'Klean Max Pro', badgeColor: 'bg-amber-100 text-amber-900 border-amber-300', hex: '#FED10C' },
-  { code: 'kleanmax', name: 'Kleanmax', badgeColor: 'bg-sky-100 text-sky-900 border-sky-300', hex: '#0284C7' },
-  { code: 'uniquepainters', name: 'Unique Painters', badgeColor: 'bg-purple-100 text-purple-900 border-purple-300', hex: '#7C3AED' },
-  { code: 'cleantech', name: 'Cleantech Services', badgeColor: 'bg-teal-100 text-teal-900 border-teal-300', hex: '#0D9488' },
+  { code: 'kleanmaxpro', name: 'Klean Max Pro', badge: 'bg-amber-400 text-slate-950', border: 'border-amber-400', banner: '/headers/header_kleanmaxpro.png', prefix: 'KMP' },
+  { code: 'kleanmax', name: 'Kleanmax', badge: 'bg-sky-500 text-slate-950', border: 'border-sky-400', banner: '/headers/header_kleanmax.png', prefix: 'KLM' },
+  { code: 'cleantech', name: 'Cleantech Services', badge: 'bg-teal-500 text-slate-950', border: 'border-teal-400', banner: '/headers/header_cleantech.png', prefix: 'CTS' },
+  { code: 'uniquepainters', name: 'Unique Painters', badge: 'bg-purple-600 text-white', border: 'border-purple-400', banner: '/headers/header_uniquepainters.png', prefix: 'UNP' },
 ];
+
+const HEADING_PRESETS: Record<string, string[]> = {
+  kleanmaxpro: [
+    'MONTHLY RENTAL QUOTATION',
+    'SALES QUOTATION',
+    'SERVICE QUOTATION',
+    'COMMERCIAL CLEANING QUOTATION'
+  ],
+  kleanmax: [
+    'COMMERCIAL CLEANING PROPOSAL',
+    'SPARES AND SERVICE QUOTATION',
+    'EQUIPMENT SALES QUOTATION',
+    'REPAIR & OVERHAUL QUOTATION'
+  ],
+  cleantech: [
+    'SERVICE QUOTATION',
+    'SPARES AND SERVICE QUOTATION',
+    'SOLAR PANEL CLEANING PROPOSAL',
+    'FACADE CLEANING QUOTATION',
+    'AMC CONTRACT QUOTATION'
+  ],
+  uniquepainters: [
+    'SURFACE COATING & PAINTING QUOTATION',
+    'EPOXY FLOORING PROPOSAL',
+    'INDUSTRIAL REPAINTING QUOTATION',
+    'COMMERCIAL EXTERIOR COATING'
+  ]
+};
+
+export const formatToIndianDate = (dateObj: Date = new Date()): string => {
+  const d = String(dateObj.getDate()).padStart(2, '0');
+  const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const y = dateObj.getFullYear();
+  return `${d}/${m}/${y}`;
+};
+
+export const toISODate = (dateStr: string): string => {
+  if (!dateStr) return new Date().toISOString().split('T')[0];
+  const cleaned = dateStr.trim();
+  const match = cleaned.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+  if (match) {
+    const day = match[1].padStart(2, '0');
+    const month = match[2].padStart(2, '0');
+    const year = match[3];
+    return `${year}-${month}-${day}`;
+  }
+  return dateStr;
+};
+
+export const fromISODate = (isoStr: string): string => {
+  if (!isoStr) return formatToIndianDate();
+  const match = isoStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (match) {
+    return `${match[3]}/${match[2]}/${match[1]}`;
+  }
+  return isoStr;
+};
+
+function numberToWords(num: number): string {
+  if (!num || isNaN(num)) return 'Zero Rupees Only';
+  const a = [
+    '', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten',
+    'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'
+  ];
+  const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+  const n = Math.floor(num);
+  if (n === 0) return 'Zero Rupees Only';
+
+  function convertTwoDigits(v: number): string {
+    if (v < 20) return a[v];
+    const tens = b[Math.floor(v / 10)];
+    const units = a[v % 10];
+    return tens + (units ? ' ' + units : '');
+  }
+
+  function convertThreeDigits(v: number): string {
+    const hundred = Math.floor(v / 100);
+    const rest = v % 100;
+    let res = '';
+    if (hundred > 0) res += a[hundred] + ' Hundred';
+    if (rest > 0) res += (res ? ' and ' : '') + convertTwoDigits(rest);
+    return res;
+  }
+
+  const crore = Math.floor(n / 10000000);
+  const lakh = Math.floor((n % 10000000) / 100000);
+  const thousand = Math.floor((n % 100000) / 1000);
+  const remainder = n % 1000;
+
+  let parts: string[] = [];
+  if (crore > 0) parts.push(convertThreeDigits(crore) + ' Crore');
+  if (lakh > 0) parts.push(convertThreeDigits(lakh) + ' Lakh');
+  if (thousand > 0) parts.push(convertThreeDigits(thousand) + ' Thousand');
+  if (remainder > 0) parts.push(convertThreeDigits(remainder));
+
+  return 'Rupees ' + parts.join(' ') + ' Only';
+}
 
 export const QuotationEdit: React.FC<QuotationEditProps> = ({
   quotationId,
@@ -53,1042 +139,1048 @@ export const QuotationEdit: React.FC<QuotationEditProps> = ({
   onNavigate,
   onOpenPreview,
 }) => {
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
-
-  // Source quotation
-  const [rawQuote, setRawQuote] = useState<Quotation | null>(null);
-
-  // Form Fields
   const [companyCode, setCompanyCode] = useState<string>(initialCompanyCode);
-  const [customer, setCustomer] = useState<Customer | null>(null);
-  const [customerNameInput, setCustomerNameInput] = useState<string>('SRI CHANDAAN LOGISTICS');
-  const [customerList, setCustomerList] = useState<Customer[]>([]);
-  const [quotationType, setQuotationType] = useState<string>('item_based');
-  const [quotationNumber, setQuotationNumber] = useState<string>('');
-  const [quotationDate, setQuotationDate] = useState<string>(new Date().toISOString().split('T')[0]);
-  const [validityDate, setValidityDate] = useState<string>('');
-  const [customerRef, setCustomerRef] = useState<string>('');
-  const [jobDescription, setJobDescription] = useState<string>('');
+  const [currentCompany, setCurrentCompany] = useState<CompanySetting | null>(null);
 
-  // Items and Sections
+  // Document Heading & Metadata
+  const [headingText, setHeadingText] = useState('MONTHLY RENTAL QUOTATION');
+  const [quotationNumber, setQuotationNumber] = useState('KMP/0001');
+  const [quotationDate, setQuotationDate] = useState(formatToIndianDate());
+
+  // Client Details
+  const [clientName, setClientName] = useState('ABANS FACILITY MANAGEMENT');
+  const [clientAddress, setClientAddress] = useState('Chennai');
+  const [attentionPerson, setAttentionPerson] = useState('Att : Mr. Rajesh');
+  const [clientGstin, setClientGstin] = useState('33AABCT9988Z1Z5');
+  const [clientPhone, setClientPhone] = useState('+91 98401 22334');
+
+  // Customer Search & Directory
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+
+  // Products Search & Catalogue
+  const [catalogueServices, setCatalogueServices] = useState<Service[]>([]);
+  const [productSearch, setProductSearch] = useState('');
+  const [showProductDropdown, setShowProductDropdown] = useState(false);
+
+  // Items Table
   const [items, setItems] = useState<EditableItem[]>([]);
-  const [sections, setSections] = useState<EditableSection[]>([]);
 
-  // Financial adjustments
-  const [discountType, setDiscountType] = useState<'none' | 'percentage' | 'fixed'>('none');
-  const [discountValue, setDiscountValue] = useState<number>(0);
-  const [freightCharges, setFreightCharges] = useState<number>(0);
-  const [packingCharges, setPackingCharges] = useState<number>(0);
-  const [otherCharges, setOtherCharges] = useState<number>(0);
-  const [taxRate, setTaxRate] = useState<number>(18.00);
+  // Word-style Continuous Flow Text (For Cleaning Proposals / Kleanmax)
+  const [mode, setMode] = useState<'table' | 'word_scope'>('table');
+  const [scopeText, setScopeText] = useState('');
+  const [cleanableSqft, setCleanableSqft] = useState('1,38,000 SQFT');
+  const [lumpSumValue, setLumpSumValue] = useState<number>(480000.0);
+  const [specialNotes, setSpecialNotes] = useState('THIS PRICE NOT INCLUDING OF BOOM LIFT. ITS CUSTOMER SCOPE. WHAT CHARGES WILL BE ADDED WE WILL RAISE THE INVOICE SEPARATELY.');
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
-  // Commercial Terms
-  const [paymentTerms, setPaymentTerms] = useState<string>('');
-  const [deliveryTerms, setDeliveryTerms] = useState<string>('');
-  const [warrantyTerms, setWarrantyTerms] = useState<string>('');
-  const [termsAndConditions, setTermsAndConditions] = useState<string>('');
-  const [notes, setNotes] = useState<string>('');
+  // Taxes & Totals
+  const [applyGst, setApplyGst] = useState(true);
+  const [gstRate, setGstRate] = useState(18); // 9% CGST + 9% SGST
 
+  // Terms & Conditions
+  const [terms, setTerms] = useState<string[]>([
+    'Price Validity : Quoted prices are valid for 30 days from quotation date.',
+    'Payment Terms : As agreed mutually.',
+    'Delivery & Service : Prompt on-site mobilization.',
+    'Warranty : Standard replacement warranty for equipment/spares.'
+  ]);
+
+  // State Management
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [activeQuotationId, setActiveQuotationId] = useState<string | null>(quotationId || null);
+
+  // Auto-resize textarea when scopeText changes
   useEffect(() => {
-    loadCustomers();
-    if (quotationId) {
-      loadQuotation(quotationId);
-    } else {
-      initNewQuotation(initialCompanyCode);
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${Math.max(500, textareaRef.current.scrollHeight)}px`;
     }
-  }, [quotationId, initialCompanyCode]);
+  }, [scopeText]);
 
-  const loadCustomers = async () => {
+  // Load existing quote if quotationId passed, or initialize
+  useEffect(() => {
+    initEditor();
+  }, [quotationId, companyCode]);
+
+  const initEditor = async () => {
+    setLoading(true);
     try {
-      const list = await api.customers.list();
-      setCustomerList(list);
-      if (list.length > 0 && !customer) {
-        setCustomer(list[0]);
-        setCustomerNameInput(list[0].company_name);
+      const [compRes, custList, servList] = await Promise.all([
+        api.company.get(companyCode).catch(() => null),
+        api.customers.list().catch(() => []),
+        api.services.list({ company_code: companyCode }).catch(() => []),
+      ]);
+
+      if (compRes) setCurrentCompany(compRes);
+      if (custList) setCustomers(custList);
+      if (servList) setCatalogueServices(servList);
+
+      if (quotationId) {
+        // Load existing quotation data
+        const quote = await api.quotations.get(quotationId);
+        if (quote) {
+          setActiveQuotationId(quote.id);
+          if (quote.company_code && quote.company_code !== companyCode) {
+            setCompanyCode(quote.company_code);
+          }
+          setQuotationNumber(quote.quotation_number || 'QUOTE-001');
+          setHeadingText(quote.job_description || 'QUOTATION');
+          if (quote.quotation_date) {
+            setQuotationDate(fromISODate(String(quote.quotation_date).split('T')[0]));
+          }
+
+          if (quote.customer) {
+            setClientName(quote.customer.company_name);
+            setClientAddress(
+              [quote.customer.billing_address_line1, quote.customer.billing_city]
+                .filter(Boolean)
+                .join(', ') || quote.customer.billing_city || 'Chennai'
+            );
+            if (quote.customer.contact_person) setAttentionPerson(`Att : ${quote.customer.contact_person}`);
+            if (quote.customer.gstin) setClientGstin(quote.customer.gstin);
+            if (quote.customer.phone) setClientPhone(quote.customer.phone);
+          }
+
+          // Items or Scope text
+          if (quote.items && quote.items.length > 0) {
+            setItems(
+              quote.items.map((it: any, idx: number) => ({
+                id: it.id || `item-${idx}`,
+                is_header: it.description?.startsWith('HEADER:'),
+                item_name: it.item_name,
+                description: it.description?.replace(/^HEADER:\s*/, '') || '',
+                quantity: Number(it.quantity) || 1,
+                uom: it.uom || 'NOS',
+                rate: Number(it.applied_rate ?? it.unit_price ?? 0),
+                total: Number(it.line_total) || 0,
+                hsn_sac: it.hsn_sac_code || '8479',
+              }))
+            );
+            setMode('table');
+          } else if (quote.notes) {
+            setScopeText(quote.notes);
+            setLumpSumValue(Number(quote.final_amount || quote.subtotal || 480000));
+            setMode('word_scope');
+          }
+
+          if (quote.terms_and_conditions) {
+            setTerms(quote.terms_and_conditions.split('\n').filter(Boolean));
+          }
+
+          if (quote.snapshot_json) {
+            try {
+              const snap = JSON.parse(quote.snapshot_json);
+              if (snap.cleanable_sqft) setCleanableSqft(snap.cleanable_sqft);
+              if (snap.special_notes) setSpecialNotes(snap.special_notes);
+            } catch (e) {
+              // ignore
+            }
+          }
+        }
+      } else {
+        // Fetch next sequential quotation number
+        try {
+          const nextNo = await api.quotations.getNextNumber(companyCode);
+          const numStr = typeof nextNo === 'object' && (nextNo as any)?.next_number
+            ? (nextNo as any).next_number
+            : String(nextNo);
+          setQuotationNumber(numStr);
+        } catch (e) {
+          // fallback
+          const prefix = COMPANIES.find(c => c.code === companyCode)?.prefix || 'QMS';
+          setQuotationNumber(`${prefix}/0001`);
+        }
+
+        // Set default heading based on company
+        const presets = HEADING_PRESETS[companyCode] || [];
+        if (presets.length > 0) setHeadingText(presets[0]);
       }
     } catch (err) {
-      console.warn('Customer list loading error:', err);
-    }
-  };
-
-  const initNewQuotation = (code: string) => {
-    setLoading(true);
-    setCompanyCode(code);
-    const prefix = code === 'kleanmaxpro' ? 'KMP' : code === 'kleanmax' ? 'KLM' : code === 'uniquepainters' ? 'UNP' : 'CTS';
-    setQuotationNumber(`NEW-${prefix}-${Math.floor(1000 + Math.random() * 9000)}`);
-    setQuotationDate(new Date().toISOString().split('T')[0]);
-    
-    if (code === 'kleanmaxpro') {
-      setQuotationType('area_based');
-      setJobDescription('Commercial warehouse floor scrubbing, deep sanitization & stain removal');
-      setSections([
-        {
-          id: `sec_1_${Date.now()}`,
-          section_name: 'Main Logistics Warehouse Floor Area',
-          service_name: 'Deep Floor Scrubbing & De-Greasing',
-          length: 100,
-          breadth: 50,
-          measurement_unit: 'ft',
-          repetitions: 1,
-          billable_area: 5000,
-          applied_rate: 4.5,
-          line_total: 22500,
-        }
-      ]);
-      setItems([]);
-      setTermsAndConditions('1. 3-Phase power and water supply at site by client.\n2. Work scheduled upon advance confirmation.\n3. GST 18% extra.');
-    } else if (code === 'kleanmax') {
-      setQuotationType('item_based');
-      setJobDescription('Spares & authorized service for industrial cleaning equipment');
-      setItems([
-        {
-          id: `item_1_${Date.now()}`,
-          item_name: 'WIPER SQUEEGEE BLADE SET',
-          description: 'Original polyurethane oil-resistant squeegee rubber',
-          hsn_sac: '8479',
-          quantity: 2,
-          uom: 'SET',
-          unit_price: 3950,
-          line_total: 7900,
-        },
-        {
-          id: `item_2_${Date.now()}`,
-          item_name: 'SUCTION HOSE ASSEMBLY',
-          description: 'Reinforced spiral wire vacuum hose 2.5m',
-          hsn_sac: '8479',
-          quantity: 1,
-          uom: 'NOS',
-          unit_price: 1600,
-          line_total: 1600,
-        }
-      ]);
-      setSections([]);
-      setTermsAndConditions('1. 100% advance payment against proforma invoice.\n2. Parts carry 90-day OEM warranty.\n3. Goods once sold will not be returned.');
-    } else if (code === 'uniquepainters') {
-      setQuotationType('area_based');
-      setJobDescription('Epoxy floor coating & commercial protective painting scope');
-      setSections([
-        {
-          id: `sec_1_${Date.now()}`,
-          section_name: 'Shop Floor Epoxy Self-Leveling (2mm)',
-          service_name: 'Industrial Epoxy Flooring',
-          length: 60,
-          breadth: 40,
-          measurement_unit: 'ft',
-          repetitions: 1,
-          billable_area: 2400,
-          applied_rate: 48,
-          line_total: 115200,
-        }
-      ]);
-      setItems([]);
-      setTermsAndConditions('1. Surface preparation & crack repair included.\n2. 40% advance, 40% primer, 20% handover.\n3. 24-month coating performance warranty.');
-    } else {
-      // Cleantech
-      setQuotationType('contract');
-      setJobDescription('Periodic solar panel mechanized cleaning & facility AMC');
-      setItems([
-        {
-          id: `item_1_${Date.now()}`,
-          item_name: '1.5 MW Rooftop Solar Array Robotic Washing AMC',
-          description: 'Monthly de-mineralized pure water mechanized cleaning (12 cycles)',
-          hsn_sac: '9985',
-          quantity: 12,
-          uom: 'cycle',
-          unit_price: 10500,
-          line_total: 126000,
-        }
-      ]);
-      setSections([]);
-      setTermsAndConditions('1. Continuous water point within 50m of roof access.\n2. Bimonthly generation yield reports provided.\n3. Certified safety rope access crew.');
-    }
-    setLoading(false);
-  };
-
-  const loadQuotation = async (id: string) => {
-    setLoading(true);
-    try {
-      const q = await api.quotations.get(id);
-      setRawQuote(q);
-      setCompanyCode(q.company_code || 'kleanmaxpro');
-      setCustomer(q.customer || null);
-      if (q.customer?.company_name) setCustomerNameInput(q.customer.company_name);
-      setQuotationType(q.quotation_type || (q.items && q.items.length > 0 ? 'item_based' : 'area_based'));
-      setQuotationNumber(q.quotation_number);
-      setQuotationDate(q.quotation_date || new Date().toISOString().split('T')[0]);
-      setValidityDate(q.validity_date || '');
-      setCustomerRef(q.customer_ref || '');
-      setJobDescription(q.job_description || '');
-
-      setDiscountType((q.discount_type as any) || 'none');
-      setDiscountValue(Number(q.discount_value || 0));
-      setFreightCharges(Number(q.freight_charges || 0));
-      setPackingCharges(Number(q.packing_charges || 0));
-      setOtherCharges(Number(q.other_charges || 0));
-      setTaxRate(Number(q.cgst_rate || 0) + Number(q.sgst_rate || 0) || (q.igst_rate ? Number(q.igst_rate) : 18));
-
-      setPaymentTerms(q.payment_terms || '');
-      setDeliveryTerms(q.delivery_terms || '');
-      setWarrantyTerms(q.warranty_terms || '');
-      setTermsAndConditions(q.terms_and_conditions || '');
-      setNotes(q.notes || '');
-
-      if (q.items && q.items.length > 0) {
-        setItems(
-          q.items.map((it: any, idx: number) => ({
-            id: it.id || `item_${idx}_${Date.now()}`,
-            item_name: it.item_name,
-            description: it.description || '',
-            hsn_sac: it.hsn_sac || '',
-            quantity: Number(it.quantity || 1),
-            uom: it.uom || 'NOS',
-            unit_price: Number(it.unit_price || it.applied_rate || 0),
-            line_total: Number(it.line_total || (Number(it.quantity || 1) * Number(it.unit_price || it.applied_rate || 0))),
-          }))
-        );
-      } else {
-        setItems([]);
-      }
-
-      if (q.sections && q.sections.length > 0) {
-        setSections(
-          q.sections.map((s: any, idx: number) => ({
-            id: s.id || `sec_${idx}_${Date.now()}`,
-            section_name: s.section_name,
-            service_name: s.service_name || '',
-            length: Number(s.length || 0),
-            breadth: Number(s.breadth || 0),
-            measurement_unit: s.measurement_unit || 'ft',
-            repetitions: Number(s.repetitions || 1),
-            billable_area: Number(s.billable_area || 0),
-            applied_rate: Number(s.applied_rate || 0),
-            line_total: Number(s.line_total || 0),
-          }))
-        );
-      } else {
-        setSections([]);
-      }
-    } catch (err: any) {
-      setError(err.message || 'Failed to load quotation for editing');
+      console.error('Error loading editor:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  // Item row operations
-  const handleItemChange = (index: number, field: keyof EditableItem, val: any) => {
-    setItems((prev) => {
-      const copy = [...prev];
-      const updated = { ...copy[index], [field]: val };
-      if (field === 'quantity' || field === 'unit_price') {
-        const qty = field === 'quantity' ? Number(val) : updated.quantity;
-        const price = field === 'unit_price' ? Number(val) : updated.unit_price;
-        updated.line_total = Math.round(qty * price * 100) / 100;
-      }
-      copy[index] = updated;
-      return copy;
-    });
+  const handleSelectCustomer = (c: Customer) => {
+    setClientName(c.company_name);
+    setClientAddress(
+      [c.billing_address_line1, c.billing_address_line2, c.billing_city, c.billing_pincode]
+        .filter(Boolean)
+        .join(', ') || c.billing_city || 'Chennai'
+    );
+    if (c.contact_person) setAttentionPerson(`Att : ${c.contact_person}`);
+    if (c.phone) setClientPhone(c.phone);
+    if (c.gstin) setClientGstin(c.gstin);
+    setShowCustomerDropdown(false);
   };
 
-  const handleAddItem = () => {
-    setItems((prev) => [
-      ...prev,
-      {
-        id: `new_item_${Date.now()}`,
-        item_name: 'New Line Item / Spares / Service',
-        description: '',
-        hsn_sac: '',
-        quantity: 1,
-        uom: 'NOS',
-        unit_price: 1000,
-        line_total: 1000,
-      },
-    ]);
+  const handleAddProductFromCatalogue = (svc: Service) => {
+    const newItem: EditableItem = {
+      id: `item-${Date.now()}`,
+      item_name: svc.service_name,
+      description: svc.description || '',
+      quantity: 1,
+      uom: svc.default_uom || 'NOS',
+      rate: Number(svc.standard_rate) || 0,
+      total: Number(svc.standard_rate) || 0,
+      hsn_sac: svc.hsn_sac_code || '8479',
+    };
+    setItems(prev => [...prev, newItem]);
+    setProductSearch('');
+    setShowProductDropdown(false);
   };
 
-  const handleRemoveItem = (index: number) => {
-    setItems((prev) => prev.filter((_, i) => i !== index));
+  const handleAddCustomItem = () => {
+    const newItem: EditableItem = {
+      id: `custom-${Date.now()}`,
+      item_name: 'New Product / Spare / Service',
+      description: '',
+      quantity: 1,
+      uom: 'NOS',
+      rate: 1000.0,
+      total: 1000.0,
+      hsn_sac: '8479',
+    };
+    setItems(prev => [...prev, newItem]);
   };
 
-  // Section row operations
-  const handleSectionChange = (index: number, field: keyof EditableSection, val: any) => {
-    setSections((prev) => {
-      const copy = [...prev];
-      const updated = { ...copy[index], [field]: val };
-      if (field === 'length' || field === 'breadth' || field === 'repetitions' || field === 'applied_rate') {
-        const l = field === 'length' ? Number(val) : updated.length;
-        const b = field === 'breadth' ? Number(val) : updated.breadth;
-        const rep = field === 'repetitions' ? Number(val) : updated.repetitions;
-        const rate = field === 'applied_rate' ? Number(val) : updated.applied_rate;
-        const area = l * b * rep;
-        updated.billable_area = area;
-        updated.line_total = Math.round(area * rate * 100) / 100;
-      }
-      copy[index] = updated;
-      return copy;
-    });
+  const handleUpdateItem = (id: string, field: keyof EditableItem, val: any) => {
+    setItems(prev =>
+      prev.map(it => {
+        if (it.id !== id) return it;
+        const updated = { ...it, [field]: val };
+        if (field === 'quantity' || field === 'rate') {
+          updated.total = Number(updated.quantity || 0) * Number(updated.rate || 0);
+        }
+        return updated;
+      })
+    );
   };
 
-  const handleAddSection = () => {
-    setSections((prev) => [
-      ...prev,
-      {
-        id: `new_sec_${Date.now()}`,
-        section_name: `Work Area ${prev.length + 1}`,
-        service_name: 'Deep Cleaning & Machine Scrubbing',
-        length: 50,
-        breadth: 20,
-        measurement_unit: 'ft',
-        repetitions: 1,
-        billable_area: 1000,
-        applied_rate: 4.5,
-        line_total: 4500,
-      },
-    ]);
+  const handleRemoveItem = (id: string) => {
+    setItems(prev => prev.filter(it => it.id !== id));
   };
 
-  const handleRemoveSection = (index: number) => {
-    setSections((prev) => prev.filter((_, i) => i !== index));
+  // Calculations
+  const tableSubtotal = items.reduce((sum, it) => sum + (it.is_header ? 0 : Number(it.total || 0)), 0);
+  const subtotal = mode === 'table' ? tableSubtotal : Number(lumpSumValue || 0);
+  const cgstAmount = applyGst ? (subtotal * (gstRate / 2)) / 100 : 0;
+  const sgstAmount = applyGst ? (subtotal * (gstRate / 2)) / 100 : 0;
+  const totalAmount = subtotal + cgstAmount + sgstAmount;
+  const amountWords = numberToWords(totalAmount);
+
+  // Build Payload
+  const buildPayload = () => {
+    const payloadItems = mode === 'table'
+      ? items.map(it => ({
+          item_name: it.item_name,
+          description: it.is_header ? `HEADER: ${it.description || ''}` : it.description,
+          quantity: it.quantity,
+          uom: it.uom,
+          unit_price: it.rate,
+          line_total: it.total,
+          hsn_sac_code: it.hsn_sac || '8479',
+        }))
+      : [
+          {
+            item_name: `${headingText} - ${cleanableSqft || 'AREA SCOPE'}`,
+            description: scopeText.slice(0, 150) + '...',
+            quantity: 1,
+            uom: 'JOB',
+            unit_price: subtotal,
+            line_total: subtotal,
+            hsn_sac_code: '998533',
+          },
+        ];
+
+    return {
+      company_code: companyCode,
+      quotation_number: quotationNumber.trim() || 'QMS-0001',
+      job_description: headingText.trim(),
+      quotation_date: toISODate(quotationDate),
+      status: 'APPROVED',
+      client_name: clientName.trim(),
+      client_address: clientAddress.trim(),
+      client_gstin: clientGstin.trim(),
+      client_phone: clientPhone.trim(),
+      attention_person: attentionPerson.trim(),
+      notes: mode === 'word_scope' ? scopeText.trim() : '',
+      subtotal: subtotal,
+      taxable_amount: subtotal,
+      cgst_rate: applyGst ? gstRate / 2 : 0,
+      cgst_amount: cgstAmount,
+      sgst_rate: applyGst ? gstRate / 2 : 0,
+      sgst_amount: sgstAmount,
+      igst_rate: 0,
+      igst_amount: 0,
+      total_tax: cgstAmount + sgstAmount,
+      final_amount: totalAmount,
+      amount_in_words: amountWords,
+      terms_and_conditions: terms.join('\n'),
+      snapshot_json: JSON.stringify({
+        cleanable_sqft: cleanableSqft,
+        special_notes: specialNotes,
+        mode: mode,
+      }),
+      items: payloadItems,
+    };
   };
 
-  // Totals calculation
-  const subtotal =
-    quotationType === 'area_based'
-      ? sections.reduce((sum, s) => sum + (Number(s.line_total) || 0), 0)
-      : items.reduce((sum, it) => sum + (Number(it.line_total) || 0), 0);
-
-  let discountAmt = 0;
-  if (discountType === 'percentage') {
-    discountAmt = (subtotal * discountValue) / 100;
-  } else if (discountType === 'fixed') {
-    discountAmt = discountValue;
-  }
-  discountAmt = Math.min(discountAmt, subtotal);
-
-  const taxableAmount = Math.max(0, subtotal - discountAmt) + freightCharges + packingCharges + otherCharges;
-  const taxAmount = (taxableAmount * taxRate) / 100;
-  const cgstAmount = taxAmount / 2;
-  const sgstAmount = taxAmount / 2;
-  const finalAmount = Math.round((taxableAmount + taxAmount) * 100) / 100;
-
-  // Save changes
-  const handleSave = async (andPreview = false) => {
+  // 1. Save / Update to Database
+  const handleSaveToDb = async () => {
     setSaving(true);
-    setError('');
-    setSuccessMsg('');
+    setSuccessMessage('');
     try {
-      const payload: any = {
-        company_code: companyCode,
-        quotation_type: quotationType,
-        quotation_date: quotationDate,
-        validity_date: validityDate || undefined,
-        customer_ref: customerRef || undefined,
-        job_description: jobDescription || undefined,
-        payment_terms: paymentTerms || undefined,
-        delivery_terms: deliveryTerms || undefined,
-        warranty_terms: warrantyTerms || undefined,
-        terms_and_conditions: termsAndConditions || undefined,
-        notes: notes || undefined,
-        discount_type: discountType,
-        discount_value: discountValue,
-        freight_charges: freightCharges,
-        packing_charges: packingCharges,
-        other_charges: otherCharges,
-        tax_rate: taxRate,
-        rounding_policy: 'HALF_UP',
+      let targetCust = customers.find(
+        c => c.company_name.toLowerCase() === clientName.trim().toLowerCase()
+      );
+      if (!targetCust && clientName.trim()) {
+        try {
+          targetCust = await api.customers.create({
+            company_name: clientName.trim(),
+            billing_address_line1: clientAddress.trim(),
+            billing_city: 'Chennai',
+            phone: clientPhone.trim(),
+            gstin: clientGstin.trim(),
+          });
+          setCustomers(prev => [...prev, targetCust!]);
+        } catch (e) {
+          // ignore
+        }
+      }
+
+      const payload = {
+        ...buildPayload(),
+        customer_id: targetCust?.id || customers[0]?.id || 'default-customer-id',
       };
 
-      if (quotationType === 'area_based') {
-        payload.sections = sections.map((s, idx) => ({
-          section_name: s.section_name,
-          section_order: idx + 1,
-          service_name: s.service_name,
-          length: Number(s.length),
-          breadth: Number(s.breadth),
-          measurement_unit: s.measurement_unit,
-          repetitions: Number(s.repetitions),
-          billable_area: Number(s.billable_area),
-          billable_uom: s.measurement_unit === 'm' ? 'sq_m' : 'sq_ft',
-          rate_source: 'catalogue',
-          original_catalogue_rate: Number(s.applied_rate),
-          applied_rate: Number(s.applied_rate),
-          line_total: Number(s.line_total),
-        }));
-        payload.items = [];
+      let res;
+      if (activeQuotationId) {
+        res = await api.quotations.update(activeQuotationId, payload);
       } else {
-        payload.items = items.map((it, idx) => ({
-          item_order: idx + 1,
-          item_name: it.item_name,
-          description: it.description || undefined,
-          hsn_sac: it.hsn_sac || undefined,
-          quotation_type: quotationType,
-          quantity: Number(it.quantity),
-          uom: it.uom,
-          unit_price: Number(it.unit_price),
-          rate_source: 'catalogue',
-          original_catalogue_rate: Number(it.unit_price),
-          applied_rate: Number(it.unit_price),
-          line_total: Number(it.line_total),
-          taxable_value: Number(it.line_total),
-        }));
-        payload.sections = [];
+        res = await api.quotations.create(payload);
+        setActiveQuotationId(res.id);
       }
 
-      let activeId = quotationId;
-      if (quotationId) {
-        await api.quotations.update(quotationId, payload);
-        setSuccessMsg('Quotation successfully updated and synchronized!');
-      } else {
-        // Customer resolution
-        let custId = customer?.id;
-        if (!custId) {
-          const list = await api.customers.list(customerNameInput);
-          const found = list.find(c => c.company_name.toLowerCase() === customerNameInput.toLowerCase());
-          if (found) {
-            custId = found.id;
-          } else {
-            const newCust = await api.customers.create({
-              company_name: customerNameInput.trim() || 'Valued Commercial Client',
-              billing_city: 'Chennai',
-              billing_state: 'Tamil Nadu',
-              billing_state_code: '33',
-              billing_pincode: '600001',
-              phone: '+91 73388 82036',
-            });
-            custId = newCust.id;
-          }
-        }
-        payload.customer_id = custId;
-        const created = await api.quotations.create(payload);
-        activeId = created.id;
-        setQuotationNumber(created.quotation_number);
-        setSuccessMsg(`Quotation ${created.quotation_number} successfully generated!`);
-      }
-
-      if (andPreview && activeId) {
-        onOpenPreview(activeId);
-      } else if (activeId) {
-        setTimeout(() => {
-          onNavigate('quotation_detail', { id: activeId });
-        }, 1200);
-      }
+      setSuccessMessage('Quotation updated and saved to database successfully!');
+      setTimeout(() => setSuccessMessage(''), 4000);
+      return res.id;
     } catch (err: any) {
-      setError(err.message || 'Failed to update quotation');
+      console.error('Save failed:', err);
+      alert(`Save failed: ${err.message || 'Error updating database record'}`);
+      return null;
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="text-center py-24 text-slate-500 font-bold text-sm">
-        Loading quotation for editing...
-      </div>
-    );
-  }
+  // 2. Download PDF
+  const handleDownloadPdf = async () => {
+    try {
+      setLoading(true);
+      let qId = activeQuotationId;
+      if (!qId) {
+        qId = await handleSaveToDb();
+      }
+      if (!qId) return;
 
-  const isImmutable = rawQuote?.status === 'issued' || rawQuote?.status === 'cancelled';
+      const filename = `${quotationNumber.replace(/[\/\\]/g, '_')}_${companyCode}_Quotation.pdf`;
+      await api.quotations.downloadPdf(qId, filename);
+    } catch (err: any) {
+      console.error('PDF download error:', err);
+      alert(`PDF download failed: ${err.message || 'Error generating PDF'}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 3. Download Word (.docx)
+  const handleDownloadDocx = async () => {
+    try {
+      setLoading(true);
+      let qId = activeQuotationId;
+      if (!qId) {
+        qId = await handleSaveToDb();
+      }
+      if (!qId) return;
+
+      const filename = `${quotationNumber.replace(/[\/\\]/g, '_')}_${companyCode}_Quotation.docx`;
+      await api.quotations.downloadDocx(qId, filename);
+    } catch (err: any) {
+      console.error('DOCX download error:', err);
+      alert(`Word download failed: ${err.message || 'Error generating Word file'}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 4. Preview A4
+  const handlePreviewA4 = async () => {
+    let qId = activeQuotationId;
+    if (!qId) {
+      qId = await handleSaveToDb();
+    }
+    if (qId) {
+      onOpenPreview(qId);
+    }
+  };
+
+  const activeCompany = COMPANIES.find(c => c.code === companyCode) || COMPANIES[0];
 
   return (
-    <div className="space-y-6 pb-20">
-      {/* Top Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-200">
+    <div className="max-w-6xl mx-auto pb-24 space-y-6">
+      {/* Top Navigation & Action Bar */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex flex-wrap items-center justify-between gap-4 sticky top-16 z-30">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => onNavigate('quotation_detail', { id: quotationId })}
-            className="p-2 hover:bg-slate-200 rounded-lg text-slate-600 transition-colors"
+            onClick={() => onNavigate('quotations')}
+            className="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-all"
+            title="Back to Quotations List"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-black uppercase text-amber-500 tracking-wider">
-                Live Quotation Editor
-              </span>
-              <span className="font-mono text-xl font-black text-slate-900">
-                {quotationNumber}
-              </span>
-              {rawQuote?.revision_number ? (
-                <span className="bg-purple-100 text-purple-900 text-[10px] font-black px-2 py-0.5 rounded border border-purple-200">
-                  REV {rawQuote.revision_number}
+              <span className={`w-2.5 h-2.5 rounded-full ${activeCompany.badge} animate-pulse`} />
+              <h1 className="text-lg font-black text-slate-900 tracking-tight">
+                Quotation Editor ({activeCompany.name})
+              </h1>
+              {activeQuotationId && (
+                <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-mono font-bold">
+                  Editing #{quotationNumber}
                 </span>
-              ) : null}
+              )}
             </div>
-            <div className="text-xs text-slate-500 mt-0.5">
-              Client: <strong>{customer?.company_name || 'Direct Client'}</strong> • Prepared By: {rawQuote?.prepared_by_name || 'Estimations'}
-            </div>
+            <p className="text-xs text-slate-500">
+              Interactive WYSIWYG editor matching official company letterhead & real-time A4 calculations.
+            </p>
           </div>
         </div>
 
-        {/* Action Buttons */}
+        {/* 4 Working Action Buttons */}
         <div className="flex flex-wrap items-center gap-2">
-          {quotationId && (
-            <>
-              <button
-                onClick={() => quotationId && api.quotations.downloadDocx(quotationId)}
-                className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-sm transition-colors"
-                title="Download Word Document"
-              >
-                <FileText className="w-4 h-4" />
-                <span>Word (.docx)</span>
-              </button>
-
-              <button
-                onClick={() => quotationId && api.quotations.downloadPdf(quotationId)}
-                className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-sm transition-colors"
-                title="Download Official PDF"
-              >
-                <Download className="w-4 h-4" />
-                <span>PDF</span>
-              </button>
-            </>
-          )}
-
           <button
-            onClick={() => handleSave(true)}
-            disabled={saving || isImmutable}
-            className="px-4 py-2 bg-white border border-slate-300 hover:border-slate-400 text-slate-800 font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-2xs transition-colors"
+            onClick={handleDownloadDocx}
+            disabled={loading || saving}
+            className="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all transform active:scale-95 disabled:opacity-50"
+            title="Download Word (.docx)"
           >
-            <Eye className="w-4 h-4 text-slate-600" />
-            <span>Save & Preview</span>
+            <FileText className="w-4 h-4" />
+            <span>Download Word (.docx)</span>
           </button>
 
           <button
-            onClick={() => handleSave(false)}
-            disabled={saving || isImmutable}
-            className="px-5 py-2 bg-[#FED10C] hover:bg-[#E5BC07] text-slate-950 font-black text-xs rounded-xl flex items-center gap-2 shadow-sm transition-colors"
+            onClick={handleDownloadPdf}
+            disabled={loading || saving}
+            className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all transform active:scale-95 disabled:opacity-50"
+            title="Download PDF"
           >
-            <Save className="w-4 h-4" />
-            <span>{saving ? 'Saving...' : 'Save Changes'}</span>
+            <Download className="w-4 h-4 text-amber-400" />
+            <span>Download PDF</span>
+          </button>
+
+          <button
+            onClick={handlePreviewA4}
+            disabled={loading || saving}
+            className="px-3.5 py-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all"
+            title="Preview A4 Document"
+          >
+            <Eye className="w-4 h-4 text-sky-600" />
+            <span>Preview A4</span>
+          </button>
+
+          <button
+            onClick={handleSaveToDb}
+            disabled={saving}
+            className="px-4 py-2 bg-[#FED10C] hover:bg-[#E5BC07] text-slate-950 font-black text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all transform active:scale-95 disabled:opacity-50"
+          >
+            {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            <span>{saving ? 'Updating...' : activeQuotationId ? 'Update & Save' : 'Save to DB'}</span>
           </button>
         </div>
       </div>
 
-      {/* Notifications */}
-      {error && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3 text-red-700 text-xs font-bold">
-          <AlertCircle className="w-5 h-5 shrink-0" />
-          <span>{error}</span>
+      {successMessage && (
+        <div className="bg-emerald-50 border border-emerald-300 text-emerald-800 px-4 py-3 rounded-xl text-xs font-bold flex items-center gap-2 animate-fade-in">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+          <span>{successMessage}</span>
         </div>
       )}
 
-      {successMsg && (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-3 text-emerald-800 text-xs font-bold">
-          <CheckCircle2 className="w-5 h-5 shrink-0" />
-          <span>{successMsg}</span>
-        </div>
-      )}
-
-      {isImmutable && (
-        <div className="p-4 bg-amber-50 border border-amber-300 rounded-xl flex items-center justify-between text-amber-900 text-xs">
-          <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
-            <span>
-              This quotation is <strong>{rawQuote?.status?.toUpperCase()}</strong> and locked against direct edits.
-              To make modifications, create a new revision.
-            </span>
-          </div>
-          <button
-            onClick={() => onNavigate('quotation_detail', { id: quotationId })}
-            className="px-3 py-1.5 bg-amber-600 text-white rounded-lg font-bold text-xs hover:bg-amber-700"
-          >
-            Go to Revision Tool
-          </button>
-        </div>
-      )}
-
-      {/* 1. Company Selection & Meta */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs space-y-4">
-        <div>
-          <label className="block text-xs font-black uppercase text-slate-500 mb-2">
-            Select Company Brand / Letterhead Header
-          </label>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {COMPANIES.map((c) => {
-              const active = companyCode === c.code;
-              return (
-                <button
-                  key={c.code}
-                  type="button"
-                  onClick={() => setCompanyCode(c.code)}
-                  className={`p-3 rounded-xl border text-left transition-all ${
-                    active
-                      ? 'border-slate-900 ring-2 ring-slate-900/10 bg-slate-50 shadow-xs'
-                      : 'border-slate-200 hover:border-slate-300 bg-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    <span
-                      className="w-3 h-3 rounded-full shrink-0"
-                      style={{ backgroundColor: c.hex }}
-                    />
-                    <span className="font-extrabold text-xs text-slate-900">{c.name}</span>
-                  </div>
-                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${c.badgeColor}`}>
-                    {c.code.toUpperCase()}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+      {/* COMPANY SWITCHER STRIP (CHOOSE FROM ALL 4 SUBSIDIARIES) */}
+      <div className="bg-slate-900 text-white p-3 rounded-2xl shadow-md flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <Building2 className="w-4 h-4 text-amber-400" />
+          <span className="text-xs font-black uppercase tracking-wider text-slate-300">
+            Active Subsidiary Template:
+          </span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-3 border-t border-slate-100">
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">Quotation Type</label>
-            <select
-              value={quotationType}
-              onChange={(e) => setQuotationType(e.target.value)}
-              className="w-full text-xs font-bold bg-slate-50 border border-slate-300 rounded-lg p-2.5 focus:bg-white"
-            >
-              <option value="item_based">Line Items / Spares / Products</option>
-              <option value="area_based">Area-Based Floor / Painting (Sq.ft)</option>
-              <option value="repair_service">Equipment Repair & Service</option>
-              <option value="rental">Monthly Rental Contract</option>
-              <option value="contract">Periodic AMC Maintenance Contract</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">Quotation Date</label>
-            <input
-              type="date"
-              value={quotationDate}
-              onChange={(e) => setQuotationDate(e.target.value)}
-              className="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2.5 focus:bg-white"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">Validity Date</label>
-            <input
-              type="date"
-              value={validityDate}
-              onChange={(e) => setValidityDate(e.target.value)}
-              className="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2.5 focus:bg-white"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">Customer PO / Ref</label>
-            <input
-              type="text"
-              placeholder="e.g. PO/2026/089"
-              value={customerRef}
-              onChange={(e) => setCustomerRef(e.target.value)}
-              className="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2.5 focus:bg-white"
-            />
-          </div>
-        </div>
-
-        {/* Customer Directory / Selector */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-slate-100">
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">Customer / Client Name</label>
-            <input
-              type="text"
-              value={customerNameInput}
-              onChange={(e) => setCustomerNameInput(e.target.value)}
-              placeholder="e.g. SRI CHANDAAN LOGISTICS"
-              className="w-full text-xs font-extrabold bg-slate-50 border border-slate-300 rounded-lg p-2.5 focus:bg-white text-slate-900"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">Select from Registered Clients</label>
-            <select
-              value={customer?.id || ''}
-              onChange={(e) => {
-                const found = customerList.find(c => c.id === e.target.value);
-                if (found) {
-                  setCustomer(found);
-                  setCustomerNameInput(found.company_name);
-                }
+        <div className="flex flex-wrap items-center gap-1.5">
+          {COMPANIES.map(c => (
+            <button
+              key={c.code}
+              type="button"
+              onClick={() => {
+                setCompanyCode(c.code);
+                const presets = HEADING_PRESETS[c.code] || [];
+                if (presets.length > 0) setHeadingText(presets[0]);
               }}
-              className="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2.5 focus:bg-white text-slate-700 font-semibold"
+              className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${
+                companyCode === c.code
+                  ? `${c.badge} shadow-md scale-105`
+                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+              }`}
             >
-              <option value="">-- Select Registered Client or Type Name on Left --</option>
-              {customerList.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.company_name} ({c.billing_city || 'Chennai'})
-                </option>
-              ))}
-            </select>
-          </div>
+              {c.name}
+            </button>
+          ))}
         </div>
+      </div>
 
-        <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1">
-            Job Scope / Detailed Description
-          </label>
-          <textarea
-            rows={2}
-            value={jobDescription}
-            onChange={(e) => setJobDescription(e.target.value)}
-            placeholder="Scope of work, machine model, surface specifications..."
-            className="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2.5 focus:bg-white"
+      {/* DOCUMENT PREVIEW & WYSIWYG EDITOR CANVAS */}
+      <div className="bg-white border border-slate-300 rounded-2xl shadow-xl overflow-hidden">
+        {/* TOP LETTERHEAD BANNER FLUSH */}
+        <div className="w-full bg-white border-b border-slate-200 text-center">
+          <img
+            src={activeCompany.banner}
+            alt={`${activeCompany.name} Letterhead Banner`}
+            className="w-full h-auto max-h-36 object-contain block mx-auto"
           />
         </div>
-      </div>
 
-      {/* 2. Interactive Line Items OR Area Sections */}
-      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs">
-        <div className="px-5 py-3.5 bg-slate-900 text-white flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Layers className="w-4 h-4 text-[#FED10C]" />
-            <h3 className="font-extrabold text-xs uppercase tracking-wide">
-              {quotationType === 'area_based' ? 'Billable Area Sections' : 'Quotation Line Items & Spares'}
-            </h3>
+        <div className="p-8 md:p-12 space-y-8 max-w-4xl mx-auto">
+          {/* HEADING PRESETS & DOCUMENT TITLE */}
+          <div className="space-y-4 border-b border-slate-200 pb-6">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                Select Heading:
+              </span>
+              {(HEADING_PRESETS[companyCode] || []).map((preset, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => setHeadingText(preset)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                    headingText === preset
+                      ? 'bg-slate-900 text-amber-400 shadow-2xs'
+                      : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                  }`}
+                >
+                  {preset}
+                </button>
+              ))}
+            </div>
+
+            {/* Centered Document Title */}
+            <div className="text-center">
+              <input
+                type="text"
+                value={headingText}
+                onChange={e => setHeadingText(e.target.value)}
+                className="w-full text-center text-xl md:text-2xl font-black text-slate-900 uppercase tracking-tight border-b-2 border-transparent hover:border-slate-300 focus:border-amber-400 focus:outline-none transition-all py-1"
+                placeholder="QUOTATION HEADING"
+              />
+              <div className="w-32 h-1 bg-amber-400 mx-auto rounded-full mt-1" />
+            </div>
           </div>
 
-          <button
-            type="button"
-            onClick={quotationType === 'area_based' ? handleAddSection : handleAddItem}
-            className="px-3 py-1.5 bg-[#FED10C] hover:bg-[#E5BC07] text-slate-950 font-bold text-xs rounded-lg flex items-center gap-1 shadow-xs transition-colors"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>{quotationType === 'area_based' ? 'Add Section' : 'Add Item'}</span>
-          </button>
-        </div>
+          {/* META SECTION: CLIENT INFO & PROPOSAL NUMBER */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50/70 p-6 rounded-2xl border border-slate-200">
+            {/* Left: Client Details (TO:) */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black uppercase text-slate-700 tracking-wider">
+                  TO (Client Information):
+                </span>
+                {/* Search customer button */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowCustomerDropdown(!showCustomerDropdown)}
+                    className="text-[11px] font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 bg-white px-2 py-0.5 rounded border border-blue-200 shadow-2xs"
+                  >
+                    <Search className="w-3 h-3" />
+                    <span>Search Clients</span>
+                  </button>
+                  {showCustomerDropdown && (
+                    <div className="absolute left-0 mt-1 w-64 bg-white rounded-xl shadow-xl border border-slate-200 p-2 z-50 animate-fade-in">
+                      <input
+                        type="text"
+                        value={customerSearch}
+                        onChange={e => setCustomerSearch(e.target.value)}
+                        placeholder="Search existing customer..."
+                        className="w-full text-xs p-1.5 border border-slate-200 rounded-lg mb-2 focus:outline-none focus:border-blue-500"
+                      />
+                      <div className="max-h-40 overflow-y-auto space-y-1">
+                        {customers
+                          .filter(c =>
+                            c.company_name.toLowerCase().includes(customerSearch.toLowerCase())
+                          )
+                          .map(c => (
+                            <button
+                              key={c.id}
+                              type="button"
+                              onClick={() => handleSelectCustomer(c)}
+                              className="w-full text-left text-xs p-1.5 hover:bg-blue-50 rounded font-semibold text-slate-800 flex items-center justify-between"
+                            >
+                              <span>{c.company_name}</span>
+                              <span className="text-[10px] text-slate-400">{c.billing_city}</span>
+                            </button>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
 
-        <div className="p-4 overflow-x-auto">
-          {quotationType === 'area_based' ? (
-            /* Area Sections Table */
-            <table className="w-full text-xs text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-100 text-slate-700 uppercase font-black text-[11px] border-b border-slate-200">
-                  <th className="p-2.5 w-12 text-center">#</th>
-                  <th className="p-2.5">Section Name</th>
-                  <th className="p-2.5">Service Name</th>
-                  <th className="p-2.5 w-24 text-center">Length</th>
-                  <th className="p-2.5 w-24 text-center">Breadth</th>
-                  <th className="p-2.5 w-20 text-center">Reps</th>
-                  <th className="p-2.5 w-28 text-right">Billable Area</th>
-                  <th className="p-2.5 w-28 text-right">Rate (₹)</th>
-                  <th className="p-2.5 w-32 text-right">Total (₹)</th>
-                  <th className="p-2.5 w-12 text-center">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200">
-                {sections.map((sec, idx) => (
-                  <tr key={sec.id} className="hover:bg-slate-50/80">
-                    <td className="p-2.5 text-center font-bold text-slate-400">{idx + 1}</td>
-                    <td className="p-2.5">
-                      <input
-                        type="text"
-                        value={sec.section_name}
-                        onChange={(e) => handleSectionChange(idx, 'section_name', e.target.value)}
-                        className="w-full p-1.5 border border-slate-300 rounded text-xs font-bold"
-                      />
-                    </td>
-                    <td className="p-2.5">
-                      <input
-                        type="text"
-                        value={sec.service_name || ''}
-                        onChange={(e) => handleSectionChange(idx, 'service_name', e.target.value)}
-                        className="w-full p-1.5 border border-slate-300 rounded text-xs text-slate-600"
-                        placeholder="Service Type"
-                      />
-                    </td>
-                    <td className="p-2.5 text-center">
-                      <input
-                        type="number"
-                        value={sec.length}
-                        onChange={(e) => handleSectionChange(idx, 'length', e.target.value)}
-                        className="w-20 p-1.5 border border-slate-300 rounded text-xs text-center"
-                      />
-                    </td>
-                    <td className="p-2.5 text-center">
-                      <input
-                        type="number"
-                        value={sec.breadth}
-                        onChange={(e) => handleSectionChange(idx, 'breadth', e.target.value)}
-                        className="w-20 p-1.5 border border-slate-300 rounded text-xs text-center"
-                      />
-                    </td>
-                    <td className="p-2.5 text-center">
-                      <input
-                        type="number"
-                        value={sec.repetitions}
-                        onChange={(e) => handleSectionChange(idx, 'repetitions', e.target.value)}
-                        className="w-16 p-1.5 border border-slate-300 rounded text-xs text-center"
-                      />
-                    </td>
-                    <td className="p-2.5 text-right font-extrabold text-slate-900">
-                      {sec.billable_area.toLocaleString()} sq.ft
-                    </td>
-                    <td className="p-2.5 text-right">
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={sec.applied_rate}
-                        onChange={(e) => handleSectionChange(idx, 'applied_rate', e.target.value)}
-                        className="w-24 p-1.5 border border-slate-300 rounded text-xs text-right font-bold"
-                      />
-                    </td>
-                    <td className="p-2.5 text-right font-black text-slate-900">
-                      ₹ {sec.line_total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                    </td>
-                    <td className="p-2.5 text-center">
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveSection(idx)}
-                        className="p-1 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded transition-colors"
-                        title="Delete section"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+              <div>
+                <input
+                  type="text"
+                  value={clientName}
+                  onChange={e => setClientName(e.target.value)}
+                  className="w-full font-black text-slate-900 text-sm bg-white border border-slate-200 px-3 py-1.5 rounded-lg focus:outline-none focus:border-amber-400 uppercase"
+                  placeholder="CLIENT / COMPANY NAME"
+                />
+              </div>
+
+              <div>
+                <input
+                  type="text"
+                  value={clientAddress}
+                  onChange={e => setClientAddress(e.target.value)}
+                  className="w-full text-xs font-semibold text-slate-700 bg-white border border-slate-200 px-3 py-1.5 rounded-lg focus:outline-none focus:border-amber-400"
+                  placeholder="Address, Plant, City"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="text"
+                  value={attentionPerson}
+                  onChange={e => setAttentionPerson(e.target.value)}
+                  className="w-full text-xs font-bold text-slate-700 bg-white border border-slate-200 px-3 py-1.5 rounded-lg focus:outline-none focus:border-amber-400"
+                  placeholder="Att : Person Name"
+                />
+                <input
+                  type="text"
+                  value={clientPhone}
+                  onChange={e => setClientPhone(e.target.value)}
+                  className="w-full text-xs font-mono text-slate-700 bg-white border border-slate-200 px-3 py-1.5 rounded-lg focus:outline-none focus:border-amber-400"
+                  placeholder="Phone No"
+                />
+              </div>
+            </div>
+
+            {/* Right: Proposal Ref & Date */}
+            <div className="space-y-3 border-t md:border-t-0 md:border-l border-slate-200 pt-4 md:pt-0 md:pl-6">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-500 uppercase">Quotation / Ref No:</span>
+                <input
+                  type="text"
+                  value={quotationNumber}
+                  onChange={e => setQuotationNumber(e.target.value)}
+                  className="font-mono font-black text-slate-900 bg-white border border-slate-300 px-3 py-1 rounded-lg text-sm w-36 text-center focus:outline-none focus:border-amber-400"
+                  placeholder="KMP/0001"
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-500 uppercase">Quotation Date:</span>
+                <input
+                  type="text"
+                  value={quotationDate}
+                  onChange={e => setQuotationDate(e.target.value)}
+                  className="font-mono font-bold text-slate-700 bg-white border border-slate-300 px-3 py-1 rounded-lg text-xs w-36 text-center focus:outline-none focus:border-amber-400"
+                  placeholder="DD/MM/YYYY"
+                />
+              </div>
+
+              <div className="flex items-center justify-between pt-2 border-t border-slate-200 text-xs">
+                <span className="text-slate-500 font-bold">GSTIN:</span>
+                <input
+                  type="text"
+                  value={clientGstin}
+                  onChange={e => setClientGstin(e.target.value)}
+                  className="font-mono font-bold text-slate-700 bg-white border border-slate-300 px-2 py-1 rounded text-xs w-44 text-right"
+                  placeholder="33XXXXX..."
+                />
+              </div>
+
+              {/* Mode Switcher: Products Table vs. Word Scope */}
+              <div className="pt-2 flex items-center justify-between text-xs">
+                <span className="text-slate-500 font-bold">Content Format:</span>
+                <div className="flex items-center gap-1 bg-slate-200 p-0.5 rounded-lg">
+                  <button
+                    type="button"
+                    onClick={() => setMode('table')}
+                    className={`px-2 py-0.5 rounded-md font-bold text-[11px] ${
+                      mode === 'table' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600'
+                    }`}
+                  >
+                    Items Table
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMode('word_scope')}
+                    className={`px-2 py-0.5 rounded-md font-bold text-[11px] ${
+                      mode === 'word_scope' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600'
+                    }`}
+                  >
+                    Word Scope Text
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* DYNAMIC CONTENT AREA: ITEMS TABLE OR WORD SCOPE CANVAS */}
+          {mode === 'table' ? (
+            <div className="space-y-4">
+              {/* Product Search & Quick Add Bar */}
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-wrap items-center justify-between gap-3">
+                <div className="relative flex-1 min-w-[260px]">
+                  <div className="flex items-center gap-2 bg-white border border-slate-300 rounded-xl px-3 py-2 shadow-2xs">
+                    <Search className="w-4 h-4 text-slate-400" />
+                    <input
+                      type="text"
+                      value={productSearch}
+                      onChange={e => {
+                        setProductSearch(e.target.value);
+                        setShowProductDropdown(true);
+                      }}
+                      onFocus={() => setShowProductDropdown(true)}
+                      placeholder={`Search ${activeCompany.name} products, spares, machines...`}
+                      className="w-full text-xs bg-transparent focus:outline-none"
+                    />
+                  </div>
+
+                  {showProductDropdown && (
+                    <div className="absolute left-0 right-0 mt-1 bg-white rounded-xl shadow-xl border border-slate-200 p-2 z-50 max-h-56 overflow-y-auto">
+                      {catalogueServices
+                        .filter(s =>
+                          s.service_name.toLowerCase().includes(productSearch.toLowerCase()) ||
+                          s.service_code.toLowerCase().includes(productSearch.toLowerCase())
+                        )
+                        .map(s => (
+                          <button
+                            key={s.id}
+                            type="button"
+                            onClick={() => handleAddProductFromCatalogue(s)}
+                            className="w-full text-left p-2 hover:bg-slate-50 rounded-lg flex items-center justify-between text-xs transition-colors"
+                          >
+                            <div>
+                              <div className="font-bold text-slate-900">{s.service_name}</div>
+                              <div className="text-[10px] text-slate-400 font-mono">{s.service_code}</div>
+                            </div>
+                            <div className="text-right">
+                              <div className="font-bold text-slate-900">₹ {Number(s.standard_rate).toLocaleString('en-IN')}</div>
+                              <div className="text-[10px] text-slate-400 uppercase">{s.default_uom}</div>
+                            </div>
+                          </button>
+                        ))}
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleAddCustomItem}
+                  className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-xs"
+                >
+                  <Plus className="w-4 h-4 text-amber-400" />
+                  <span>+ Add Custom Row</span>
+                </button>
+              </div>
+
+              {/* Items Table */}
+              <div className="border border-slate-200 rounded-xl overflow-hidden shadow-xs">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead className="bg-[#0F172A] text-white uppercase text-[11px] font-black tracking-wider">
+                    <tr>
+                      <th className="p-3 text-center w-12">#</th>
+                      <th className="p-3">Description / Machine Specifications</th>
+                      <th className="p-3 text-center w-20">Qty</th>
+                      <th className="p-3 text-center w-20">UOM</th>
+                      <th className="p-3 text-right w-28">Rate (₹)</th>
+                      <th className="p-3 text-right w-32">Total (₹)</th>
+                      <th className="p-3 text-center w-12">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200">
+                    {items.map((it, idx) => (
+                      <tr key={it.id} className="hover:bg-slate-50/70">
+                        <td className="p-3 text-center font-bold text-slate-400">{idx + 1}</td>
+                        <td className="p-3 space-y-1">
+                          <input
+                            type="text"
+                            value={it.item_name}
+                            onChange={e => handleUpdateItem(it.id, 'item_name', e.target.value)}
+                            className="w-full font-bold text-slate-900 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-amber-400 focus:outline-none"
+                            placeholder="Item name"
+                          />
+                          <textarea
+                            rows={2}
+                            value={it.description || ''}
+                            onChange={e => handleUpdateItem(it.id, 'description', e.target.value)}
+                            placeholder="Specifications / features (optional)"
+                            className="w-full text-[11px] text-slate-600 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-amber-400 focus:outline-none resize-none"
+                          />
+                        </td>
+                        <td className="p-3 text-center">
+                          <input
+                            type="number"
+                            min="1"
+                            value={it.quantity}
+                            onChange={e => handleUpdateItem(it.id, 'quantity', parseFloat(e.target.value) || 1)}
+                            className="w-16 text-center font-bold text-slate-900 bg-slate-100 rounded p-1"
+                          />
+                        </td>
+                        <td className="p-3 text-center">
+                          <input
+                            type="text"
+                            value={it.uom}
+                            onChange={e => handleUpdateItem(it.id, 'uom', e.target.value)}
+                            className="w-16 text-center font-bold text-slate-700 bg-slate-100 rounded p-1 uppercase"
+                          />
+                        </td>
+                        <td className="p-3 text-right">
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={it.rate}
+                            onChange={e => handleUpdateItem(it.id, 'rate', parseFloat(e.target.value) || 0)}
+                            className="w-24 text-right font-bold text-slate-900 bg-slate-100 rounded p-1"
+                          />
+                        </td>
+                        <td className="p-3 text-right font-black text-slate-900">
+                          ₹ {Number(it.total).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                        </td>
+                        <td className="p-3 text-center">
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveItem(it.id)}
+                            className="p-1 text-slate-400 hover:text-rose-600 rounded"
+                            title="Remove Item"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {items.length === 0 && (
+                      <tr>
+                        <td colSpan={7} className="p-8 text-center text-slate-400 italic">
+                          No items added yet. Use the search bar above or click "+ Add Custom Row".
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           ) : (
-            /* Items Table */
-            <table className="w-full text-xs text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-100 text-slate-700 uppercase font-black text-[11px] border-b border-slate-200">
-                  <th className="p-2.5 w-12 text-center">#</th>
-                  <th className="p-2.5">Item Name & Description</th>
-                  <th className="p-2.5 w-24 text-center">HSN/SAC</th>
-                  <th className="p-2.5 w-24 text-center">Qty</th>
-                  <th className="p-2.5 w-24 text-center">UOM</th>
-                  <th className="p-2.5 w-32 text-right">Rate (₹)</th>
-                  <th className="p-2.5 w-36 text-right">Line Total (₹)</th>
-                  <th className="p-2.5 w-12 text-center">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200">
-                {items.map((it, idx) => (
-                  <tr key={it.id} className="hover:bg-slate-50/80">
-                    <td className="p-2.5 text-center font-bold text-slate-400">{idx + 1}</td>
-                    <td className="p-2.5">
-                      <input
-                        type="text"
-                        value={it.item_name}
-                        onChange={(e) => handleItemChange(idx, 'item_name', e.target.value)}
-                        placeholder="Item or Spare Name"
-                        className="w-full p-1.5 border border-slate-300 rounded text-xs font-bold text-slate-900 mb-1"
-                      />
-                      <input
-                        type="text"
-                        value={it.description || ''}
-                        onChange={(e) => handleItemChange(idx, 'description', e.target.value)}
-                        placeholder="Optional specifications, model compatibility, remarks"
-                        className="w-full p-1 border border-slate-200 rounded text-[11px] text-slate-500"
-                      />
-                    </td>
-                    <td className="p-2.5 text-center">
-                      <input
-                        type="text"
-                        value={it.hsn_sac || ''}
-                        onChange={(e) => handleItemChange(idx, 'hsn_sac', e.target.value)}
-                        placeholder="8479"
-                        className="w-20 p-1.5 border border-slate-300 rounded text-xs text-center"
-                      />
-                    </td>
-                    <td className="p-2.5 text-center">
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={it.quantity}
-                        onChange={(e) => handleItemChange(idx, 'quantity', e.target.value)}
-                        className="w-20 p-1.5 border border-slate-300 rounded text-xs text-center font-bold"
-                      />
-                    </td>
-                    <td className="p-2.5 text-center">
-                      <select
-                        value={it.uom}
-                        onChange={(e) => handleItemChange(idx, 'uom', e.target.value)}
-                        className="p-1.5 border border-slate-300 rounded text-xs font-bold"
-                      >
-                        <option value="NOS">NOS</option>
-                        <option value="SET">SET</option>
-                        <option value="MTR">MTR</option>
-                        <option value="LOT">LOT</option>
-                        <option value="HRS">HRS</option>
-                        <option value="DAYS">DAYS</option>
-                        <option value="MONTH">MONTH</option>
-                        <option value="contract">CONTRACT</option>
-                      </select>
-                    </td>
-                    <td className="p-2.5 text-right">
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={it.unit_price}
-                        onChange={(e) => handleItemChange(idx, 'unit_price', e.target.value)}
-                        className="w-28 p-1.5 border border-slate-300 rounded text-xs text-right font-bold"
-                      />
-                    </td>
-                    <td className="p-2.5 text-right font-black text-slate-900">
-                      ₹ {it.line_total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                    </td>
-                    <td className="p-2.5 text-center">
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveItem(idx)}
-                        className="p-1 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded transition-colors"
-                        title="Delete item"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            /* WORD-STYLE EXPANDING TEXT CANVAS */
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black uppercase text-slate-700 tracking-wider flex items-center gap-1.5">
+                  <AlignLeft className="w-4 h-4 text-sky-600" />
+                  <span>Cleaning Scope / Work Specifications (Continuous Natural Flow):</span>
+                </span>
+                <span className="text-[11px] font-mono text-slate-400">
+                  {scopeText.length} chars • {scopeText.split('\n').length} lines
+                </span>
+              </div>
+
+              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-300">
+                <textarea
+                  ref={textareaRef}
+                  value={scopeText}
+                  onChange={e => setScopeText(e.target.value)}
+                  placeholder="Type scope of work here. Content expands naturally downwards just like MS Word..."
+                  className="w-full resize-none font-mono text-xs md:text-sm text-slate-800 leading-relaxed border-0 bg-transparent focus:outline-none"
+                  style={{ minHeight: '480px', lineHeight: '1.65' }}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-amber-50/70 p-4 rounded-xl border border-amber-200">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                    Cleanable SQFT (Approx):
+                  </label>
+                  <input
+                    type="text"
+                    value={cleanableSqft}
+                    onChange={e => setCleanableSqft(e.target.value)}
+                    className="w-full text-xs font-bold p-2 bg-white border border-amber-300 rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                    Total Lump Sum Value (₹):
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={lumpSumValue}
+                    onChange={e => setLumpSumValue(parseFloat(e.target.value) || 0)}
+                    className="w-full text-xs font-black p-2 bg-white border border-amber-300 rounded-lg"
+                  />
+                </div>
+              </div>
+            </div>
           )}
-        </div>
-      </div>
 
-      {/* 3. Financial Summary & Extra Charges */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left: Discounts & Surcharges */}
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs space-y-4">
-          <h4 className="font-extrabold text-xs uppercase tracking-wide text-slate-900 flex items-center gap-1.5">
-            <Percent className="w-4 h-4 text-amber-500" />
-            <span>Discount, Freight & Taxes</span>
-          </h4>
+          {/* FINANCIAL SUMMARY & GST BREAKDOWN */}
+          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="applyGst"
+                  checked={applyGst}
+                  onChange={e => setApplyGst(e.target.checked)}
+                  className="w-4 h-4 rounded text-amber-500"
+                />
+                <label htmlFor="applyGst" className="text-xs font-bold text-slate-800 cursor-pointer">
+                  Apply GST (CGST 9% + SGST 9% = 18%)
+                </label>
+              </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Discount Type</label>
-              <select
-                value={discountType}
-                onChange={(e) => setDiscountType(e.target.value as any)}
-                className="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2 font-bold"
-              >
-                <option value="none">No Discount</option>
-                <option value="percentage">Percentage (%)</option>
-                <option value="fixed">Fixed Amount (₹)</option>
-              </select>
+              <div className="text-right space-y-1">
+                <div className="text-xs text-slate-500">
+                  Subtotal: <strong className="text-slate-900">₹ {subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong>
+                </div>
+                {applyGst && (
+                  <>
+                    <div className="text-xs text-slate-500">
+                      CGST (9%): <strong className="text-slate-900">₹ {cgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong>
+                    </div>
+                    <div className="text-xs text-slate-500">
+                      SGST (9%): <strong className="text-slate-900">₹ {sgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Discount Value</label>
-              <input
-                type="number"
-                disabled={discountType === 'none'}
-                value={discountValue}
-                onChange={(e) => setDiscountValue(Number(e.target.value))}
-                className="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2 font-bold"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">GST Tax Rate</label>
-              <select
-                value={taxRate}
-                onChange={(e) => setTaxRate(Number(e.target.value))}
-                className="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2 font-bold"
-              >
-                <option value={18}>18% GST (9% CGST + 9% SGST)</option>
-                <option value={12}>12% GST</option>
-                <option value={5}>5% GST</option>
-                <option value={0}>0% Tax Exempted</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Freight / Transport (₹)</label>
-              <input
-                type="number"
-                value={freightCharges}
-                onChange={(e) => setFreightCharges(Number(e.target.value))}
-                className="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2 font-bold"
-              />
+            <div className="pt-3 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3 bg-amber-100/70 p-4 rounded-xl">
+              <div>
+                <div className="text-xs font-bold text-amber-900 uppercase">Grand Total Amount :</div>
+                <div className="text-xs font-medium text-slate-600 italic">{amountWords}</div>
+              </div>
+              <div className="text-2xl font-black text-slate-900">
+                ₹ {totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </div>
             </div>
           </div>
 
-          <div className="pt-3 border-t border-slate-100">
-            <label className="block text-xs font-bold text-slate-700 mb-1">Terms & Conditions</label>
-            <textarea
-              rows={3}
-              value={termsAndConditions}
-              onChange={(e) => setTermsAndConditions(e.target.value)}
-              className="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2 font-sans"
-              placeholder="1. Water and 3-phase electricity to be supplied by client..."
-            />
-          </div>
-        </div>
-
-        {/* Right: Live Calculation Card */}
-        <div className="bg-slate-900 text-white rounded-2xl p-5 shadow-lg space-y-3 flex flex-col justify-between">
-          <div>
-            <h4 className="font-extrabold text-xs uppercase tracking-wide text-amber-400 mb-3">
-              Commercial Summary
-            </h4>
-
-            <div className="space-y-2 text-xs border-b border-slate-800 pb-3">
-              <div className="flex justify-between text-slate-300">
-                <span>Subtotal:</span>
-                <span className="font-bold">₹ {subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-              </div>
-
-              {discountAmt > 0 && (
-                <div className="flex justify-between text-emerald-400">
-                  <span>Discount:</span>
-                  <span className="font-bold">- ₹ {discountAmt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                </div>
-              )}
-
-              {freightCharges > 0 && (
-                <div className="flex justify-between text-slate-300">
-                  <span>Freight Charges:</span>
-                  <span className="font-bold">+ ₹ {freightCharges.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                </div>
-              )}
-
-              <div className="flex justify-between text-slate-300">
-                <span>Taxable Amount:</span>
-                <span className="font-bold">₹ {taxableAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-              </div>
-
-              {taxRate > 0 && (
-                <>
-                  <div className="flex justify-between text-slate-400">
-                    <span>CGST ({taxRate / 2}%):</span>
-                    <span>₹ {cgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                  </div>
-                  <div className="flex justify-between text-slate-400">
-                    <span>SGST ({taxRate / 2}%):</span>
-                    <span>₹ {sgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                  </div>
-                </>
-              )}
-            </div>
-
-            <div className="flex justify-between items-baseline pt-3">
-              <span className="font-black text-sm uppercase text-amber-400">Final Total:</span>
-              <span className="text-2xl font-black text-white">
-                ₹ {finalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+          {/* BANK DETAILS (MATCHING THE SUBSIDIARY) */}
+          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black uppercase text-slate-900 tracking-wider">
+                Company's Official Bank Details :
+              </span>
+              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                <ShieldCheck className="w-3 h-3" />
+                Verified Corporate Account
               </span>
             </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs pt-2">
+              <div>
+                <span className="text-slate-400 block font-bold text-[10px]">A/C HOLDER'S NAME</span>
+                <span className="font-extrabold text-slate-900">
+                  {currentCompany?.bank_account_name || currentCompany?.company_name || activeCompany.name}
+                </span>
+              </div>
+              <div>
+                <span className="text-slate-400 block font-bold text-[10px]">BANK NAME</span>
+                <span className="font-extrabold text-slate-900">
+                  {currentCompany?.bank_name || 'HDFC Bank'}
+                </span>
+              </div>
+              <div>
+                <span className="text-slate-400 block font-bold text-[10px]">ACCOUNT NUMBER</span>
+                <span className="font-mono font-extrabold text-slate-900 text-sm">
+                  {currentCompany?.bank_account_no || '73388820361'}
+                </span>
+              </div>
+              <div>
+                <span className="text-slate-400 block font-bold text-[10px]">BRANCH & IFS CODE</span>
+                <span className="font-extrabold text-slate-900">
+                  {currentCompany?.bank_branch || 'Chennai'} & {currentCompany?.bank_ifsc || 'HDFC0001234'}
+                </span>
+              </div>
+            </div>
           </div>
 
-          <div className="pt-4 border-t border-slate-800 space-y-2">
-            <button
-              type="button"
-              onClick={() => handleSave(false)}
-              disabled={saving || isImmutable}
-              className="w-full py-2.5 bg-[#FED10C] hover:bg-[#E5BC07] text-slate-950 font-black text-xs rounded-xl flex items-center justify-center gap-2 shadow-sm transition-colors"
-            >
-              <Save className="w-4 h-4" />
-              <span>{saving ? 'Saving Changes...' : 'Save Quotation Updates'}</span>
-            </button>
+          {/* TERMS AND CONDITIONS */}
+          <div className="space-y-3 border-t border-slate-200 pt-6">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black uppercase tracking-wider text-slate-900">
+                Terms and Conditions:
+              </span>
+              <button
+                type="button"
+                onClick={() => setTerms(prev => [...prev, 'New condition...'])}
+                className="text-[11px] font-bold text-blue-600 hover:text-blue-800"
+              >
+                + Add Term
+              </button>
+            </div>
+            <div className="space-y-2">
+              {terms.map((term, index) => (
+                <div key={index} className="flex items-center gap-2 text-xs">
+                  <span className="text-amber-500 font-bold">•</span>
+                  <input
+                    type="text"
+                    value={term}
+                    onChange={e => {
+                      const updated = [...terms];
+                      updated[index] = e.target.value;
+                      setTerms(updated);
+                    }}
+                    className="w-full bg-transparent hover:bg-slate-50 focus:bg-white border-b border-transparent focus:border-amber-400 focus:outline-none py-0.5 text-xs font-medium text-slate-800"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setTerms(prev => prev.filter((_, i) => i !== index))}
+                    className="text-slate-400 hover:text-rose-500 p-0.5"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
 
-            <button
-              type="button"
-              onClick={() => handleSave(true)}
-              disabled={saving || isImmutable}
-              className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-colors border border-slate-700"
-            >
-              <Eye className="w-4 h-4 text-amber-400" />
-              <span>Save & View A4 Preview</span>
-            </button>
+          {/* SIGNATORY & FOOTER NOTICE */}
+          <div className="pt-8 border-t border-slate-200 flex flex-wrap items-center justify-between gap-6">
+            <div className="space-y-1">
+              <div className="text-xs font-bold text-slate-700">For {activeCompany.name}</div>
+              <div className="h-10" />
+              <div className="text-xs font-black text-slate-900">
+                {companyCode === 'cleantech'
+                  ? 'Mr. Manikandan Balamurugan'
+                  : companyCode === 'kleanmax'
+                  ? 'Mr. Manikandan'
+                  : 'Authorised Signatory'}
+              </div>
+              <div className="text-[11px] text-slate-500">
+                {companyCode === 'cleantech' ? 'Sales and Service Head' : 'Project Estimations Head'} • +91 7338882036
+              </div>
+              <div className="text-[11px] font-bold text-slate-700">Authorised Signatory</div>
+            </div>
+
+            <div className="text-right text-[10px] text-slate-400 max-w-xs leading-relaxed">
+              This is a computer generated document and authenticated by {activeCompany.name}. Hence, it is valid even if not signed manually.
+            </div>
           </div>
         </div>
       </div>
@@ -1097,4 +1189,3 @@ export const QuotationEdit: React.FC<QuotationEditProps> = ({
 };
 
 export default QuotationEdit;
-
