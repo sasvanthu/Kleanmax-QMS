@@ -1,3 +1,4 @@
+import re
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
@@ -280,7 +281,8 @@ async def download_quotation_pdf(
     )
 
     pdf_bytes = await generate_pdf_bytes_async(html)
-    filename = f"Quotation_{quotation.quotation_number.replace('/', '_')}.pdf"
+    clean_no = re.sub(r'[\/\\?%*:|"<> ]', '_', quotation.quotation_number)
+    filename = f"Quotation_{clean_no}.pdf"
 
     return Response(
         content=pdf_bytes,
@@ -295,32 +297,39 @@ def download_quotation_docx(
     db: Session = Depends(get_db),
     current_user: Optional[Profile] = Depends(get_optional_current_user)
 ):
-    quotation = db.query(Quotation).filter(Quotation.id == id).first()
-    if not quotation:
-        raise HTTPException(status_code=404, detail="Quotation not found")
+    try:
+        quotation = db.query(Quotation).filter(Quotation.id == id).first()
+        if not quotation:
+            raise HTTPException(status_code=404, detail="Quotation not found")
 
-    company = None
-    if quotation.company_code:
-        company = db.query(CompanySetting).filter(CompanySetting.company_code == quotation.company_code).first()
-    if not company:
-        company = db.query(CompanySetting).first()
-    if not company:
-        company = CompanySetting()
+        company = None
+        if quotation.company_code:
+            company = db.query(CompanySetting).filter(CompanySetting.company_code == quotation.company_code).first()
+        if not company:
+            company = db.query(CompanySetting).first()
+        if not company:
+            company = CompanySetting()
 
-    docx_bytes = generate_quotation_docx_bytes(
-        quotation=quotation,
-        company=company,
-        customer=quotation.customer,
-        sections=quotation.sections,
-        items=quotation.items,
-    )
-    filename = f"Quotation_{quotation.quotation_number.replace('/', '_')}.docx"
+        docx_bytes = generate_quotation_docx_bytes(
+            quotation=quotation,
+            company=company,
+            customer=quotation.customer,
+            sections=quotation.sections,
+            items=quotation.items,
+        )
+        clean_no = re.sub(r'[\/\\?%*:|"<> ]', '_', quotation.quotation_number)
+        filename = f"Quotation_{clean_no}.docx"
 
-    return Response(
-        content=docx_bytes,
-        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
-    )
+        return Response(
+            content=docx_bytes,
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Error generating Word (.docx) for quotation {id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate Word document: {str(e)}")
 
 
 @router.delete("/{id}")

@@ -16,9 +16,9 @@ class QuotationSectionSchema(BaseModel):
     section_name: str
     section_order: int = 1
     service_id: Optional[str] = None
-    service_name: str
-    length: Decimal = Field(..., gt=0)
-    breadth: Decimal = Field(..., gt=0)
+    service_name: Optional[str] = 'Service Area'
+    length: Decimal = Field(Decimal("1.0000"), ge=0)
+    breadth: Decimal = Field(Decimal("1.0000"), ge=0)
     measurement_unit: str = "ft"  # ft, m, sq_ft, sq_m
     calculated_area: Decimal = Decimal("0.0000")
     repetitions: int = Field(1, ge=1)
@@ -26,7 +26,7 @@ class QuotationSectionSchema(BaseModel):
     billable_uom: str = "sq_ft"
     rate_source: str = "catalogue"  # catalogue, manual_override
     original_catalogue_rate: Decimal = Decimal("0.0000")
-    applied_rate: Decimal = Field(..., ge=0)
+    applied_rate: Decimal = Field(Decimal("0.0000"), ge=0)
     override_reason: Optional[str] = None
     discount_percent: Decimal = Field(Decimal("0.00"), ge=0, le=100)
     line_total: Decimal = Decimal("0.00")
@@ -42,12 +42,12 @@ class QuotationItemSchema(BaseModel):
     description: Optional[str] = None
     hsn_sac: Optional[str] = None
     quotation_type: str = "item_based"
-    quantity: Decimal = Field(Decimal("1.0000"), gt=0)
+    quantity: Decimal = Field(Decimal("1.0000"), ge=0)
     uom: str = "nos"
-    unit_price: Decimal = Field(..., ge=0)
+    unit_price: Decimal = Field(Decimal("0.00"), ge=0)
     rate_source: str = "catalogue"
     original_catalogue_rate: Decimal = Decimal("0.0000")
-    applied_rate: Decimal = Field(..., ge=0)
+    applied_rate: Decimal = Field(Decimal("0.00"), ge=0)
     override_reason: Optional[str] = None
     discount_type: str = "none"
     discount_value: Decimal = Decimal("0.00")
@@ -84,6 +84,12 @@ class QuotationCreate(BaseModel):
     other_charges: Decimal = Decimal("0.00")
     tax_rate: Decimal = Decimal("18.00")
     rounding_policy: str = "HALF_UP"
+    snapshot_json: Optional[Any] = None
+    client_name: Optional[str] = None
+    client_address: Optional[str] = None
+    client_gstin: Optional[str] = None
+    client_phone: Optional[str] = None
+    attention_person: Optional[str] = None
 
 class QuotationUpdate(BaseModel):
     company_code: Optional[str] = None
@@ -109,6 +115,12 @@ class QuotationUpdate(BaseModel):
     other_charges: Optional[Decimal] = None
     tax_rate: Optional[Decimal] = None
     rounding_policy: Optional[str] = None
+    snapshot_json: Optional[Any] = None
+    client_name: Optional[str] = None
+    client_address: Optional[str] = None
+    client_gstin: Optional[str] = None
+    client_phone: Optional[str] = None
+    attention_person: Optional[str] = None
 
 class RevisionCreateRequest(BaseModel):
     revision_reason: str = Field(..., min_length=3, description="Explanation of why this revision was created")

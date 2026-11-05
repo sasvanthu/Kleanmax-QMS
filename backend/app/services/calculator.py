@@ -71,7 +71,7 @@ class SectionCalculationResult(BaseModel):
 
 class ItemCalculationInput(BaseModel):
     item_name: str
-    quantity: Decimal = Field(..., gt=0)
+    quantity: Decimal = Field(Decimal("1.0000"), ge=0)
     uom: str = "nos"
     unit_price: Decimal = Field(..., ge=0)
     discount_percent: Decimal = Field(Decimal("0.00"), ge=0, le=100)

@@ -39,7 +39,24 @@ def create_quotation(
 ) -> Quotation:
     customer = db.query(Customer).filter(Customer.id == data.customer_id).first()
     if not customer:
-        raise HTTPException(status_code=404, detail="Customer not found")
+        customer = db.query(Customer).filter(Customer.company_name.ilike(data.customer_id.strip())).first()
+    if not customer:
+        client_name = getattr(data, 'client_name', None) or (data.customer_id if len(data.customer_id) < 60 and '-' not in data.customer_id else "Client")
+        customer = Customer(
+            company_name=client_name,
+            billing_address_line1=getattr(data, 'client_address', None) or "Perungudi Industrial Estate",
+            billing_city="Chennai",
+            billing_state="Tamil Nadu",
+            billing_state_code="33",
+            billing_pincode="600096",
+            phone=getattr(data, 'client_phone', None) or "+91 98840 12345",
+            gstin=getattr(data, 'client_gstin', None),
+            contact_person=getattr(data, 'attention_person', None),
+            is_active=True,
+            created_by_id=current_user.id if current_user else None
+        )
+        db.add(customer)
+        db.flush()
 
     company = None
     if getattr(data, 'company_code', None):
@@ -130,8 +147,8 @@ def create_quotation(
             Quotation.quotation_number == quotation_number,
             Quotation.revision_number == 0
         ).first()
-        if existing and existing.status == "draft":
-            # Update existing draft seamlessly without UniqueConstraint collision
+        if existing and existing.status not in ("cancelled", "revised"):
+            # Update existing record seamlessly without UniqueConstraint collision
             existing.customer_id = customer.id
             existing.company_code = data.company_code or existing.company_code
             existing.quotation_type = data.quotation_type or existing.quotation_type
@@ -152,6 +169,8 @@ def create_quotation(
             existing.total_tax = calc_res.total_tax
             existing.final_amount = calc_res.final_amount
             existing.amount_in_words = calc_res.amount_in_words
+            if hasattr(data, 'snapshot_json') and data.snapshot_json is not None:
+                existing.snapshot_json = data.snapshot_json
             existing.updated_at = datetime.utcnow()
 
             # Replace items
@@ -178,6 +197,32 @@ def create_quotation(
                     notes=item_input.notes,
                 )
                 db.add(item_row)
+
+            # Replace sections
+            db.query(QuotationSection).filter(QuotationSection.quotation_id == existing.id).delete()
+            for idx, (sec_input, sec_calc) in enumerate(zip(data.sections, calc_res.sections), start=1):
+                sec_row = QuotationSection(
+                    quotation_id=existing.id,
+                    section_name=sec_calc.section_name,
+                    section_order=idx,
+                    service_id=sec_input.service_id,
+                    service_name=sec_input.service_name,
+                    length=sec_calc.length,
+                    breadth=sec_calc.breadth,
+                    measurement_unit=sec_calc.measurement_unit,
+                    calculated_area=sec_calc.calculated_area,
+                    repetitions=sec_calc.repetitions,
+                    billable_area=sec_calc.billable_area,
+                    billable_uom=sec_calc.billable_uom,
+                    rate_source=sec_input.rate_source,
+                    original_catalogue_rate=sec_input.original_catalogue_rate,
+                    applied_rate=sec_calc.applied_rate,
+                    override_reason=sec_calc.override_reason,
+                    discount_percent=sec_calc.discount_percent,
+                    line_total=sec_calc.line_total,
+                    notes=sec_input.notes,
+                )
+                db.add(sec_row)
 
             db.commit()
             db.refresh(existing)
@@ -224,6 +269,7 @@ def create_quotation(
         rounding_adjustment=calc_res.rounding_adjustment,
         final_amount=calc_res.final_amount,
         amount_in_words=calc_res.amount_in_words,
+        snapshot_json=getattr(data, 'snapshot_json', None),
         prepared_by_id=current_user.id,
     )
     db.add(quotation)

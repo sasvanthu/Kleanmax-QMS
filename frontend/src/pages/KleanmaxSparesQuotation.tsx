@@ -157,8 +157,13 @@ export const KleanmaxSparesQuotation: React.FC<KleanmaxSparesQuotationProps> = (
         other_charges: 0,
       };
 
-      const created = await api.quotations.create(payload);
-      setSavedQuoteId(created.id);
+      let created;
+      if (savedQuoteId) {
+        created = await api.quotations.update(savedQuoteId, payload);
+      } else {
+        created = await api.quotations.create(payload);
+        setSavedQuoteId(created.id);
+      }
       setToastMsg(`Quotation ${created.quotation_number} saved successfully! Ready to download.`);
       setTimeout(() => setToastMsg(null), 5000);
       return created.id;

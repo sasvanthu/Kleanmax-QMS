@@ -2,6 +2,17 @@ import os
 import io
 from pathlib import Path
 from decimal import Decimal
+
+def safe_decimal(v, default="0") -> Decimal:
+    if v is None:
+        return Decimal(default)
+    try:
+        s = str(v).strip()
+        if not s or s.lower() == "none":
+            return Decimal(default)
+        return Decimal(s)
+    except Exception:
+        return Decimal(default)
 from typing import List, Optional
 import docx
 from docx.shared import Inches, Pt, RGBColor
@@ -233,8 +244,8 @@ def _generate_uniquepainters_docx(
 
     sections_list = sections or []
     items_list = items or []
-    subtotal = Decimal(str(getattr(quotation, 'subtotal', 0)))
-    final_amount = Decimal(str(getattr(quotation, 'final_amount', subtotal)))
+    subtotal = safe_decimal(getattr(quotation, 'subtotal', 0), '0')
+    final_amount = safe_decimal(getattr(quotation, 'final_amount', subtotal), '0')
 
     data_rows = []
     if sections_list:
@@ -244,14 +255,14 @@ def _generate_uniquepainters_docx(
             notes = getattr(s, 'notes', '') or ""
             dim_str = ""
             if s.billable_area:
-                dim_str = f"Area: {Decimal(str(s.billable_area)):,.0f} sq.ft @ Rs.{Decimal(str(s.applied_rate)):,.2f} / sq.ft"
-            amt = Decimal(str(s.line_total or 0))
+                dim_str = f"Area: {safe_decimal(getattr(s, 'billable_area', 0), '0'):,.0f} sq.ft @ Rs.{safe_decimal(getattr(s, 'applied_rate', 0), '0'):,.2f} / sq.ft"
+            amt = safe_decimal(getattr(s, 'line_total', 0), '0')
             data_rows.append((idx, title, svc, notes, dim_str, amt))
     elif items_list:
         for idx, itm in enumerate(items_list, 1):
             title = itm.item_name.upper()
             desc = itm.description or ""
-            amt = Decimal(str(itm.line_total or 0))
+            amt = safe_decimal(getattr(itm, 'line_total', 0), '0')
             data_rows.append((idx, title, "", desc, "", amt))
     else:
         title = "INTERIOR WALL PAINTING"
@@ -746,16 +757,16 @@ def generate_quotation_docx_bytes(
                 p_desc.add_run(f"\n{itm.description}").font.size = Pt(7.5)
 
             row_cells[2].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
-            row_cells[2].paragraphs[0].add_run(f"{Decimal(str(itm.quantity)):.2f}").font.size = Pt(8.5)
+            row_cells[2].paragraphs[0].add_run(f"{safe_decimal(getattr(itm, 'quantity', 0), '0'):.2f}").font.size = Pt(8.5)
 
             row_cells[3].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
             row_cells[3].paragraphs[0].add_run(str(itm.uom).upper()).font.size = Pt(8.5)
 
             row_cells[4].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.RIGHT
-            row_cells[4].paragraphs[0].add_run(f"{Decimal(str(itm.unit_price)):,.2f}").font.size = Pt(8.5)
+            row_cells[4].paragraphs[0].add_run(f"{safe_decimal(getattr(itm, 'unit_price', 0), '0'):,.2f}").font.size = Pt(8.5)
 
             row_cells[5].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.RIGHT
-            r_total = row_cells[5].paragraphs[0].add_run(f"{Decimal(str(itm.line_total)):,.2f}")
+            r_total = row_cells[5].paragraphs[0].add_run(f"{safe_decimal(getattr(itm, 'line_total', 0), '0'):,.2f}")
             r_total.bold = True
             r_total.font.size = Pt(8.5)
 
@@ -804,13 +815,13 @@ def generate_quotation_docx_bytes(
             row_cells[2].paragraphs[0].add_run(dim).font.size = Pt(8.5)
 
             row_cells[3].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
-            row_cells[3].paragraphs[0].add_run(f"{Decimal(str(sec.billable_area)):,.1f} sq.ft").font.size = Pt(8.5)
+            row_cells[3].paragraphs[0].add_run(f"{safe_decimal(getattr(sec, 'billable_area', 0), '0'):,.1f} sq.ft").font.size = Pt(8.5)
 
             row_cells[4].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.RIGHT
-            row_cells[4].paragraphs[0].add_run(f"{Decimal(str(sec.applied_rate)):,.2f}").font.size = Pt(8.5)
+            row_cells[4].paragraphs[0].add_run(f"{safe_decimal(getattr(sec, 'applied_rate', 0), '0'):,.2f}").font.size = Pt(8.5)
 
             row_cells[5].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.RIGHT
-            r_total = row_cells[5].paragraphs[0].add_run(f"{Decimal(str(sec.line_total)):,.2f}")
+            r_total = row_cells[5].paragraphs[0].add_run(f"{safe_decimal(getattr(sec, 'line_total', 0), '0'):,.2f}")
             r_total.bold = True
             r_total.font.size = Pt(8.5)
 
@@ -840,7 +851,7 @@ def generate_quotation_docx_bytes(
             row_cells[c_idx].width = col_widths[c_idx]
             _set_cell_margins(row_cells[c_idx], top=80, bottom=80, left=100, right=100)
 
-        fallback_subtotal = Decimal(str(getattr(quotation, 'subtotal', 0)))
+        fallback_subtotal = safe_decimal(getattr(quotation, 'subtotal', 0), '0')
         row_cells[0].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
         row_cells[0].paragraphs[0].add_run("1.").font.size = Pt(8.5)
         row_cells[1].paragraphs[0].add_run(getattr(quotation, 'job_description', 'Commercial Services') or 'Commercial Services').font.size = Pt(8.5)
@@ -856,12 +867,12 @@ def generate_quotation_docx_bytes(
         r_tot.font.size = Pt(8.5)
 
     # 6. Financial Summary Rows
-    subtotal = Decimal(str(getattr(quotation, 'subtotal', 0)))
-    cgst_rate = Decimal(str(getattr(quotation, 'cgst_rate', 9)))
-    cgst_amount = Decimal(str(getattr(quotation, 'cgst_amount', 0)))
-    sgst_rate = Decimal(str(getattr(quotation, 'sgst_rate', 9)))
-    sgst_amount = Decimal(str(getattr(quotation, 'sgst_amount', 0)))
-    final_amount = Decimal(str(getattr(quotation, 'final_amount', subtotal + cgst_amount + sgst_amount)))
+    subtotal = safe_decimal(getattr(quotation, 'subtotal', 0), '0')
+    cgst_rate = safe_decimal(getattr(quotation, 'cgst_rate', 9), '9')
+    cgst_amount = safe_decimal(getattr(quotation, 'cgst_amount', 0), '0')
+    sgst_rate = safe_decimal(getattr(quotation, 'sgst_rate', 9), '9')
+    sgst_amount = safe_decimal(getattr(quotation, 'sgst_amount', 0), '0')
+    final_amount = safe_decimal(getattr(quotation, 'final_amount', subtotal + cgst_amount + sgst_amount), str(subtotal + cgst_amount + sgst_amount))
 
     # Add Totals Rows
     def add_total_line(label, value_str, bold=False, highlight=False):

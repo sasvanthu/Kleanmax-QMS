@@ -161,46 +161,70 @@ export const api = {
     getDocxUrl: (id: string) => `${BASE_URL}/quotations/${id}/docx`,
     getHtmlUrl: (id: string) => `${BASE_URL}/quotations/${id}/html`,
     downloadPdf: async (id: string, filename?: string) => {
-      try {
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${BASE_URL}/quotations/${id}/pdf`, {
-          headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-        });
-        if (!res.ok) throw new Error('PDF generation response not OK');
-        const blob = await res.blob();
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = filename || `Quotation_${id}.pdf`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-      } catch (err) {
-        console.warn('Blob download fallback, opening direct link:', err);
-        window.open(`${BASE_URL}/quotations/${id}/pdf`, '_blank');
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${BASE_URL}/quotations/${id}/pdf`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+      });
+      if (!res.ok) {
+        let errDesc = `Failed to generate PDF (HTTP ${res.status})`;
+        try {
+          const text = await res.text();
+          try {
+            const parsed = JSON.parse(text);
+            errDesc = parsed.detail || parsed.message || text;
+          } catch {
+            if (text && text.length < 300) errDesc = text;
+          }
+        } catch {
+          // ignore
+        }
+        throw new Error(errDesc);
       }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const cleanName = (filename || `Quotation_${id}.pdf`).replace(/[\/\\?%*:|"<>]/g, '_');
+      link.download = cleanName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => {
+        try { window.URL.revokeObjectURL(url); } catch { /* ignore */ }
+      }, 60000);
     },
     downloadDocx: async (id: string, filename?: string) => {
-      try {
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${BASE_URL}/quotations/${id}/docx`, {
-          headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-        });
-        if (!res.ok) throw new Error('Word generation response not OK');
-        const blob = await res.blob();
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = filename || `Quotation_${id}.docx`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-      } catch (err) {
-        console.warn('Blob docx download fallback, opening direct link:', err);
-        window.open(`${BASE_URL}/quotations/${id}/docx`, '_blank');
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${BASE_URL}/quotations/${id}/docx`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+      });
+      if (!res.ok) {
+        let errDesc = `Failed to generate Word document (HTTP ${res.status})`;
+        try {
+          const text = await res.text();
+          try {
+            const parsed = JSON.parse(text);
+            errDesc = parsed.detail || parsed.message || text;
+          } catch {
+            if (text && text.length < 300) errDesc = text;
+          }
+        } catch {
+          // ignore
+        }
+        throw new Error(errDesc);
       }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const cleanName = (filename || `Quotation_${id}.docx`).replace(/[\/\\?%*:|"<>]/g, '_');
+      link.download = cleanName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => {
+        try { window.URL.revokeObjectURL(url); } catch { /* ignore */ }
+      }, 60000);
     },
   },
 

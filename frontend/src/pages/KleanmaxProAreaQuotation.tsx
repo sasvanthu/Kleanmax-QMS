@@ -580,8 +580,13 @@ Recovery / Dirty Water Tank: 100 L`,
         discount_value: 0,
       };
 
-      const res = await api.quotations.create(payload);
-      setSavedQuoteId(res.id);
+      let res;
+      if (savedQuoteId) {
+        res = await api.quotations.update(savedQuoteId, payload);
+      } else {
+        res = await api.quotations.create(payload);
+        setSavedQuoteId(res.id);
+      }
       setToastMsg(`Quotation ${res.quotation_number} saved successfully!`);
       return res.id;
     } catch (err: any) {
@@ -601,7 +606,7 @@ Recovery / Dirty Water Tank: 100 L`,
       }
       if (quoteId) {
         setToastMsg('Generating Word (.docx) document with authentic letterhead...');
-        await api.quotations.downloadDocx(quoteId, `${quotationNo.replace('/', '_')}_KleanmaxPro.docx`);
+        await api.quotations.downloadDocx(quoteId, `${quotationNo.replace(/[\/\\]/g, '_')}_KleanmaxPro.docx`);
         setToastMsg('Word document (.docx) downloaded successfully!');
       }
     } catch (err: any) {
@@ -618,7 +623,7 @@ Recovery / Dirty Water Tank: 100 L`,
       }
       if (quoteId) {
         setToastMsg('Generating official PDF with authentic letterhead...');
-        await api.quotations.downloadPdf(quoteId, `${quotationNo.replace('/', '_')}_KleanmaxPro.pdf`);
+        await api.quotations.downloadPdf(quoteId, `${quotationNo.replace(/[\/\\]/g, '_')}_KleanmaxPro.pdf`);
         setToastMsg('Official PDF downloaded successfully!');
       }
     } catch (err: any) {

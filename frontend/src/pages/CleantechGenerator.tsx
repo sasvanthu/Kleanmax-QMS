@@ -582,8 +582,13 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
         discount_value: 0,
       };
 
-      const res = await api.quotations.create(payload);
-      setSavedQuoteId(res.id);
+      let res;
+      if (savedQuoteId) {
+        res = await api.quotations.update(savedQuoteId, payload);
+      } else {
+        res = await api.quotations.create(payload);
+        setSavedQuoteId(res.id);
+      }
       setToastMsg(`Quotation ${res.quotation_number} saved successfully!`);
       return res.id;
     } catch (err: any) {
@@ -603,7 +608,7 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
       }
       if (quoteId) {
         setToastMsg('Generating Word (.docx) document with authentic letterhead...');
-        await api.quotations.downloadDocx(quoteId, `${quotationNo.replace('/', '_')}_Cleantech.docx`);
+        await api.quotations.downloadDocx(quoteId, `${quotationNo.replace(/[\/\\]/g, '_')}_Cleantech.docx`);
         setToastMsg('Word document (.docx) downloaded successfully!');
       }
     } catch (err: any) {
@@ -620,7 +625,7 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
       }
       if (quoteId) {
         setToastMsg('Generating official PDF with authentic letterhead...');
-        await api.quotations.downloadPdf(quoteId, `${quotationNo.replace('/', '_')}_Cleantech.pdf`);
+        await api.quotations.downloadPdf(quoteId, `${quotationNo.replace(/[\/\\]/g, '_')}_Cleantech.pdf`);
         setToastMsg('Official PDF downloaded successfully!');
       }
     } catch (err: any) {

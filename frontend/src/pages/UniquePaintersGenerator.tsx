@@ -414,8 +414,13 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
         discount_value: 0,
       };
 
-      const res = await api.quotations.create(payload);
-      setSavedQuoteId(res.id);
+      let res;
+      if (savedQuoteId) {
+        res = await api.quotations.update(savedQuoteId, payload);
+      } else {
+        res = await api.quotations.create(payload);
+        setSavedQuoteId(res.id);
+      }
       setToastMsg(`Quotation ${res.quotation_number} saved successfully!`);
       return res.id;
     } catch (err: any) {
@@ -435,7 +440,7 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
       }
       if (quoteId) {
         setToastMsg('Generating authentic Word (.docx) proposal matching sample...');
-        await api.quotations.downloadDocx(quoteId, `${quotationNo.replace('/', '_')}_UniquePainters.docx`);
+        await api.quotations.downloadDocx(quoteId, `${quotationNo.replace(/[\/\\]/g, '_')}_UniquePainters.docx`);
         setToastMsg('Word (.docx) proposal downloaded successfully!');
       }
     } catch (err: any) {
@@ -452,7 +457,7 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
       }
       if (quoteId) {
         setToastMsg('Generating official PDF with authentic letterhead...');
-        await api.quotations.downloadPdf(quoteId, `${quotationNo.replace('/', '_')}_UniquePainters.pdf`);
+        await api.quotations.downloadPdf(quoteId, `${quotationNo.replace(/[\/\\]/g, '_')}_UniquePainters.pdf`);
         setToastMsg('Official PDF downloaded successfully!');
       }
     } catch (err: any) {

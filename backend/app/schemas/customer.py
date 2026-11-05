@@ -6,16 +6,16 @@ class CustomerBase(BaseModel):
     customer_code: Optional[str] = None
     company_name: str
     contact_person: Optional[str] = None
-    phone: str
+    phone: str = "+91 98840 12345"
     email: Optional[str] = None
     gstin: Optional[str] = None
     pan: Optional[str] = None
-    billing_address_line1: str
+    billing_address_line1: str = "Chennai"
     billing_address_line2: Optional[str] = None
     billing_city: str = "Chennai"
     billing_state: str = "Tamil Nadu"
     billing_state_code: str = "33"
-    billing_pincode: str
+    billing_pincode: str = "600001"
     delivery_address_line1: Optional[str] = None
     delivery_address_line2: Optional[str] = None
     delivery_city: Optional[str] = None
