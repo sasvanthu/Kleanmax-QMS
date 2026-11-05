@@ -18,6 +18,29 @@ jinja_env = Environment(
     autoescape=True
 )
 
+def format_currency_filter(val):
+    if val is None:
+        return "0.00"
+    try:
+        return f"{float(val):.2f}"
+    except (ValueError, TypeError):
+        return "0.00"
+
+def format_date_filter(d, fmt='%d/%m/%Y'):
+    if not d:
+        return ""
+    if hasattr(d, 'strftime'):
+        return d.strftime(fmt)
+    try:
+        from datetime import datetime
+        s = str(d).strip()[:10]
+        return datetime.fromisoformat(s).strftime(fmt)
+    except Exception:
+        return str(d)
+
+jinja_env.filters['currency'] = format_currency_filter
+jinja_env.filters['format_date'] = format_date_filter
+
 
 def get_file_base64(filename: str) -> Optional[str]:
     path = STATIC_DIR / filename
@@ -104,7 +127,8 @@ async def generate_pdf_bytes_async(html_content: str) -> bytes:
             pdf_bytes = await page.pdf(
                 format="A4",
                 print_background=True,
-                margin={"top": "10mm", "right": "12mm", "bottom": "12mm", "left": "12mm"}
+                prefer_css_page_size=True,
+                margin={"top": "0", "right": "0", "bottom": "0", "left": "0"}
             )
             await browser.close()
             return pdf_bytes

@@ -225,26 +225,32 @@ def view_quotation_html(
     db: Session = Depends(get_db),
     current_user: Optional[Profile] = Depends(get_optional_current_user)
 ):
-    quotation = db.query(Quotation).filter(Quotation.id == id).first()
-    if not quotation:
-        raise HTTPException(status_code=404, detail="Quotation not found")
+    try:
+        quotation = db.query(Quotation).filter(Quotation.id == id).first()
+        if not quotation:
+            raise HTTPException(status_code=404, detail="Quotation not found")
 
-    company = None
-    if quotation.company_code:
-        company = db.query(CompanySetting).filter(CompanySetting.company_code == quotation.company_code).first()
-    if not company:
-        company = db.query(CompanySetting).first()
-    if not company:
-        company = CompanySetting()
+        company = None
+        if quotation.company_code:
+            company = db.query(CompanySetting).filter(CompanySetting.company_code == quotation.company_code).first()
+        if not company:
+            company = db.query(CompanySetting).first()
+        if not company:
+            company = CompanySetting()
 
-    html = render_quotation_html(
-        quotation=quotation,
-        company=company,
-        customer=quotation.customer,
-        sections=quotation.sections,
-        items=quotation.items,
-    )
-    return HTMLResponse(content=html, status_code=200)
+        html = render_quotation_html(
+            quotation=quotation,
+            company=company,
+            customer=quotation.customer,
+            sections=quotation.sections,
+            items=quotation.items,
+        )
+        return HTMLResponse(content=html, status_code=200)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Error rendering quotation HTML preview for {id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to render quotation preview: {str(e)}")
 
 
 @router.get("/{id}/pdf")

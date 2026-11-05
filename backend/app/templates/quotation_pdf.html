@@ -26,6 +26,24 @@
         }
 
         /* Top Letterhead Banner */
+        {% if company_code == 'kleanmax' %}
+        .banner-container {
+            width: calc(100% + 24mm);
+            margin: -8mm -12mm 16px -12mm;
+            padding: 0;
+            border-bottom: none;
+            text-align: center;
+            overflow: hidden;
+            display: block;
+        }
+        .banner-img {
+            width: 100%;
+            height: auto;
+            max-height: none;
+            display: block;
+            object-fit: fill;
+        }
+        {% else %}
         .banner-container {
             width: 100%;
             text-align: center;
@@ -39,6 +57,7 @@
             max-height: 110px;
             object-fit: contain;
         }
+        {% endif %}
 
         /* Quotation Title */
         .quote-title {
@@ -722,7 +741,7 @@
             </td>
             <td class="meta-no-date">
                 <div>Quotation No :- {{ quotation.quotation_number }}{% if quotation.revision_number > 0 %}-R{{ quotation.revision_number }}{% endif %}</div>
-                <div style="margin-top: 4px;">Date :- {{ quotation.quotation_date.strftime('%d/%m/%Y') if quotation.quotation_date else '' }}</div>
+                <div style="margin-top: 4px;">Date :- {{ quotation.quotation_date|format_date('%d/%m/%Y') }}</div>
             </td>
         </tr>
     </table>
@@ -796,7 +815,7 @@
             </tr>
             <tr style="border-top: 1px solid #fef08a;">
                 <td style="font-weight: 800; font-size: 10pt; color: #0f172a; padding-top: 4px;">TOTAL PROJECT VALUE :</td>
-                <td style="font-weight: 900; font-size: 11pt; text-align: right; color: #0f172a; padding-top: 4px;">₹ {{ "%.2f"|format(quotation.final_amount) }}</td>
+                <td style="font-weight: 900; font-size: 11pt; text-align: right; color: #0f172a; padding-top: 4px;">₹ {{ "%.2f"|format(quotation.final_amount or 0) }}</td>
             </tr>
         </table>
         {% if quotation.amount_in_words %}
@@ -849,8 +868,8 @@
                     </td>
                     <td class="text-center" style="font-weight: 700;">{{ item.quantity|int if item.quantity == item.quantity|int else item.quantity }}</td>
                     <td class="text-center">{{ item.uom|upper }}</td>
-                    <td class="text-right">₹ {{ "%.2f"|format(item.applied_rate) }}</td>
-                    <td class="text-right" style="font-weight: 700;">₹ {{ "%.2f"|format(item.line_total) }}</td>
+                    <td class="text-right">₹ {{ "%.2f"|format(item.applied_rate or 0) }}</td>
+                    <td class="text-right" style="font-weight: 700;">₹ {{ "%.2f"|format(item.line_total or 0) }}</td>
                 </tr>
                 {% endif %}
             {% endfor %}
@@ -859,24 +878,24 @@
             {% if quotation.cgst_amount and quotation.cgst_amount > 0 %}
             <tr class="total-row">
                 <td colspan="5" class="text-right">SUB TOTAL</td>
-                <td class="text-right">₹ {{ "%.2f"|format(quotation.subtotal) }}</td>
+                <td class="text-right">₹ {{ "%.2f"|format(quotation.subtotal or 0) }}</td>
             </tr>
             <tr>
                 <td colspan="5" class="text-right" style="font-weight: 600;">CGST ({{ quotation.cgst_rate }}%)</td>
-                <td class="text-right">₹ {{ "%.2f"|format(quotation.cgst_amount) }}</td>
+                <td class="text-right">₹ {{ "%.2f"|format(quotation.cgst_amount or 0) }}</td>
             </tr>
             <tr>
                 <td colspan="5" class="text-right" style="font-weight: 600;">SGST ({{ quotation.sgst_rate }}%)</td>
-                <td class="text-right">₹ {{ "%.2f"|format(quotation.sgst_amount) }}</td>
+                <td class="text-right">₹ {{ "%.2f"|format(quotation.sgst_amount or 0) }}</td>
             </tr>
             <tr class="total-row" style="background-color: #fef08a;">
                 <td colspan="5" class="text-right" style="font-size: 10pt;">TOTAL</td>
-                <td class="text-right" style="font-size: 10pt; color: #0f172a;">₹ {{ "%.2f"|format(quotation.final_amount) }}</td>
+                <td class="text-right" style="font-size: 10pt; color: #0f172a;">₹ {{ "%.2f"|format(quotation.final_amount or 0) }}</td>
             </tr>
             {% else %}
             <tr class="total-row">
                 <td colspan="5" class="text-right" style="font-size: 9.5pt;">TOTAL</td>
-                <td class="text-right" style="font-size: 9.5pt; color: #0f172a;">₹ {{ "%.2f"|format(quotation.final_amount) }}</td>
+                <td class="text-right" style="font-size: 9.5pt; color: #0f172a;">₹ {{ "%.2f"|format(quotation.final_amount or 0) }}</td>
             </tr>
             {% endif %}
         </tbody>
@@ -903,28 +922,28 @@
                 </td>
                 <td class="text-center">{{ s.length }} x {{ s.breadth }} {{ s.measurement_unit }}{% if s.repetitions > 1 %} (x{{ s.repetitions }}){% endif %}</td>
                 <td class="text-center" style="font-weight: 700;">{{ s.billable_area }} sq ft</td>
-                <td class="text-right">₹ {{ "%.2f"|format(s.applied_rate) }}</td>
-                <td class="text-right" style="font-weight: 700;">₹ {{ "%.2f"|format(s.line_total) }}</td>
+                <td class="text-right">₹ {{ "%.2f"|format(s.applied_rate or 0) }}</td>
+                <td class="text-right" style="font-weight: 700;">₹ {{ "%.2f"|format(s.line_total or 0) }}</td>
             </tr>
             {% endfor %}
 
             <tr class="total-row">
                 <td colspan="5" class="text-right">SUB TOTAL</td>
-                <td class="text-right">₹ {{ "%.2f"|format(quotation.subtotal) }}</td>
+                <td class="text-right">₹ {{ "%.2f"|format(quotation.subtotal or 0) }}</td>
             </tr>
             {% if quotation.cgst_amount and quotation.cgst_amount > 0 %}
             <tr>
                 <td colspan="5" class="text-right" style="font-weight: 600;">CGST ({{ quotation.cgst_rate }}%)</td>
-                <td class="text-right">₹ {{ "%.2f"|format(quotation.cgst_amount) }}</td>
+                <td class="text-right">₹ {{ "%.2f"|format(quotation.cgst_amount or 0) }}</td>
             </tr>
             <tr>
                 <td colspan="5" class="text-right" style="font-weight: 600;">SGST ({{ quotation.sgst_rate }}%)</td>
-                <td class="text-right">₹ {{ "%.2f"|format(quotation.sgst_amount) }}</td>
+                <td class="text-right">₹ {{ "%.2f"|format(quotation.sgst_amount or 0) }}</td>
             </tr>
             {% endif %}
             <tr class="total-row" style="background-color: #fef08a;">
                 <td colspan="5" class="text-right" style="font-size: 10pt;">TOTAL</td>
-                <td class="text-right" style="font-size: 10pt; color: #0f172a;">₹ {{ "%.2f"|format(quotation.final_amount) }}</td>
+                <td class="text-right" style="font-size: 10pt; color: #0f172a;">₹ {{ "%.2f"|format(quotation.final_amount or 0) }}</td>
             </tr>
         </tbody>
     </table>

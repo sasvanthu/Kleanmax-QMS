@@ -595,7 +595,13 @@ def generate_quotation_docx_bytes(
         p_banner.paragraph_format.space_before = Pt(0)
         p_banner.paragraph_format.space_after = Pt(8)
         run_banner = p_banner.add_run()
-        run_banner.add_picture(str(header_img_path), width=Inches(7.07))
+        if company_code == 'kleanmax':
+            # Edge-to-edge header across full page width
+            p_banner.paragraph_format.left_indent = Inches(-0.6)
+            p_banner.paragraph_format.right_indent = Inches(-0.6)
+            run_banner.add_picture(str(header_img_path), width=Inches(8.27))
+        else:
+            run_banner.add_picture(str(header_img_path), width=Inches(7.07))
 
     # 2. Quotation Title
     q_type = getattr(quotation, 'quotation_type', 'item_based')

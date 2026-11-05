@@ -316,10 +316,13 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
         try {
           targetCust = await api.customers.create({
             company_name: clientName.trim(),
-            billing_address_line1: clientAddress.trim(),
+            billing_address_line1: clientAddress.trim() || 'Perungudi Industrial Estate',
             billing_city: 'Chennai',
-            phone: clientPhone.trim(),
-            gstin: clientGstin.trim(),
+            billing_state: 'Tamil Nadu',
+            billing_state_code: '33',
+            billing_pincode: '600001',
+            phone: clientPhone.trim() || '+91 98840 12345',
+            gstin: clientGstin.trim() || undefined,
           });
           setCustomers(prev => [...prev, targetCust!]);
         } catch (e) {
@@ -527,12 +530,12 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
       <div className="bg-white border border-slate-300 rounded-2xl shadow-xl overflow-hidden">
         {/* STARTING PAGE (COVER PAGE WITH AUTHENTIC KLEANMAX HEADER) */}
         <div className="border-b-4 border-slate-100 bg-white">
-          {/* Flush Header Banner */}
-          <div className="w-full bg-white border-b border-slate-200 text-center">
+          {/* Flush Header Banner - Spanning Till End of Page */}
+          <div className="w-full bg-white border-b border-slate-200 overflow-hidden">
             <img
               src="/headers/header_kleanmax.png"
               alt="Kleanmax Official Letterhead Banner"
-              className="w-full h-auto max-h-36 object-contain block mx-auto"
+              className="w-full h-auto block object-fill"
             />
           </div>
 

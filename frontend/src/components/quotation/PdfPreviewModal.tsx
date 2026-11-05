@@ -18,6 +18,7 @@ export const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({
 }) => {
   const [htmlContent, setHtmlContent] = useState<string>('');
   const [loading, setLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen && quotationId) {
@@ -28,16 +29,34 @@ export const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({
   const loadHtml = async () => {
     if (!quotationId) return;
     setLoading(true);
+    setPreviewError(null);
     try {
       const res = await fetch(api.quotations.getHtmlUrl(quotationId), {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
         }
       });
+      if (!res.ok) {
+        let errDesc = `HTTP ${res.status}: ${res.statusText}`;
+        try {
+          const text = await res.text();
+          try {
+            const parsed = JSON.parse(text);
+            errDesc = parsed.detail || parsed.message || text;
+          } catch {
+            if (text && text.length < 500) errDesc = text;
+          }
+        } catch {
+          // ignore
+        }
+        setPreviewError(errDesc);
+        return;
+      }
       const text = await res.text();
       setHtmlContent(text);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      setPreviewError(err.message || 'Failed to connect to backend server');
     } finally {
       setLoading(false);
     }
@@ -131,6 +150,23 @@ export const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({
           {loading ? (
             <div className="flex items-center justify-center h-full text-xs text-slate-500 font-bold">
               Rendering quotation document...
+            </div>
+          ) : previewError ? (
+            <div className="flex flex-col items-center justify-center h-full max-w-md text-center p-6 bg-white rounded-2xl shadow border border-rose-200 space-y-3">
+              <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 font-black">
+                !
+              </div>
+              <h4 className="text-sm font-bold text-slate-900">Unable to load document preview</h4>
+              <p className="text-xs text-slate-500 bg-rose-50 border border-rose-100 p-2.5 rounded-lg font-mono">
+                {previewError}
+              </p>
+              <button
+                type="button"
+                onClick={loadHtml}
+                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-xs"
+              >
+                Retry Document Render
+              </button>
             </div>
           ) : (
             <div className="w-full max-w-[210mm] h-full bg-white shadow-lg overflow-y-auto rounded border border-slate-300">

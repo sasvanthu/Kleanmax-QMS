@@ -646,11 +646,11 @@ export const QuotationEdit: React.FC<QuotationEditProps> = ({
       {/* DOCUMENT PREVIEW & WYSIWYG EDITOR CANVAS */}
       <div className="bg-white border border-slate-300 rounded-2xl shadow-xl overflow-hidden">
         {/* TOP LETTERHEAD BANNER FLUSH */}
-        <div className="w-full bg-white border-b border-slate-200 text-center">
+        <div className="w-full bg-white border-b border-slate-200 overflow-hidden">
           <img
             src={activeCompany.banner}
             alt={`${activeCompany.name} Letterhead Banner`}
-            className="w-full h-auto max-h-36 object-contain block mx-auto"
+            className={`w-full h-auto block ${activeCompany.code === 'kleanmax' ? 'object-fill' : 'max-h-36 object-contain mx-auto'}`}
           />
         </div>
 
