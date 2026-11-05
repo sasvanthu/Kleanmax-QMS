@@ -5,6 +5,7 @@ export interface User {
   email: string;
   full_name: string;
   role: UserRole;
+  company_code?: string;
   phone?: string;
   is_active: boolean;
 }
@@ -144,6 +145,7 @@ export interface Quotation {
   terms_and_conditions?: string;
   notes?: string;
   snapshot_json?: string;
+  image_url?: string | null;
   
   subtotal: number;
   discount_type: 'none' | 'percentage' | 'fixed';

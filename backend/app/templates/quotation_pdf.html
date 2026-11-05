@@ -4,6 +4,18 @@
     <meta charset="UTF-8">
     <title>Quotation {{ quotation.quotation_number }} - Klean Max Pro</title>
     <style>
+        {% if company_code == 'uniquepainters' %}
+        @page {
+            size: A4 portrait;
+            margin: 14mm 20mm 15mm 20mm;
+            @bottom-center {
+                content: "Unique Painters  --  Contact: 9500065813 / 9710148218 / 7338882034";
+                font-size: 8pt;
+                color: #64748b;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            }
+        }
+        {% else %}
         @page {
             size: A4 portrait;
             margin: 8mm 12mm 12mm 12mm;
@@ -14,6 +26,7 @@
                 font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
             }
         }
+        {% endif %}
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -24,6 +37,47 @@
             line-height: 1.35;
             background-color: #ffffff;
         }
+
+        {% if company_code == 'uniquepainters' %}
+        @media screen {
+            body {
+                background-color: #cbd5e1;
+                padding: 24px 16px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+            .unp-page {
+                background: #ffffff;
+                width: 210mm;
+                max-width: 90%;
+                min-height: 297mm;
+                padding: 16mm 20mm !important;
+                margin: 0 auto 28px auto;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+                border-radius: 4px;
+                box-sizing: border-box;
+            }
+            .page-break {
+                height: 24px;
+                display: block;
+            }
+        }
+        @media print {
+            body {
+                background: #ffffff;
+                padding: 0;
+                margin: 0;
+            }
+            .unp-page {
+                padding: 0 !important;
+                margin: 0 !important;
+                box-shadow: none !important;
+                border-radius: 0 !important;
+                width: 100% !important;
+            }
+        }
+        {% endif %}
 
         /* Top Letterhead Banner */
         {% if company_code == 'kleanmax' %}
@@ -275,9 +329,13 @@
         }
         .unp-banner-img {
             width: 100%;
-            max-height: 105px;
-            object-fit: contain;
+            max-width: 100%;
+            height: auto;
+            max-height: 130px;
+            object-fit: cover;
             border-radius: 4px;
+            display: block;
+            margin: 0 auto;
         }
         .unp-quote-title {
             text-align: center;
@@ -644,14 +702,12 @@
             <tr>
                 <td style="width: 60%; vertical-align: top;">
                     <div>Regards</div>
-                    <div class="unp-sig-company">Unique Painters</div>
-                    <div class="unp-sig-name">K. SRIDHAR</div>
+                    <div class="unp-sig-company">{{ company.company_name or 'Unique Painters' }}</div>
+                    <div class="unp-sig-name">{{ company.bank_account_name or 'K. SRIDHAR' }}</div>
                     <div class="unp-sig-title">Operations Head</div>
-                    <div class="unp-sig-phone">9710148218 / 7338882034</div>
+                    <div class="unp-sig-phone">{{ company.phone1 or company.phone2 or '9710148218 / 7338882034' }}</div>
                 </td>
                 <td style="width: 40%; text-align: right; vertical-align: bottom;">
-                    <div style="font-weight: 700; margin-bottom: 45px;">Client Signature</div>
-                    <div style="border-top: 1px solid #64748b; display: inline-block; width: 180px;"></div>
                 </td>
             </tr>
         </table>
@@ -849,7 +905,9 @@
                     <td class="text-center">{{ loop.index }}</td>
                     <td>
                         <div style="font-weight: 700; color: #0f172a; font-size: 9pt;">{{ item.item_name }}</div>
-                        {% if 'RB-800' in item.item_name|upper or '800' in item.item_name %}
+                        {% if quotation.image_url and loop.first %}
+                        <div style="margin: 8px 0;"><img src="{{ quotation.image_url }}" style="max-height: 140px; max-width: 220px; width: auto; height: auto; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px; background: #ffffff; display: block;" alt="Uploaded Product Photo" /></div>
+                        {% elif 'RB-800' in item.item_name|upper or '800' in item.item_name %}
                             {% if rb800_base64 %}
                             <div style="margin: 8px 0;"><img src="data:image/png;base64,{{ rb800_base64 }}" style="max-height: 140px; max-width: 220px; width: auto; height: auto; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px; background: #ffffff; display: block;" alt="RB-800" /></div>
                             {% endif %}
@@ -1094,54 +1152,19 @@
     </div>
     {% endif %}
 
-    <!-- 5. Company's Bank Details (Always Rendered) -->
+        <!-- 5. Company's Bank Details (Dynamic from DB) -->
     <div class="bank-box">
         <div style="font-weight: 800; color: #0f172a; margin-bottom: 2px;">Company's Bank Details</div>
-        {% if company_code == 'cleantech' %}
-        <div>• A/c Holder's Name : <strong>CLEANTECH</strong></div>
-        <div>• Bank Name : <strong>IDFC BANK</strong></div>
-        <div>• A/c No. : <strong>73388820361</strong></div>
-        <div>• Branch & IFS Code: <strong>Chennai – Iyyapanthangal Branch & IDFB0081831</strong></div>
-        {% elif company_code == 'kleanmax' %}
-        <div>• A/c Holder's Name : <strong>KLEAN MAX BANK</strong></div>
-        <div>• Bank Name : <strong>KVB BANK A/C 1278135000007113</strong></div>
-        <div>• A/c No. : <strong>1278135000007113</strong></div>
-        <div>• Branch & IFS Code: <strong>ASHOK NAGAR & KVBL0001278</strong></div>
-        {% else %}
-        <div>• A/c Holder's Name : <strong>{{ company.bank_account_name or company.company_name or 'KLEAN MAX PRO' }}</strong></div>
-        <div>• Bank Name : <strong>{{ company.bank_name or 'ICICI BANK KMP' }}</strong></div>
-        <div>• A/c No. : <strong>{{ company.bank_account_no or '027505010327' }}</strong></div>
-        <div>• Branch & IFS Code: <strong>{{ company.bank_branch or 'PORUR' }} & {{ company.bank_ifsc or 'ICIC0000275' }}</strong></div>
-        {% endif %}
+        {% set def_holder = 'CLEANTECH' if company_code == 'cleantech' else ('KLEAN MAX BANK' if company_code == 'kleanmax' else 'KLEAN MAX PRO') %}
+        {% set def_bank = 'IDFC BANK' if company_code == 'cleantech' else ('KVB BANK' if company_code == 'kleanmax' else 'ICICI BANK KMP') %}
+        {% set def_acc = '73388820361' if company_code == 'cleantech' else ('1278135000007113' if company_code == 'kleanmax' else '027505010327') %}
+        {% set def_branch = 'Chennai - Iyyapanthangal Branch' if company_code == 'cleantech' else ('ASHOK NAGAR' if company_code == 'kleanmax' else 'PORUR') %}
+        {% set def_ifsc = 'IDFB0081831' if company_code == 'cleantech' else ('KVBL0001278' if company_code == 'kleanmax' else 'ICIC0000275') %}
+        <div>• A/c Holder's Name : <strong>{{ company.bank_account_name or company.company_name or def_holder }}</strong></div>
+        <div>• Bank Name : <strong>{{ company.bank_name or def_bank }}</strong></div>
+        <div>• A/c No. : <strong>{{ company.bank_account_no or def_acc }}</strong></div>
+        <div>• Branch & IFS Code: <strong>{{ company.bank_branch or def_branch }} & {{ company.bank_ifsc or def_ifsc }}</strong></div>
     </div>
-
-    <div style="font-size: 7.5pt; font-weight: 600; color: #0f172a; margin-top: 6px;">
-        {% if company_code == 'cleantech' %}
-        Cleantech Services — Specialized Industrial Cleaning, Solar Yield Optimization & Facility Tech Solutions across South India.
-        {% else %}
-        {{ company.company_name or 'Kleanmax Pro' }} — Your trusted service partner for complete cleaning equipment and facility solutions across South India.
-        {% endif %}
-    </div>
-
-    <!-- 6. Signatory (On Left like an official corporate letter) -->
-    <div style="margin-top: 18px; text-align: left;">
-        <div style="font-weight: 700; font-size: 8.5pt;">For {{ 'Clean tech' if company_code == 'cleantech' else (company.company_name or 'Klean max pro') }}</div>
-        <div style="margin-top: 25px; font-weight: 800; font-size: 9pt; color: #0f172a;">
-            {% if company_code == 'cleantech' %}
-            Mr. Manikandan Balamurugan
-            {% elif 'kleanmax' in company_code %}
-            Mr. Manikandan
-            {% else %}
-            {{ prepared_by_name or 'Authorised Signatory' }}
-            {% endif %}
-        </div>
-        <div style="font-size: 8pt; color: #475569;">
-            {% if company_code == 'cleantech' %}Sales and Service Head
-            {% elif 'kleanmax' in company_code %}Service Head
-            {% else %}Project Estimations Head{% endif %}
-        </div>
-        <div style="font-size: 8pt; color: #475569;">{{ company.phone or '+91 7338882036' }}</div>
-        <div style="font-weight: 700; color: #0f172a; margin-top: 3px; font-size: 8.5pt;">Authorised Signatory</div>
     </div>
 
     <!-- 7. Computer Notice & Footer -->

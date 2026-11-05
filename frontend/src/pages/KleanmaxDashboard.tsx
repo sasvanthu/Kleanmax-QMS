@@ -1,10 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Quotation, Service, User, CompanySetting } from '../services/types';
+import { User, CompanySetting } from '../services/types';
 import { api } from '../services/api';
 import {
-  Wrench, ShoppingCart, FileText, CheckCircle2, PlusCircle,
-  Building2, ArrowRight, Eye, ShieldCheck, TrendingUp, Package,
-  Zap, Clock, Layers, Edit, Download
+  FileText,
+  Edit,
+  Building2,
+  ArrowRight,
+  ArrowLeft,
+  ShoppingCart,
+  Wrench,
+  CheckCircle2,
+  Sparkles
 } from 'lucide-react';
 
 interface KleanmaxDashboardProps {
@@ -16,333 +22,201 @@ interface KleanmaxDashboardProps {
 export const KleanmaxDashboard: React.FC<KleanmaxDashboardProps> = ({
   currentUser,
   onNavigate,
-  onOpenPreview,
 }) => {
-  const [quotations, setQuotations] = useState<Quotation[]>([]);
   const [company, setCompany] = useState<CompanySetting | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadData();
+    loadCompany();
   }, []);
 
-  const loadData = async () => {
-    setLoading(true);
+  const loadCompany = async () => {
     try {
-      const [qList, comp] = await Promise.all([
-        api.quotations.list({ company_code: 'kleanmax' }),
-        api.company.get('kleanmax'),
-      ]);
-      setQuotations(qList);
+      const comp = await api.company.get('kleanmax');
       setCompany(comp);
     } catch (err) {
-      console.error('Failed to load Kleanmax data:', err);
+      console.error('Failed to load Kleanmax info:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const totalQuotes = quotations.length;
-  const totalValue = quotations.reduce((acc, q) => acc + Number(q.final_amount || 0), 0);
-  const repairQuotes = quotations.filter(q => q.quotation_type === 'repair_service');
-  const salesQuotes = quotations.filter(q => q.quotation_type === 'item_based' || q.quotation_type === 'equipment_sales');
-
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-12">
-      {/* Brand Header */}
-      <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-sky-950 text-white rounded-2xl p-6 md:p-8 shadow-xl border border-sky-500/30 relative overflow-hidden">
-        <div className="absolute -right-8 -bottom-8 w-60 h-60 bg-sky-500/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="max-w-6xl mx-auto px-4 py-8 space-y-8 font-sans">
+      {/* Top Header with Back Button */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-6">
+        <div>
+          <button
+            onClick={() => onNavigate('dashboard')}
+            className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-xl transition-all mb-3"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Back to All Companies</span>
+          </button>
+          <div className="flex items-center gap-2">
+            <span className="bg-sky-500 text-slate-950 font-black text-xs px-3 py-1 rounded-full uppercase tracking-wider shadow-xs">
+              Company 2 • KLM
+            </span>
+            <span className="bg-sky-100 text-sky-900 text-xs font-bold px-2.5 py-1 rounded-full">
+              Prefix: {company?.quotation_prefix || 'KLM'}
+            </span>
+          </div>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight mt-2 flex items-center gap-2.5">
+            <span>{company?.company_name || 'Kleanmax'}</span>
+            <span className="text-2xl">🔧</span>
+          </h1>
+          <p className="text-xs text-slate-500 mt-1">
+            Commercial cleaning proposals, equipment sales, genuine spares & machine repair services.
+          </p>
+        </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-4 relative z-10">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => onNavigate('settings', { tab: 'kleanmax' })}
+            className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all"
+          >
+            <Building2 className="w-4 h-4 text-sky-600" />
+            <span>Company Settings</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Big Navigation Cards for Kleanmax */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Card 1: Quotation Generator */}
+        <div
+          onClick={() => onNavigate('kleanmax_generator')}
+          className="group relative bg-white rounded-3xl p-7 border-2 border-slate-200 hover:border-sky-400 shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col justify-between"
+        >
           <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="bg-sky-500 text-slate-950 px-3 py-1 rounded-full text-xs font-black tracking-wider uppercase shadow-xs">
-                Company 2 • Spares & Sales Hub
-              </span>
-              <span className="bg-sky-400/20 text-sky-300 border border-sky-400/30 px-2.5 py-0.5 rounded-full text-[11px] font-bold">
-                Prefix: {company?.quotation_prefix || 'KLM'}
-              </span>
-              <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2.5 py-0.5 rounded-full text-[11px] font-bold flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Active Entity
-              </span>
+            <div className="w-12 h-12 rounded-2xl bg-sky-50 border border-sky-200 flex items-center justify-center text-sky-600 mb-5 group-hover:scale-110 transition-transform">
+              <FileText className="w-6 h-6" />
             </div>
-            <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
-              <span>{company?.company_name || 'Kleanmax'}</span>
-              <span className="text-sm font-semibold text-sky-400 bg-sky-400/10 px-3 py-1 rounded-lg border border-sky-400/20">
-                Equipment, Spares & Authorized Machine Service
-              </span>
-            </h1>
-            <p className="text-xs text-slate-300 mt-2 max-w-2xl leading-relaxed">
-              Official sales of industrial ride-on scrubber dryers, walk-behinds, genuine spare parts, and fast turnaround repair job cards.
+
+            <h2 className="text-xl font-black text-slate-900 group-hover:text-sky-600 transition-colors">
+              Quotation Generator
+            </h2>
+            <p className="text-xs font-bold text-sky-700 mt-1 uppercase tracking-wider">
+              Commercial Cleaning Proposals
+            </p>
+            <p className="text-xs text-slate-600 mt-3 leading-relaxed">
+              Build full continuous Word-style cleaning proposals with scope of work, frequency matrix, machinery allocations, lump sum or area rates, and instant PDF/Word preview.
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => onNavigate('kleanmax_generator')}
-              className="px-4 py-2.5 bg-sky-500 hover:bg-sky-400 text-slate-950 font-black text-xs rounded-xl shadow-md flex items-center gap-2 transition-all transform active:scale-95"
-            >
-              <FileText className="w-4 h-4" />
-              <span>Cleaning Proposal Generator</span>
+          <div className="mt-8 pt-4 border-t border-slate-100">
+            <button className="w-full py-3 px-4 bg-slate-900 group-hover:bg-sky-500 text-white group-hover:text-slate-950 font-black text-xs rounded-2xl flex items-center justify-center gap-2 transition-all">
+              <span>Open Proposal Generator</span>
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </button>
-            <button
-              onClick={() => onNavigate('kleanmax_sales')}
-              className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-sky-300 border border-sky-400/40 font-bold text-xs rounded-xl flex items-center gap-2"
-            >
-              <ShoppingCart className="w-4 h-4 text-sky-400" />
-              <span>Equipment Sale Quote</span>
+          </div>
+        </div>
+
+        {/* Card 2: Past Records */}
+        <div
+          onClick={() => onNavigate('kleanmax_quotes')}
+          className="group relative bg-white rounded-3xl p-7 border-2 border-slate-200 hover:border-sky-400 shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col justify-between"
+        >
+          <div>
+            <div className="w-12 h-12 rounded-2xl bg-sky-50 border border-sky-200 flex items-center justify-center text-sky-600 mb-5 group-hover:scale-110 transition-transform">
+              <FileText className="w-6 h-6" />
+            </div>
+
+            <h2 className="text-xl font-black text-slate-900 group-hover:text-sky-600 transition-colors">
+              Past Records
+            </h2>
+            <p className="text-xs font-bold text-sky-700 mt-1 uppercase tracking-wider">
+              View, Word (.docx) & PDF
+            </p>
+            <p className="text-xs text-slate-600 mt-3 leading-relaxed">
+              Browse all historical Kleanmax cleaning and sales quotations. Direct download to Microsoft Word (.docx) or PDF, view preview, or edit records.
+            </p>
+          </div>
+
+          <div className="mt-8 pt-4 border-t border-slate-100">
+            <button className="w-full py-3 px-4 bg-slate-900 group-hover:bg-sky-500 text-white group-hover:text-slate-950 font-black text-xs rounded-2xl flex items-center justify-center gap-2 transition-all">
+              <span>View Past Records</span>
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </button>
-            <button
-              onClick={() => onNavigate('settings', { tab: 'kleanmax' })}
-              className="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs rounded-xl flex items-center gap-2"
-            >
-              <Building2 className="w-4 h-4 text-sky-400" />
-              <span>Edit Info</span>
+          </div>
+        </div>
+
+        {/* Card 3: Quotation Editor */}
+        <div
+          onClick={() => onNavigate('quotation_edit', { company_code: 'kleanmax' })}
+          className="group relative bg-white rounded-3xl p-7 border-2 border-slate-200 hover:border-sky-400 shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col justify-between"
+        >
+          <div>
+            <div className="w-12 h-12 rounded-2xl bg-sky-50 border border-sky-200 flex items-center justify-center text-sky-600 mb-5 group-hover:scale-110 transition-transform">
+              <Edit className="w-6 h-6" />
+            </div>
+
+            <h2 className="text-xl font-black text-slate-900 group-hover:text-sky-600 transition-colors">
+              Quotation Editor
+            </h2>
+            <p className="text-xs font-bold text-sky-700 mt-1 uppercase tracking-wider">
+              Custom Spares, Pricing & Terms
+            </p>
+            <p className="text-xs text-slate-600 mt-3 leading-relaxed">
+              Open visual proposal editor preset for Kleanmax. Add equipment lines, customize scope text, configure headings, apply taxes, and manage terms.
+            </p>
+          </div>
+
+          <div className="mt-8 pt-4 border-t border-slate-100">
+            <button className="w-full py-3 px-4 bg-slate-900 group-hover:bg-sky-500 text-white group-hover:text-slate-950 font-black text-xs rounded-2xl flex items-center justify-center gap-2 transition-all">
+              <span>Open Quotation Editor</span>
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs hover:border-sky-400 transition-all">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">Total Quotations</span>
-            <FileText className="w-5 h-5 text-sky-500" />
-          </div>
-          <div className="text-2xl font-black text-slate-900">{totalQuotes}</div>
-          <div className="text-[11px] text-slate-500 mt-1 flex items-center gap-2">
-            <span>{repairQuotes.length} Repairs</span>
-            <span>•</span>
-            <span>{salesQuotes.length} Machine Sales</span>
-          </div>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs hover:border-sky-400 transition-all">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">Equipment Pipeline</span>
-            <TrendingUp className="w-5 h-5 text-emerald-500" />
-          </div>
-          <div className="text-2xl font-black text-slate-900">
-            ₹{totalValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-          </div>
-          <div className="text-[11px] text-emerald-600 font-bold mt-1">
-            Machines & Replacement Spares
-          </div>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs hover:border-sky-400 transition-all">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">Parts In Stock</span>
-            <Package className="w-5 h-5 text-sky-600" />
-          </div>
-          <div className="text-2xl font-black text-slate-900">120+ <span className="text-xs font-normal text-slate-500">SKUs</span></div>
-          <div className="text-[11px] text-slate-500 mt-1">
-            Squeegees, scrub discs, vacuum motors
-          </div>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs hover:border-sky-400 transition-all">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">GSTIN & Entity</span>
-            <ShieldCheck className="w-5 h-5 text-indigo-500" />
-          </div>
-          <div className="text-xs font-mono font-black text-slate-800 truncate">
-            {company?.gstin || '33DXIPS4251R2ZP'}
-          </div>
-          <div className="text-[11px] text-slate-500 mt-1 truncate">
-            {company?.legal_name || 'Kleanmax Equipment & Spares India LLP'}
-          </div>
-        </div>
-      </div>
-
-      {/* Dual Launchers: Spares vs Sales */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Launcher 1: Spares & Service (Imgs 1-2) */}
-        <div className="bg-white rounded-2xl border-2 border-sky-100 p-6 shadow-xs hover:border-sky-400 transition-all flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <span className="bg-sky-50 text-sky-800 border border-sky-200 font-black text-xs px-3 py-1 rounded-full uppercase">
-                Service Division
-              </span>
-              <Wrench className="w-5 h-5 text-sky-600" />
+      {/* Secondary Actions Row: Equipment Sales & Company Info */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+        {/* Quick Action: Equipment Sales Quote */}
+        <div
+          onClick={() => onNavigate('kleanmax_sales')}
+          className="bg-white rounded-2xl p-5 border border-slate-200 hover:border-sky-400 shadow-xs hover:shadow-md transition-all cursor-pointer flex items-center justify-between group"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-11 h-11 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center font-bold">
+              <ShoppingCart className="w-5 h-5" />
             </div>
-            <h3 className="text-lg font-black text-slate-900 mb-1">
-              Scrubber Repair & Spare Parts Quotation
-            </h3>
-            <p className="text-xs text-slate-600 leading-relaxed mb-4">
-              Pre-configured template based on standard machine overhaul job cards. Includes squeegee rubbers, suction hoses, battery terminals, and labor charges with auto-calculated GST.
-            </p>
-
-            <div className="space-y-2 mb-4 bg-slate-50 p-3.5 rounded-xl border border-slate-100">
-              <div className="flex justify-between text-xs">
-                <span className="text-slate-600 font-medium">B 40 C EP Squeegee Rubbers (Set)</span>
-                <span className="font-bold text-slate-900">₹4,200</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-slate-600 font-medium">Suction Hose Assembly 38mm</span>
-                <span className="font-bold text-slate-900">₹3,800</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-slate-600 font-medium">On-Site Overhaul Service Labor</span>
-                <span className="font-bold text-slate-900">₹1,500</span>
-              </div>
+            <div>
+              <h3 className="font-black text-slate-900 text-sm group-hover:text-sky-600 transition-colors">
+                Equipment Sales Quotation
+              </h3>
+              <p className="text-xs text-slate-500">
+                Itemized quotes for scrubber-dryers, sweepers, and replacement accessories.
+              </p>
             </div>
           </div>
-
-          <button
-            onClick={() => onNavigate('kleanmax_spares')}
-            className="w-full py-2.5 bg-sky-500 hover:bg-sky-400 text-slate-950 font-black text-xs rounded-xl flex items-center justify-center gap-2 shadow-xs"
-          >
-            <Wrench className="w-4 h-4" />
-            <span>Generate Spares & Service Quote</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
+          <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-sky-600 group-hover:translate-x-1 transition-all" />
         </div>
 
-        {/* Launcher 2: Equipment Sales (Imgs 3-4) */}
-        <div className="bg-white rounded-2xl border-2 border-sky-100 p-6 shadow-xs hover:border-sky-400 transition-all flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <span className="bg-indigo-50 text-indigo-800 border border-indigo-200 font-black text-xs px-3 py-1 rounded-full uppercase">
-                Machine Sales Division
-              </span>
-              <ShoppingCart className="w-5 h-5 text-indigo-600" />
+        {/* Quick Action: Company Info */}
+        <div
+          onClick={() => onNavigate('settings', { tab: 'kleanmax' })}
+          className="bg-white rounded-2xl p-5 border border-slate-200 hover:border-sky-400 shadow-xs hover:shadow-md transition-all cursor-pointer flex items-center justify-between group"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-11 h-11 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center font-bold">
+              <Building2 className="w-5 h-5 text-sky-600" />
             </div>
-            <h3 className="text-lg font-black text-slate-900 mb-1">
-              Industrial Equipment Sales Quotation
-            </h3>
-            <p className="text-xs text-slate-600 leading-relaxed mb-4">
-              Direct commercial machine quotation generator with manufacturer warranty, technical specifications, and official bank payment instructions printed on letterhead.
-            </p>
-
-            <div className="space-y-2 mb-4 bg-slate-50 p-3.5 rounded-xl border border-slate-100">
-              <div className="flex justify-between text-xs">
-                <span className="text-slate-600 font-medium">KMP-850R Ride-On Scrubber Dryer</span>
-                <span className="font-bold text-slate-900">₹4,85,000</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-slate-600 font-medium">Heavy Duty Wet & Dry 80L Vacuum</span>
-                <span className="font-bold text-slate-900">₹38,500</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-slate-600 font-medium">Walk-Behind 500mm Electric Scrubber</span>
-                <span className="font-bold text-slate-900">₹1,95,000</span>
-              </div>
+            <div>
+              <h3 className="font-black text-slate-900 text-sm group-hover:text-sky-600 transition-colors">
+                Company Letterhead & Info
+              </h3>
+              <p className="text-xs text-slate-500">
+                Update letterhead banner, GSTIN ({company?.gstin || '33DXIPS4251R2ZP'}), bank details.
+              </p>
             </div>
           </div>
-
-          <button
-            onClick={() => onNavigate('kleanmax_sales')}
-            className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 shadow-xs"
-          >
-            <ShoppingCart className="w-4 h-4 text-sky-400" />
-            <span>Generate Equipment Sales Quote</span>
-            <ArrowRight className="w-3.5 h-3.5 text-sky-400" />
-          </button>
+          <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-sky-600 group-hover:translate-x-1 transition-all" />
         </div>
-      </div>
-
-      {/* Recent Kleanmax Quotations Table */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-base font-black text-slate-900">Recent Kleanmax Quotations</h2>
-            <p className="text-xs text-slate-500">Machine repair job cards and commercial equipment sales.</p>
-          </div>
-          <button
-            onClick={() => onNavigate('kleanmax_quotes')}
-            className="text-xs font-bold text-sky-600 hover:underline flex items-center gap-1"
-          >
-            <span>View All ({totalQuotes})</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        {quotations.length === 0 ? (
-          <div className="text-center py-8 text-xs text-slate-500">
-            No quotations found for Kleanmax.
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider font-extrabold border-b border-slate-200">
-                <tr>
-                  <th className="py-3 px-4">Quotation #</th>
-                  <th className="py-3 px-4">Customer</th>
-                  <th className="py-3 px-4">Type</th>
-                  <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4 text-right">Amount</th>
-                  <th className="py-3 px-4 text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {quotations.slice(0, 6).map((q) => (
-                  <tr key={q.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="py-3 px-4 font-mono font-bold text-slate-900">
-                      {q.quotation_number}
-                    </td>
-                    <td className="py-3 px-4 font-semibold text-slate-800">
-                      {q.customer?.company_name || 'Industrial Customer'}
-                    </td>
-                    <td className="py-3 px-4 capitalize text-slate-600">
-                      {q.quotation_type.replace('_', ' ')}
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-extrabold uppercase ${
-                        q.status === 'approved' ? 'bg-emerald-100 text-emerald-800' :
-                        q.status === 'issued' ? 'bg-sky-100 text-sky-800' :
-                        'bg-amber-100 text-amber-800'
-                      }`}>
-                        {q.status}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-right font-black text-slate-900">
-                      ₹{Number(q.final_amount || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
-                    </td>
-                    <td className="py-3 px-4 text-center">
-                      <div className="flex items-center justify-center gap-1.5">
-                        <button
-                          onClick={() => onNavigate('quotation_edit', { id: q.id })}
-                          className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-blue-600 rounded-lg transition-colors"
-                          title="Edit Quotation"
-                        >
-                          <Edit className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => api.quotations.downloadDocx(q.id)}
-                          className="p-1.5 bg-sky-50 hover:bg-sky-100 text-sky-700 rounded-lg transition-colors"
-                          title="Download Word (.docx)"
-                        >
-                          <FileText className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => api.quotations.downloadPdf(q.id)}
-                          className="p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-lg transition-colors"
-                          title="Download PDF"
-                        >
-                          <Download className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => onOpenPreview(q.id)}
-                          className="p-1.5 bg-slate-100 hover:bg-sky-100 text-slate-700 hover:text-sky-900 rounded-lg transition-colors"
-                          title="Preview Document"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
       </div>
     </div>
   );
 };
 
 export default KleanmaxDashboard;
-

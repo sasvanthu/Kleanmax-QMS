@@ -21,6 +21,7 @@ class Profile(Base):
     full_name = Column(String(255), nullable=False)
     role = Column(String(50), nullable=False, default="staff")  # 'admin', 'manager', 'staff'
     is_active = Column(Boolean, nullable=False, default=True)
+    company_code = Column(String(50), nullable=True)
     phone = Column(String(50), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
@@ -186,6 +187,7 @@ class Quotation(Base):
     approved_at = Column(DateTime, nullable=True)
     issued_at = Column(DateTime, nullable=True)
     snapshot_json = Column(JSON, nullable=True)
+    image_url = Column(Text, nullable=True)
 
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)

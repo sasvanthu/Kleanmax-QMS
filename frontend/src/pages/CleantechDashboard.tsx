@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Quotation, Service, User, CompanySetting } from '../services/types';
+import { User, CompanySetting } from '../services/types';
 import { api } from '../services/api';
 import {
-  Sun, Shield, FileText, CheckCircle2, PlusCircle,
-  Building2, ArrowRight, Eye, ShieldCheck, TrendingUp, Sparkles,
-  Calendar, Clock, Check, Droplets, Wind, RotateCw, Edit, Download
+  Sun,
+  FileText,
+  Edit,
+  Building2,
+  ArrowRight,
+  ArrowLeft,
+  Sparkles,
+  Shield
 } from 'lucide-react';
 
 interface CleantechDashboardProps {
@@ -16,496 +21,180 @@ interface CleantechDashboardProps {
 export const CleantechDashboard: React.FC<CleantechDashboardProps> = ({
   currentUser,
   onNavigate,
-  onOpenPreview,
 }) => {
-  const [quotations, setQuotations] = useState<Quotation[]>([]);
   const [company, setCompany] = useState<CompanySetting | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Cleantech AMC & Solar Calculator State
-  const [serviceType, setServiceType] = useState<string>('solar');
-  const [solarPanels, setSolarPanels] = useState<number>(1200);
-  const [facadeArea, setFacadeArea] = useState<number>(15000);
-  const [ductHoodCount, setDuctHoodCount] = useState<number>(4);
-  const [amcDurationMonths, setAmcDurationMonths] = useState<number>(12);
-
   useEffect(() => {
-    loadData();
+    loadCompany();
   }, []);
 
-  const loadData = async () => {
-    setLoading(true);
+  const loadCompany = async () => {
     try {
-      const [qList, comp] = await Promise.all([
-        api.quotations.list({ company_code: 'cleantech' }),
-        api.company.get('cleantech'),
-      ]);
-      setQuotations(qList);
+      const comp = await api.company.get('cleantech');
       setCompany(comp);
     } catch (err) {
-      console.error('Failed to load Cleantech data:', err);
+      console.error('Failed to load Cleantech info:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const totalQuotes = quotations.length;
-  const totalValue = quotations.reduce((acc, q) => acc + Number(q.final_amount || 0), 0);
-
-  // Calculate based on selected service
-  let calculatedAmount = 0;
-  let serviceDescription = '';
-
-  if (serviceType === 'solar') {
-    const ratePerPanel = 45;
-    const perCycle = solarPanels * ratePerPanel;
-    // AMC 12 cycles = 12 * perCycle with 10% annual contract discount
-    const annualMultiplier = amcDurationMonths === 12 ? 10.8 : amcDurationMonths;
-    calculatedAmount = perCycle * annualMultiplier;
-    serviceDescription = `Robotic & de-ionized solar panel cleaning for ${solarPanels.toLocaleString()} panels (${amcDurationMonths} monthly cycles AMC).`;
-  } else if (serviceType === 'facade') {
-    const ratePerSqFt = 6.5;
-    calculatedAmount = facadeArea * ratePerSqFt * (amcDurationMonths >= 12 ? 4 : 1);
-    serviceDescription = `High-rise glass facade and ACP curtain wall cradle wash for ${facadeArea.toLocaleString()} sq.ft area (${amcDurationMonths >= 12 ? '4 quarterly visits' : 'one-time execution'}).`;
-  } else if (serviceType === 'duct') {
-    const ratePerHood = 8500;
-    calculatedAmount = ductHoodCount * ratePerHood * (amcDurationMonths >= 12 ? 4 : 1);
-    serviceDescription = `Commercial kitchen grease exhaust hood and horizontal duct caustic degreasing for ${ductHoodCount} hoods.`;
-  } else {
-    // Facility AMC
-    const monthlyRate = 22000;
-    calculatedAmount = monthlyRate * amcDurationMonths;
-    serviceDescription = `Comprehensive facility sanitization and periodic mechanical washing AMC for ${amcDurationMonths} months.`;
-  }
-
-  const handleLaunchQuote = () => {
-    onNavigate('create_quotation', {
-      company_code: 'cleantech',
-      quotation_type: 'contract',
-      job_description: serviceDescription,
-      notes: 'Water supply within 50m of work zone to be provided by client. All technician safety harness gear certified under ISO 45001.',
-      initialItem: {
-        item_name: serviceType === 'solar' ? 'Robotic Solar Array Cleaning AMC' :
-                   serviceType === 'facade' ? 'High-Rise Glass Facade Cradle Cleaning' :
-                   serviceType === 'duct' ? 'Commercial Kitchen Grease Duct Degreasing' :
-                   'Facility Comprehensive Maintenance AMC',
-        quantity: 1,
-        unit_price: calculatedAmount,
-        line_total: calculatedAmount,
-        uom: 'contract',
-      }
-    });
-  };
-
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-12">
-      {/* Brand Header */}
-      <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-emerald-950 text-white rounded-2xl p-6 md:p-8 shadow-xl border border-emerald-500/30 relative overflow-hidden">
-        <div className="absolute -right-8 -bottom-8 w-60 h-60 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="max-w-6xl mx-auto px-4 py-8 space-y-8 font-sans">
+      {/* Top Header with Back Button */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-6">
+        <div>
+          <button
+            onClick={() => onNavigate('dashboard')}
+            className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-xl transition-all mb-3"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Back to All Companies</span>
+          </button>
+          <div className="flex items-center gap-2">
+            <span className="bg-teal-500 text-slate-950 font-black text-xs px-3 py-1 rounded-full uppercase tracking-wider shadow-xs">
+              Company 4 • CTS
+            </span>
+            <span className="bg-teal-100 text-teal-900 text-xs font-bold px-2.5 py-1 rounded-full">
+              Prefix: {company?.quotation_prefix || 'CTS'}
+            </span>
+          </div>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight mt-2 flex items-center gap-2.5">
+            <span>{company?.company_name || 'Cleantech Services'}</span>
+            <span className="text-2xl">🌿</span>
+          </h1>
+          <p className="text-xs text-slate-500 mt-1">
+            Rooftop & industrial solar panel cleaning, glass facade wash & comprehensive AMC maintenance.
+          </p>
+        </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-4 relative z-10">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => onNavigate('settings', { tab: 'cleantech' })}
+            className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all"
+          >
+            <Building2 className="w-4 h-4 text-teal-600" />
+            <span>Company Settings</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Big Navigation Cards for Cleantech Services */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Card 1: Quotation Generator */}
+        <div
+          onClick={() => onNavigate('cleantech_generator')}
+          className="group relative bg-white rounded-3xl p-7 border-2 border-slate-200 hover:border-teal-400 shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col justify-between"
+        >
           <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="bg-emerald-500 text-slate-950 px-3 py-1 rounded-full text-xs font-black tracking-wider uppercase shadow-xs">
-                Company 4 • Industrial & AMC Tech Hub
-              </span>
-              <span className="bg-emerald-400/20 text-emerald-300 border border-emerald-400/30 px-2.5 py-0.5 rounded-full text-[11px] font-bold">
-                Prefix: {company?.quotation_prefix || 'CTS'}
-              </span>
-              <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2.5 py-0.5 rounded-full text-[11px] font-bold flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Active Entity
-              </span>
+            <div className="w-12 h-12 rounded-2xl bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-600 mb-5 group-hover:scale-110 transition-transform">
+              <Sun className="w-6 h-6" />
             </div>
-            <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
-              <span>{company?.company_name || 'Cleantech Services'}</span>
-              <span className="text-sm font-semibold text-emerald-300 bg-emerald-400/10 px-3 py-1 rounded-lg border border-emerald-400/20">
-                Specialized Sanitization, Solar Panel & Facade Tech Solutions
-              </span>
-            </h1>
-            <p className="text-xs text-slate-300 mt-2 max-w-2xl leading-relaxed">
-              Industrial solar PV array cleaning, high-rise glass facade cradle maintenance, kitchen exhaust degreasing, and long-term facility AMC contracts.
+
+            <h2 className="text-xl font-black text-slate-900 group-hover:text-teal-600 transition-colors">
+              Quotation Generator
+            </h2>
+            <p className="text-xs font-bold text-teal-700 mt-1 uppercase tracking-wider">
+              Solar, Facade & AMC Contracts
+            </p>
+            <p className="text-xs text-slate-600 mt-3 leading-relaxed">
+              Generate proposals for solar panel wash, glass facade restoration, and periodic maintenance contracts with instant Word and PDF preview & download.
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleLaunchQuote}
-              className="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-xl shadow-md flex items-center gap-2 transition-all transform active:scale-95"
-            >
-              <Sun className="w-4 h-4" />
-              <span>Create Cleantech Quote</span>
+          <div className="mt-8 pt-4 border-t border-slate-100">
+            <button className="w-full py-3 px-4 bg-slate-900 group-hover:bg-teal-500 text-white group-hover:text-slate-950 font-black text-xs rounded-2xl flex items-center justify-center gap-2 transition-all">
+              <span>Open Solar/AMC Generator</span>
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </button>
-            <button
-              onClick={() => onNavigate('settings', { tab: 'cleantech' })}
-              className="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs rounded-xl flex items-center gap-2"
-            >
-              <Building2 className="w-4 h-4 text-emerald-400" />
-              <span>Edit Company Info</span>
+          </div>
+        </div>
+
+        {/* Card 2: Past Records */}
+        <div
+          onClick={() => onNavigate('cleantech_quotes')}
+          className="group relative bg-white rounded-3xl p-7 border-2 border-slate-200 hover:border-teal-400 shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col justify-between"
+        >
+          <div>
+            <div className="w-12 h-12 rounded-2xl bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-600 mb-5 group-hover:scale-110 transition-transform">
+              <FileText className="w-6 h-6" />
+            </div>
+
+            <h2 className="text-xl font-black text-slate-900 group-hover:text-teal-600 transition-colors">
+              Past Records
+            </h2>
+            <p className="text-xs font-bold text-teal-700 mt-1 uppercase tracking-wider">
+              View, Word (.docx) & PDF
+            </p>
+            <p className="text-xs text-slate-600 mt-3 leading-relaxed">
+              Browse all historical Cleantech Services proposals. Export directly to Microsoft Word (.docx) or PDF, view previews, and edit records.
+            </p>
+          </div>
+
+          <div className="mt-8 pt-4 border-t border-slate-100">
+            <button className="w-full py-3 px-4 bg-slate-900 group-hover:bg-teal-500 text-white group-hover:text-slate-950 font-black text-xs rounded-2xl flex items-center justify-center gap-2 transition-all">
+              <span>View Past Records</span>
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </button>
+          </div>
+        </div>
+
+        {/* Card 3: Quotation Editor */}
+        <div
+          onClick={() => onNavigate('quotation_edit', { company_code: 'cleantech' })}
+          className="group relative bg-white rounded-3xl p-7 border-2 border-slate-200 hover:border-teal-400 shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col justify-between"
+        >
+          <div>
+            <div className="w-12 h-12 rounded-2xl bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-600 mb-5 group-hover:scale-110 transition-transform">
+              <Edit className="w-6 h-6" />
+            </div>
+
+            <h2 className="text-xl font-black text-slate-900 group-hover:text-teal-600 transition-colors">
+              Quotation Editor
+            </h2>
+            <p className="text-xs font-bold text-teal-700 mt-1 uppercase tracking-wider">
+              Custom Rates, Items & Terms
+            </p>
+            <p className="text-xs text-slate-600 mt-3 leading-relaxed">
+              Open visual proposal editor preset for Cleantech Services. Customize cleaning frequencies, equipment allocations, taxes, and service terms.
+            </p>
+          </div>
+
+          <div className="mt-8 pt-4 border-t border-slate-100">
+            <button className="w-full py-3 px-4 bg-slate-900 group-hover:bg-teal-500 text-white group-hover:text-slate-950 font-black text-xs rounded-2xl flex items-center justify-center gap-2 transition-all">
+              <span>Open Quotation Editor</span>
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs hover:border-emerald-400 transition-all">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">Total Quotations</span>
-            <FileText className="w-5 h-5 text-emerald-500" />
-          </div>
-          <div className="text-2xl font-black text-slate-900">{totalQuotes}</div>
-          <div className="text-[11px] text-slate-500 mt-1">
-            AMC & Specialized Engineering Clean
-          </div>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs hover:border-emerald-400 transition-all">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">Contract Pipeline</span>
-            <TrendingUp className="w-5 h-5 text-emerald-500" />
-          </div>
-          <div className="text-2xl font-black text-slate-900">
-            ₹{totalValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-          </div>
-          <div className="text-[11px] text-emerald-600 font-bold mt-1">
-            Annual Recurring Maintenance
-          </div>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs hover:border-emerald-400 transition-all">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">Solar & Facade Cap</span>
-            <Sun className="w-5 h-5 text-amber-500" />
-          </div>
-          <div className="text-2xl font-black text-slate-900">12.5 <span className="text-xs font-normal text-slate-500">MW / Mo</span></div>
-          <div className="text-[11px] text-slate-500 mt-1">
-            De-ionized zero TDS water wash
-          </div>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs hover:border-emerald-400 transition-all">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">GSTIN & Entity</span>
-            <ShieldCheck className="w-5 h-5 text-indigo-500" />
-          </div>
-          <div className="text-xs font-mono font-black text-slate-800 truncate">
-            {company?.gstin || '33AABCT5432M1ZQ'}
-          </div>
-          <div className="text-[11px] text-slate-500 mt-1 truncate">
-            {company?.legal_name || 'Cleantech Environmental & Industrial Services LLP'}
-          </div>
-        </div>
-      </div>
-
-      {/* Interactive AMC & Specialized Calculator */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+      {/* Secondary Actions Row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+        {/* Quick Action: Company Info */}
+        <div
+          onClick={() => onNavigate('settings', { tab: 'cleantech' })}
+          className="bg-white rounded-2xl p-5 border border-slate-200 hover:border-teal-400 shadow-xs hover:shadow-md transition-all cursor-pointer flex items-center justify-between group md:col-span-2"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-11 h-11 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center font-bold">
+              <Building2 className="w-5 h-5 text-teal-600" />
+            </div>
             <div>
-              <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
-                <Sun className="w-4 h-4 text-emerald-600" />
-                <span>Specialized Service & AMC Contract Calculator</span>
-              </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Calculate Solar PV array washing, glass facade cradles, exhaust ducting, and multi-month AMC contracts.
+              <h3 className="font-black text-slate-900 text-sm group-hover:text-teal-600 transition-colors">
+                Company Letterhead & Info
+              </h3>
+              <p className="text-xs text-slate-500">
+                Update letterhead banner, GSTIN ({company?.gstin || '33AABCT9988Z1Z5'}), bank details, and registered address.
               </p>
             </div>
-            <span className="text-xs bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold px-2.5 py-1 rounded-lg">
-              Periodic SLA Builder
-            </span>
           </div>
-
-          {/* Module Selector */}
-          <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase mb-2">
-              Select Cleantech Module
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-              {[
-                { id: 'solar', label: 'Solar Array Wash', icon: Sun },
-                { id: 'facade', label: 'Facade Glass & ACP', icon: Building2 },
-                { id: 'duct', label: 'Kitchen Hood Duct', icon: Wind },
-                { id: 'amc', label: 'Facility Total AMC', icon: RotateCw },
-              ].map((m) => {
-                const Icon = m.icon;
-                return (
-                  <button
-                    key={m.id}
-                    type="button"
-                    onClick={() => setServiceType(m.id)}
-                    className={`p-3 rounded-xl border text-left transition-all flex flex-col justify-between ${
-                      serviceType === m.id
-                        ? 'border-emerald-500 bg-emerald-50/80 shadow-xs'
-                        : 'border-slate-200 hover:border-emerald-300 bg-white'
-                    }`}
-                  >
-                    <Icon className={`w-4 h-4 mb-2 ${serviceType === m.id ? 'text-emerald-700' : 'text-slate-500'}`} />
-                    <span className="text-xs font-black text-slate-900">{m.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Dynamic Inputs Based on Module */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {serviceType === 'solar' && (
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  Total Solar Panels (Nos)
-                </label>
-                <input
-                  type="number"
-                  value={solarPanels}
-                  onChange={(e) => setSolarPanels(Number(e.target.value) || 0)}
-                  className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2.5 focus:border-emerald-400 focus:outline-hidden"
-                />
-                <p className="text-[10px] text-slate-400 mt-1">₹45 / panel per de-ionized robotic wash cycle</p>
-              </div>
-            )}
-
-            {serviceType === 'facade' && (
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  Facade Glass Area (Sq.Ft)
-                </label>
-                <input
-                  type="number"
-                  value={facadeArea}
-                  onChange={(e) => setFacadeArea(Number(e.target.value) || 0)}
-                  className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2.5 focus:border-emerald-400 focus:outline-hidden"
-                />
-                <p className="text-[10px] text-slate-400 mt-1">₹6.50 / sq.ft cradle / rope-access cleaning</p>
-              </div>
-            )}
-
-            {serviceType === 'duct' && (
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  Exhaust Hood & Grease Traps (Nos)
-                </label>
-                <input
-                  type="number"
-                  value={ductHoodCount}
-                  onChange={(e) => setDuctHoodCount(Number(e.target.value) || 0)}
-                  className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2.5 focus:border-emerald-400 focus:outline-hidden"
-                />
-                <p className="text-[10px] text-slate-400 mt-1">₹8,500 / hood with high-heat degreasing</p>
-              </div>
-            )}
-
-            {serviceType === 'amc' && (
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  Base Facility Maintenance Sizing
-                </label>
-                <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-800">
-                  Standard Industrial Facility (up to 75,000 sq.ft)
-                </div>
-                <p className="text-[10px] text-slate-400 mt-1">₹22,000 / month inclusive of machinery and personnel</p>
-              </div>
-            )}
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                Contract Term / Duration
-              </label>
-              <select
-                value={amcDurationMonths}
-                onChange={(e) => setAmcDurationMonths(Number(e.target.value))}
-                className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2.5 focus:border-emerald-400 focus:outline-hidden bg-white"
-              >
-                <option value={1}>One-Time Execution</option>
-                <option value={3}>3 Months Quarterly Contract</option>
-                <option value={6}>6 Months Semi-Annual Contract</option>
-                <option value={12}>12 Months Comprehensive AMC (Includes 10% Discount)</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Result Box */}
-          <div className="bg-emerald-50/80 border border-emerald-200 rounded-xl p-4 flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <div className="text-[11px] font-bold text-emerald-900 uppercase">Selected Scope</div>
-              <div className="text-sm font-black text-slate-900 max-w-md line-clamp-2">
-                {serviceDescription}
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="text-[11px] font-bold text-emerald-900 uppercase">Estimated Contract (Pre-Tax)</div>
-              <div className="text-2xl font-black text-emerald-900">
-                ₹{calculatedAmount.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between pt-2">
-            <span className="text-xs text-slate-500">
-              Includes TDS calibration, turbidity certification, harness safety logs, and chemical approvals.
-            </span>
-            <button
-              onClick={handleLaunchQuote}
-              className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl flex items-center gap-2 shadow-xs transition-all"
-            >
-              <span>Build Official Cleantech Quotation</span>
-              <ArrowRight className="w-3.5 h-3.5 text-emerald-200" />
-            </button>
-          </div>
+          <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-teal-600 group-hover:translate-x-1 transition-all" />
         </div>
-
-        {/* Safety & Compliance Standards */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
-              <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
-                <Shield className="w-4 h-4 text-emerald-600" />
-                <span>Safety & ISO Compliance</span>
-              </h2>
-            </div>
-
-            <div className="space-y-3">
-              <div className="p-3 rounded-xl border border-slate-100 bg-slate-50">
-                <div className="flex items-center gap-2 text-xs font-bold text-slate-900 mb-1">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  <span>ISO 45001 Occupational Safety</span>
-                </div>
-                <p className="text-[11px] text-slate-500 leading-relaxed">
-                  Certified rope-access cradle rigging and dual-lanyard fall protection harness systems.
-                </p>
-              </div>
-
-              <div className="p-3 rounded-xl border border-slate-100 bg-slate-50">
-                <div className="flex items-center gap-2 text-xs font-bold text-slate-900 mb-1">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  <span>De-Ionized Zero TDS Water</span>
-                </div>
-                <p className="text-[11px] text-slate-500 leading-relaxed">
-                  Eliminates mineral scaling on photovoltaic panels and high-rise structural glass.
-                </p>
-              </div>
-
-              <div className="p-3 rounded-xl border border-slate-100 bg-slate-50">
-                <div className="flex items-center gap-2 text-xs font-bold text-slate-900 mb-1">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  <span>100% Scheduled SLA Guarantee</span>
-                </div>
-                <p className="text-[11px] text-slate-500 leading-relaxed">
-                  Documented inspection logs, service reports, and scheduled maintenance calendar.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="pt-4 border-t border-slate-100 mt-4">
-            <button
-              onClick={() => onNavigate('quotations')}
-              className="w-full py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 font-bold text-xs rounded-xl flex items-center justify-center gap-2 border border-emerald-200"
-            >
-              <FileText className="w-4 h-4 text-emerald-600" />
-              <span>View All Cleantech Quotes ({totalQuotes})</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Recent Cleantech Services Quotations */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-base font-black text-slate-900">Recent Cleantech Quotations</h2>
-            <p className="text-xs text-slate-500">Solar panel array cleaning contracts and facility maintenance orders.</p>
-          </div>
-          <button
-            onClick={handleLaunchQuote}
-            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl shadow-xs flex items-center gap-1.5"
-          >
-            <PlusCircle className="w-3.5 h-3.5" />
-            <span>New Cleantech Quote</span>
-          </button>
-        </div>
-
-        {quotations.length === 0 ? (
-          <div className="text-center py-8 text-xs text-slate-500">
-            No quotations found for Cleantech Services.
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider font-extrabold border-b border-slate-200">
-                <tr>
-                  <th className="py-3 px-4">Quotation #</th>
-                  <th className="py-3 px-4">Customer</th>
-                  <th className="py-3 px-4">Date</th>
-                  <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4 text-right">Amount</th>
-                  <th className="py-3 px-4 text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {quotations.slice(0, 6).map((q) => (
-                  <tr key={q.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="py-3 px-4 font-mono font-bold text-slate-900">
-                      {q.quotation_number}
-                    </td>
-                    <td className="py-3 px-4 font-semibold text-slate-800">
-                      {q.customer?.company_name || 'Industrial Facility Client'}
-                    </td>
-                    <td className="py-3 px-4 text-slate-500">{q.quotation_date}</td>
-                    <td className="py-3 px-4">
-                      <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-extrabold uppercase ${
-                        q.status === 'approved' ? 'bg-emerald-100 text-emerald-800' :
-                        q.status === 'issued' ? 'bg-sky-100 text-sky-800' :
-                        'bg-teal-100 text-teal-800'
-                      }`}>
-                        {q.status}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-right font-black text-slate-900">
-                      ₹{Number(q.final_amount || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
-                    </td>
-                    <td className="py-3 px-4 text-center">
-                      <div className="flex items-center justify-center gap-1.5">
-                        <button
-                          onClick={() => onNavigate('quotation_edit', { id: q.id })}
-                          className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-blue-600 rounded-lg transition-colors"
-                          title="Edit Quotation"
-                        >
-                          <Edit className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => api.quotations.downloadDocx(q.id)}
-                          className="p-1.5 bg-teal-50 hover:bg-teal-100 text-teal-700 rounded-lg transition-colors"
-                          title="Download Word (.docx)"
-                        >
-                          <FileText className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => api.quotations.downloadPdf(q.id)}
-                          className="p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-lg transition-colors"
-                          title="Download PDF"
-                        >
-                          <Download className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => onOpenPreview(q.id)}
-                          className="p-1.5 bg-slate-100 hover:bg-emerald-100 text-slate-700 hover:text-emerald-900 rounded-lg transition-colors"
-                          title="Preview Document"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
       </div>
     </div>
   );
 };
 
 export default CleantechDashboard;
-

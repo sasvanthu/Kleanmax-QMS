@@ -800,19 +800,19 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
               <div>
                 <span className="text-slate-400 block font-bold text-[10px]">A/C HOLDER'S NAME</span>
-                <span className="font-extrabold text-slate-900">KLEAN MAX BANK</span>
+                <span className="font-extrabold text-slate-900">{company?.bank_account_name || company?.company_name || 'KLEAN MAX BANK'}</span>
               </div>
               <div>
                 <span className="text-slate-400 block font-bold text-[10px]">BANK NAME</span>
-                <span className="font-extrabold text-slate-900">KVB BANK A/C 1278135000007113</span>
+                <span className="font-extrabold text-slate-900">{company?.bank_name || 'KVB BANK'}</span>
               </div>
               <div>
                 <span className="text-slate-400 block font-bold text-[10px]">ACCOUNT NUMBER</span>
-                <span className="font-mono font-extrabold text-slate-900 text-sm">1278135000007113</span>
+                <span className="font-mono font-extrabold text-slate-900 text-sm">{company?.bank_account_no || '1278135000007113'}</span>
               </div>
               <div>
                 <span className="text-slate-400 block font-bold text-[10px]">BRANCH & IFS CODE</span>
-                <span className="font-extrabold text-slate-900">ASHOK NAGAR & KVBL0001278</span>
+                <span className="font-extrabold text-slate-900">{company?.bank_branch || 'ASHOK NAGAR'} & {company?.bank_ifsc || 'KVBL0001278'}</span>
               </div>
             </div>
           </div>
@@ -847,10 +847,10 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
           {/* 4. Thank You & Signatory */}
           <div className="pt-8 border-t border-slate-200 flex flex-wrap items-center justify-between gap-6">
             <div className="space-y-1">
-              <div className="text-xs font-bold text-slate-700">For KLEAN MAX</div>
+              <div className="text-xs font-bold text-slate-700">For {company?.company_name || 'KLEAN MAX'}</div>
               <div className="h-10" />
-              <div className="text-xs font-black text-slate-900">Mr. Manikandan</div>
-              <div className="text-[11px] text-slate-500">Service Head • +91 8122282034</div>
+              <div className="text-xs font-black text-slate-900">{company?.bank_account_name || 'Mr. Manikandan'}</div>
+              <div className="text-[11px] text-slate-500">Service Head • {company?.phone1 || company?.phone2 || '+91 8122282034'}</div>
               <div className="text-[11px] font-bold text-slate-700">Authorised Signatory</div>
             </div>
 

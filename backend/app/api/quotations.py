@@ -1,4 +1,5 @@
 import re
+import logging
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
@@ -27,6 +28,10 @@ from backend.app.services.pdf_generator import (
 from backend.app.services.docx_generator import generate_quotation_docx_bytes
 
 router = APIRouter(prefix="/quotations", tags=["Quotations"])
+
+
+
+logger = logging.getLogger(__name__)
 
 
 @router.post("/calculate", response_model=QuotationCalculationResult)

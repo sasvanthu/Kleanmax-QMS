@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Customer, Service, User } from '../services/types';
+import { Customer, Service, User, CompanySetting } from '../services/types';
 import { api } from '../services/api';
 import {
   Download, FileText, Printer, Save, CheckCircle2,
@@ -7,7 +7,6 @@ import {
   Search, Eye, Check, ChevronDown, Building, Phone, Mail, MapPin,
   RefreshCw, Info, HelpCircle, Image as ImageIcon, X, Paintbrush
 } from 'lucide-react';
-import { PdfPreviewModal } from '../components/quotation/PdfPreviewModal';
 
 interface PaintingScopeRow {
   id: string;
@@ -169,6 +168,7 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
   const [addressLine2, setAddressLine2] = useState<string>('Chennai - 600118, Tamil Nadu');
   const [contactPerson, setContactPerson] = useState<string>('Mr. Dinesh (Avadi Site)');
   const [phone, setPhone] = useState<string>('07676131368');
+  const [gstin, setGstin] = useState<string>('33AAAAU1234F1Z5');
   const [salutation, setSalutation] = useState<string>('DEAR SIR;');
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
   const [customerList, setCustomerList] = useState<Customer[]>([]);
@@ -177,7 +177,7 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
   const [introText1, setIntroText1] = useState<string>(DEFAULT_INTRO_1);
   const [introText2, setIntroText2] = useState<string>(DEFAULT_INTRO_2);
 
-  // 5. Scope Rows (Table: S.No, Description, Amount in INR)
+  // 5. Scope Rows (Table: S.No, Description, Area sqft, Rate, Amount in INR)
   const [rows, setRows] = useState<PaintingScopeRow[]>([
     {
       id: 'row_1',
@@ -206,15 +206,18 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
   const [callNotice, setCallNotice] = useState<string>('Looking forward for your favourable orders. Please call - 9500065813 / 9710148218.');
   const [satisfactionGoal, setSatisfactionGoal] = useState<string>('Your satisfaction is our Goal. Looking forward for your favourable orders.');
 
-  // Signatory
+  // Signatory (Dynamic from DB Company Settings)
   const [sigCompany, setSigCompany] = useState<string>('Unique Painters');
   const [sigName, setSigName] = useState<string>('K. SRIDHAR');
   const [sigTitle, setSigTitle] = useState<string>('Operations Head');
   const [sigPhones, setSigPhones] = useState<string>('9710148218 / 7338882034');
+  const [company, setCompany] = useState<CompanySetting | null>(null);
 
   // Search & Catalog
   const [productSearchQuery, setProductSearchQuery] = useState<string>('');
   const [searchDropdownOpen, setSearchDropdownOpen] = useState<boolean>(false);
+  const [availableProducts, setAvailableProducts] = useState<Partial<Service>[]>(DEFAULT_PAINT_CATALOG);
+  const [searchResults, setSearchResults] = useState<Partial<Service>[]>(DEFAULT_PAINT_CATALOG);
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
   // State & Feedback
@@ -247,12 +250,57 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
       } catch (e) {
         console.warn('Fallback sequence number:', e);
       }
-      const custs = await api.customers.list();
+
+      const [comp, custs, services] = await Promise.all([
+        api.company.get('uniquepainters').catch(() => null),
+        api.customers.list().catch(() => []),
+        api.services.list({ company_code: 'uniquepainters' }).catch(() => []),
+      ]);
+
+      if (comp) {
+        setCompany(comp);
+        if (comp.company_name) setSigCompany(comp.company_name);
+        if (comp.bank_account_name) setSigName(comp.bank_account_name);
+        const phones = [comp.phone1, comp.phone2].filter(Boolean).join(' / ');
+        if (phones) {
+          setSigPhones(phones);
+          setCallNotice(`Looking forward for your favourable orders. Please call - ${phones}.`);
+        }
+        if (comp.terms_and_conditions) {
+          setTerms(comp.terms_and_conditions.split('\n').filter(Boolean));
+        }
+      }
+
       setCustomerList(custs);
+
+      // Merge backend services with default paint products
+      const combinedMap = new Map<string, Partial<Service>>();
+      DEFAULT_PAINT_CATALOG.forEach((p) => combinedMap.set(p.service_code || '', p));
+      if (Array.isArray(services) && services.length > 0) {
+        services.forEach((s) => combinedMap.set(s.service_code, s));
+      }
+      const combinedList = Array.from(combinedMap.values());
+      setAvailableProducts(combinedList);
+      setSearchResults(combinedList);
     } catch (err) {
-      console.error('Failed to load initial data:', err);
+      console.error('Failed to load initial Unique Painters data:', err);
     }
   };
+
+  // Filter products as user types in search
+  useEffect(() => {
+    if (!productSearchQuery.trim()) {
+      setSearchResults(availableProducts);
+    } else {
+      const q = productSearchQuery.toLowerCase();
+      const filtered = availableProducts.filter((p) =>
+        (p.service_name || '').toLowerCase().includes(q) ||
+        (p.service_code || '').toLowerCase().includes(q) ||
+        (p.description || '').toLowerCase().includes(q)
+      );
+      setSearchResults(filtered);
+    }
+  }, [productSearchQuery, availableProducts]);
 
   const handleSelectCustomer = (custId: string) => {
     setSelectedCustomerId(custId);
@@ -263,6 +311,7 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
       setAddressLine2(`${target.billing_city || ''}${target.billing_pincode ? ` - ${target.billing_pincode}` : ''}`);
       setContactPerson(target.contact_person || '');
       setPhone(target.phone || '');
+      if (target.gstin) setGstin(target.gstin);
     }
   };
 
@@ -278,14 +327,16 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
 
   // Add Scope Row from Catalog
   const handleAddCatalogItem = (item: Partial<Service>) => {
+    const rate = Number(item.standard_rate) || 25;
+    const defaultArea = 2000;
     const newRow: PaintingScopeRow = {
       id: `row_${Date.now()}`,
       name: (item.service_name || 'PAINTING SCOPE').toUpperCase(),
       service_type: item.service_code || 'ASIAN PAINTS',
       description: item.description || '',
-      area_sqft: 2000,
-      rate_per_sqft: Number(item.standard_rate) || 25,
-      amount: Math.round(2000 * (Number(item.standard_rate) || 25)),
+      area_sqft: defaultArea,
+      rate_per_sqft: rate,
+      amount: Math.round(defaultArea * rate),
     };
     setRows((prev) => [...prev, newRow]);
     setProductSearchQuery('');
@@ -321,7 +372,7 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
         if (field === 'area_sqft' || field === 'rate_per_sqft') {
           const a = field === 'area_sqft' ? Number(val) : r.area_sqft;
           const rt = field === 'rate_per_sqft' ? Number(val) : r.rate_per_sqft;
-          if (a > 0 && rt > 0) {
+          if (a >= 0 && rt >= 0) {
             updated.amount = Math.round(a * rt);
           }
         }
@@ -354,7 +405,13 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
 
   // Save to DB
   const handleSaveToDatabase = async (): Promise<string | null> => {
+    if (rows.length === 0) {
+      alert('Please have at least one painting specification row.');
+      return null;
+    }
+
     setSaving(true);
+    setToastMsg(null);
     try {
       let targetCustId = selectedCustomerId;
       if (!targetCustId) {
@@ -373,12 +430,16 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
             billing_pincode: '600118',
             contact_person: contactPerson,
             phone: phone.trim() || '07676131368',
+            gstin: gstin.trim() || undefined,
+            is_active: true,
           });
           targetCustId = createdCust.id;
+          setSelectedCustomerId(createdCust.id);
           setCustomerList((prev) => [...prev, createdCust]);
         }
       }
 
+      // Payload sections
       const payloadSections = rows.map((r, idx) => ({
         section_order: idx + 1,
         section_name: r.name,
@@ -398,6 +459,47 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
         notes: r.description,
       }));
 
+      // Payload items
+      const payloadItems = rows.map((r, idx) => ({
+        item_name: `${r.name}: ${r.service_type}`,
+        description: `${r.description} | Area: ${r.area_sqft} sq.ft @ Rs.${r.rate_per_sqft}/sq.ft`,
+        quantity: 1,
+        uom: 'SQ_FT',
+        unit_price: Number(r.amount) || 0,
+        applied_rate: Number(r.amount) || 0,
+        rate_source: 'catalogue',
+        tax_rate: applyTax ? taxPercent : 0,
+        line_total: Number(r.amount) || 0,
+        item_order: idx + 1,
+      }));
+
+      // Snapshot JSON for complete state restore
+      const snapshot = {
+        quotationTitle,
+        customerName,
+        addressLine1,
+        addressLine2,
+        contactPerson,
+        phone,
+        gstin,
+        salutation,
+        introText1,
+        introText2,
+        rows,
+        machineries,
+        terms,
+        callNotice,
+        satisfactionGoal,
+        sigCompany,
+        sigName,
+        sigTitle,
+        sigPhones,
+        applyTax,
+        taxPercent,
+        quotationDate,
+        quotationNo,
+      };
+
       const payload = {
         customer_id: targetCustId,
         company_code: 'uniquepainters',
@@ -407,11 +509,12 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
         job_description: `${introText1}\n\n${introText2}`,
         notes: callNotice,
         terms_and_conditions: terms.join('\n'),
-        items: [],
+        items: payloadItems,
         sections: payloadSections,
         tax_rate: applyTax ? taxPercent : 0,
         discount_type: 'none',
         discount_value: 0,
+        snapshot_json: snapshot,
       };
 
       let res;
@@ -434,12 +537,9 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
 
   const handleDownloadDocx = async () => {
     try {
-      let quoteId = savedQuoteId;
-      if (!quoteId) {
-        quoteId = await handleSaveToDatabase();
-      }
+      const quoteId = await handleSaveToDatabase();
       if (quoteId) {
-        setToastMsg('Generating authentic Word (.docx) proposal matching sample...');
+        setToastMsg('Generating authentic Word (.docx) proposal...');
         await api.quotations.downloadDocx(quoteId, `${quotationNo.replace(/[\/\\]/g, '_')}_UniquePainters.docx`);
         setToastMsg('Word (.docx) proposal downloaded successfully!');
       }
@@ -451,10 +551,7 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
 
   const handleDownloadPdf = async () => {
     try {
-      let quoteId = savedQuoteId;
-      if (!quoteId) {
-        quoteId = await handleSaveToDatabase();
-      }
+      const quoteId = await handleSaveToDatabase();
       if (quoteId) {
         setToastMsg('Generating official PDF with authentic letterhead...');
         await api.quotations.downloadPdf(quoteId, `${quotationNo.replace(/[\/\\]/g, '_')}_UniquePainters.pdf`);
@@ -466,21 +563,13 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
     }
   };
 
-  const handleOpenA4Preview = async () => {
-    let quoteId = savedQuoteId;
-    if (!quoteId) {
-      quoteId = await handleSaveToDatabase();
-    }
-    if (quoteId) {
-      setInPagePreviewOpen(true);
-    }
+  const handleOpenA4Preview = () => {
+    // Immediate React live preview without latency or caching
+    setInPagePreviewOpen(true);
   };
 
   const handlePrint = async () => {
-    let quoteId = savedQuoteId;
-    if (!quoteId) {
-      quoteId = await handleSaveToDatabase();
-    }
+    const quoteId = await handleSaveToDatabase();
     if (quoteId) {
       const printWindow = window.open(api.quotations.getHtmlUrl(quoteId), '_blank');
       if (printWindow) {
@@ -490,7 +579,7 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
   };
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto pb-16 font-sans">
+    <div className="space-y-6 max-w-5xl mx-auto pb-16 font-sans">
       {/* Toast Alert Banner */}
       {toastMsg && (
         <div className="bg-purple-50 border border-purple-300 text-purple-950 px-4 py-3 rounded-2xl shadow-sm flex items-center justify-between animate-fade-in sticky top-20 z-30">
@@ -504,7 +593,7 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
         </div>
       )}
 
-      {/* Top Action Bar */}
+      {/* Top Action Bar (Identical Layout to Cleantech) */}
       <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex flex-wrap items-center justify-between gap-4 sticky top-16 z-20">
         <div className="flex items-center gap-2">
           <button
@@ -522,7 +611,7 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
               </h1>
             </div>
             <p className="text-[11px] text-slate-500">
-              Direct in-sheet editing with balanced margins & clean quotation table.
+              Interactive proposal builder matching authentic Unique Painters letterhead & quotation format.
             </p>
           </div>
         </div>
@@ -552,7 +641,7 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
             <span>Download PDF</span>
           </button>
 
-          {/* Preview A4 */}
+          {/* Preview A4 (Instant Live Preview Modal) */}
           <button
             type="button"
             onClick={handleOpenA4Preview}
@@ -587,29 +676,27 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
         </div>
       </div>
 
-      {/* Main Quotation Document Sheets: Balanced Equal Corners */}
-      <div className="space-y-10">
+      {/* Main Quotation Document Sheet (A4 Letterhead Flush Width - Identical to Cleantech Layout) */}
+      <div className="bg-white border-2 border-slate-300 rounded-3xl shadow-xl overflow-hidden text-slate-800">
+        
+        {/* 1. Authentic Header Flush to the very ends of the page (Edge-to-Edge) */}
+        <div className="w-full bg-white border-b-2 border-purple-600 p-0 m-0">
+          <img
+            src="/headers/header_uniquepainters.png"
+            alt="Unique Painters Official Letterhead Header"
+            className="w-full h-auto object-cover block select-none"
+            style={{ width: '100%', display: 'block' }}
+          />
+        </div>
 
-        {/* ========================================================================= */}
-        {/* SHEET 1: PROPOSAL TABLE & SCOPE (WITH HEADER BANNER)                     */}
-        {/* ========================================================================= */}
-        <div className="bg-white border border-slate-300 rounded-2xl shadow-lg p-8 md:p-10 text-slate-800 space-y-6 transition-all">
+        <div className="p-6 md:p-10 space-y-7">
           
-          {/* Header Banner - Page 1 ALONE, balanced inside equal corners */}
-          <div className="rounded-xl overflow-hidden border border-slate-200 bg-slate-50 text-center shadow-xs">
-            <img
-              src="/headers/header_uniquepainters.png"
-              alt="Unique Painters Official Letterhead Header"
-              className="w-full max-h-28 object-contain mx-auto block select-none"
-            />
-          </div>
-
-          {/* Heading Selector + In-place Editable Heading */}
-          <div className="bg-purple-50/50 border border-purple-200/80 rounded-xl p-3.5 space-y-2.5">
+          {/* 2. Heading Selector: 3 Options + Directly Editable Title */}
+          <div className="bg-purple-50/70 border border-purple-200 rounded-2xl p-4 space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-[11px] font-black uppercase tracking-wider text-purple-900 flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-purple-600" />
-                Quotation Type Heading:
+                Select Heading Type:
               </span>
               <div className="flex flex-wrap items-center gap-1.5">
                 {HEADING_OPTIONS.map((opt) => (
@@ -617,9 +704,9 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
                     key={opt}
                     type="button"
                     onClick={() => handleSelectHeadingOption(opt)}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
                       selectedHeadingOption === opt
-                        ? 'bg-purple-700 text-white font-black shadow-xs ring-2 ring-purple-400'
+                        ? 'bg-purple-700 text-white font-black shadow-xs ring-2 ring-purple-800'
                         : 'bg-white text-slate-700 hover:bg-purple-100 border border-purple-200'
                     }`}
                   >
@@ -630,22 +717,25 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
             </div>
 
             <div>
+              <label className="block text-[10px] font-black uppercase text-purple-800 mb-1">
+                Editable Document Heading (Centered on Document):
+              </label>
               <input
                 type="text"
                 value={quotationTitle}
                 onChange={(e) => setQuotationTitle(e.target.value.toUpperCase())}
-                className="w-full text-center text-base md:text-lg font-black text-slate-900 bg-white border border-purple-300 rounded-lg py-2 px-3 tracking-wide uppercase focus:ring-2 focus:ring-purple-500 shadow-2xs"
+                className="w-full text-center text-lg md:text-xl font-black text-slate-950 bg-white border border-purple-300 rounded-xl py-2 px-3 tracking-wide uppercase focus:ring-2 focus:ring-purple-500 shadow-2xs"
               />
             </div>
           </div>
 
-          {/* Metadata & "To :-" Client Address Grid (Equal Balanced Layout) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-1 pb-4 border-b border-slate-200">
-            {/* Left: Client Address ("TO :-") */}
-            <div className="space-y-2">
+          {/* 3. Metadata & "To :" Client Address Grid (Matching Cleantech 2-Column Responsive Grid) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 pb-4 border-b border-slate-200">
+            {/* Left: Client Address ("To :") */}
+            <div className="space-y-2.5">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-black uppercase text-slate-900 tracking-wider">
-                  To,
+                <span className="text-xs font-black uppercase text-slate-900 tracking-wider">
+                  To :
                 </span>
                 {customerList.length > 0 && (
                   <select
@@ -667,9 +757,9 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
                 <input
                   type="text"
                   value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value.toUpperCase())}
-                  placeholder="CLIENT / COMPANY NAME (e.g. TRUE NUTRITION)"
-                  className="w-full text-sm font-black text-slate-900 border border-slate-300 rounded-lg p-2 focus:ring-1 focus:ring-purple-500 uppercase tracking-wide bg-slate-50/50"
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  placeholder="Client / Company Name (e.g. TRUE NUTRITION)"
+                  className="w-full text-sm font-black text-slate-900 border border-slate-300 rounded-xl p-2.5 focus:ring-1 focus:ring-purple-500 uppercase tracking-wide bg-slate-50/50"
                 />
               </div>
 
@@ -690,39 +780,64 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                <input
-                  type="text"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="Phone No (e.g. 07676131368)"
-                  className="w-full border border-slate-300 rounded-lg p-2"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
                 <input
                   type="text"
                   value={contactPerson}
                   onChange={(e) => setContactPerson(e.target.value)}
-                  placeholder="Attn: Person (e.g. Mr. Dinesh)"
+                  placeholder="Attn: Person"
                   className="w-full border border-slate-300 rounded-lg p-2"
                 />
-              </div>
-
-              <div className="pt-1">
                 <input
                   type="text"
-                  value={salutation}
-                  onChange={(e) => setSalutation(e.target.value.toUpperCase())}
-                  placeholder="DEAR SIR;"
-                  className="w-36 font-black text-xs text-slate-900 border border-slate-300 rounded-lg p-1.5 uppercase"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="Phone No"
+                  className="w-full border border-slate-300 rounded-lg p-2"
+                />
+                <input
+                  type="text"
+                  value={gstin}
+                  onChange={(e) => setGstin(e.target.value.toUpperCase())}
+                  placeholder="GSTIN No"
+                  className="w-full font-mono border border-slate-300 rounded-lg p-2 uppercase"
                 />
               </div>
             </div>
 
             {/* Right: Quotation Number & Date in DD/MM/YYYY */}
-            <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-200 flex flex-col justify-center space-y-3">
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex flex-col justify-center space-y-3">
               <div>
                 <label className="block text-[11px] font-black uppercase text-slate-700 mb-1">
-                  DATE:
+                  Quotation No :-
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={quotationNo}
+                    onChange={(e) => setQuotationNo(e.target.value.toUpperCase())}
+                    className="w-full text-sm font-mono font-black text-slate-900 border border-slate-300 rounded-xl p-2 bg-white uppercase focus:ring-1 focus:ring-purple-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const res = await api.quotations.getNextNumber('uniquepainters', 'short');
+                      if (res?.next_number) setQuotationNo(res.next_number);
+                    }}
+                    className="p-2 bg-slate-200 hover:bg-slate-300 rounded-xl text-slate-700"
+                    title="Fetch latest sequence from database"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                  </button>
+                </div>
+                <span className="text-[10px] text-slate-500 block mt-0.5">
+                  Format: UNP/2026/001. Directly editable or click refresh.
+                </span>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-black uppercase text-slate-700 mb-1">
+                  Date :-
                 </label>
                 <div className="relative flex items-center">
                   <input
@@ -730,7 +845,7 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
                     value={quotationDate}
                     onChange={(e) => setQuotationDate(e.target.value)}
                     placeholder="DD/MM/YYYY (e.g. 21/10/2025)"
-                    className="w-full text-xs font-bold text-slate-900 border border-slate-300 rounded-lg p-2.5 bg-white pr-9 focus:ring-1 focus:ring-purple-500"
+                    className="w-full text-xs font-bold text-slate-900 border border-slate-300 rounded-xl p-2.5 bg-white pr-9 focus:ring-1 focus:ring-purple-500"
                   />
                   <input
                     type="date"
@@ -741,202 +856,195 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
                     title="Select date from calendar"
                   />
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-black uppercase text-slate-700 mb-1">
-                  QUOTATION NO:
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={quotationNo}
-                    onChange={(e) => setQuotationNo(e.target.value.toUpperCase())}
-                    className="w-full text-sm font-mono font-black text-slate-900 border border-slate-300 rounded-lg p-2 bg-white uppercase focus:ring-1 focus:ring-purple-500"
-                  />
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      const res = await api.quotations.getNextNumber('uniquepainters', 'short');
-                      if (res?.next_number) setQuotationNo(res.next_number);
-                    }}
-                    className="p-2 bg-slate-200 hover:bg-slate-300 rounded-lg text-slate-700"
-                    title="Fetch latest sequence from database"
-                  >
-                    <RefreshCw className="w-4 h-4" />
-                  </button>
-                </div>
+                <span className="text-[10px] text-slate-500 block mt-0.5">
+                  Indian order: DD/MM/YYYY. Directly editable or click calendar icon.
+                </span>
               </div>
             </div>
           </div>
 
-          {/* Intro Textboxes (Directly Editable) */}
-          <div className="space-y-2">
-            <textarea
-              rows={2}
-              value={introText1}
-              onChange={(e) => setIntroText1(e.target.value)}
-              className="w-full text-xs text-slate-800 bg-slate-50/50 border border-slate-200 rounded-lg p-3 leading-relaxed focus:ring-1 focus:ring-purple-500 text-justify"
-            />
-            <textarea
-              rows={2}
-              value={introText2}
-              onChange={(e) => setIntroText2(e.target.value)}
-              className="w-full text-xs text-slate-800 bg-slate-50/50 border border-slate-200 rounded-lg p-3 leading-relaxed focus:ring-1 focus:ring-purple-500 text-justify"
-            />
+          {/* 4. Introductory Survey & Proposal Context */}
+          <div className="bg-slate-50/70 p-5 rounded-2xl border border-slate-200 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black uppercase text-slate-900 flex items-center gap-1.5">
+                <Paintbrush className="w-4 h-4 text-purple-600" />
+                Introductory Letter & Site Survey Context
+              </span>
+              <span className="text-[10px] text-slate-400 font-mono">Authentic Unique Painters Intro</span>
+            </div>
+
+            <div className="space-y-2">
+              <div className="text-xs font-bold text-slate-800">
+                <input
+                  type="text"
+                  value={salutation}
+                  onChange={(e) => setSalutation(e.target.value.toUpperCase())}
+                  className="font-black text-slate-900 border border-slate-200 rounded px-2 py-1 w-36 uppercase bg-white"
+                />
+              </div>
+
+              <textarea
+                rows={2}
+                value={introText1}
+                onChange={(e) => setIntroText1(e.target.value)}
+                className="w-full text-xs text-slate-700 border border-slate-300 rounded-xl p-2.5 bg-white focus:ring-1 focus:ring-purple-500 leading-relaxed"
+              />
+
+              <textarea
+                rows={2}
+                value={introText2}
+                onChange={(e) => setIntroText2(e.target.value)}
+                className="w-full text-xs text-slate-700 border border-slate-300 rounded-xl p-2.5 bg-white focus:ring-1 focus:ring-purple-500 leading-relaxed"
+              />
+            </div>
           </div>
 
-          {/* Product / Paint System Search Bar */}
+          {/* 5. Product / Scope Search Bar */}
           <div className="space-y-2 relative" ref={searchContainerRef}>
             <div className="flex items-center justify-between">
               <label className="text-xs font-black uppercase tracking-wider text-slate-900 flex items-center gap-1.5">
                 <Search className="w-4 h-4 text-purple-600" />
-                <span>Search & Add Painting Service / System:</span>
+                <span>Search & Add Painting Scope / Coatings / Epoxy Flooring:</span>
               </label>
-              <button
-                type="button"
-                onClick={handleAddBlankRow}
-                className="text-xs font-bold text-purple-700 hover:text-purple-800 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-3 py-1 rounded-lg flex items-center gap-1"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>+ Custom Blank Row</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleAddBlankRow}
+                  className="text-xs font-bold text-purple-800 hover:text-purple-900 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-3 py-1 rounded-lg flex items-center gap-1"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>+ Add Blank Specification Row</span>
+                </button>
+              </div>
             </div>
 
             <div className="relative">
               <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400 pointer-events-none" />
               <input
                 type="text"
-                placeholder="Search painting catalog (e.g. Asian Paint Tractor Emulsion, Royale Emulsion, Epoxy Flooring, Exterior Apex)..."
+                placeholder="Search painting catalog (e.g. Tractor Emulsion, Royale, Apex Weatherproof, Epoxy Flooring, Waterproofing, Texture)..."
                 value={productSearchQuery}
+                onFocus={() => setSearchDropdownOpen(true)}
                 onChange={(e) => {
                   setProductSearchQuery(e.target.value);
                   setSearchDropdownOpen(true);
                 }}
-                onFocus={() => setSearchDropdownOpen(true)}
-                className="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg pl-10 pr-4 py-2.5 focus:bg-white focus:ring-2 focus:ring-purple-500 shadow-2xs"
+                className="w-full pl-10 pr-4 py-2.5 text-xs font-bold bg-white border-2 border-purple-300 rounded-2xl shadow-xs focus:ring-2 focus:ring-purple-400 focus:outline-none"
               />
             </div>
 
-            {/* Dropdown Results */}
+            {/* Instant Search Results Dropdown */}
             {searchDropdownOpen && (
-              <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-300 rounded-xl shadow-2xl z-40 max-h-64 overflow-y-auto divide-y divide-slate-100">
-                {DEFAULT_PAINT_CATALOG.filter(
-                  (p) =>
-                    !productSearchQuery ||
-                    p.service_name?.toLowerCase().includes(productSearchQuery.toLowerCase()) ||
-                    p.description?.toLowerCase().includes(productSearchQuery.toLowerCase())
-                ).map((prod) => (
-                  <div
-                    key={prod.service_code}
-                    onClick={() => handleAddCatalogItem(prod)}
-                    className="p-3 hover:bg-purple-50 cursor-pointer flex items-center justify-between gap-3 transition-colors"
-                  >
-                    <div className="space-y-0.5">
-                      <div className="text-xs font-black text-slate-900 uppercase">
-                        {prod.service_name}
-                      </div>
-                      <div className="text-[11px] text-slate-500 line-clamp-1">
-                        {prod.description}
-                      </div>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <div className="text-xs font-black text-purple-900">
-                        ₹{prod.standard_rate?.toFixed(2)} / sq.ft
-                      </div>
-                      <span className="text-[10px] font-bold text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full uppercase">
-                        + Add
-                      </span>
-                    </div>
+              <div className="absolute left-0 right-0 top-full mt-1 bg-white border-2 border-purple-400 rounded-2xl shadow-2xl z-40 max-h-72 overflow-y-auto">
+                {searchResults.length === 0 ? (
+                  <div className="p-4 text-xs text-slate-400 text-center">
+                    No matching painting specifications found. Click "+ Add Blank Specification Row" above.
                   </div>
-                ))}
+                ) : (
+                  searchResults.map((item, i) => (
+                    <div
+                      key={item.service_code || i}
+                      onClick={() => handleAddCatalogItem(item)}
+                      className="p-3 hover:bg-purple-50/80 cursor-pointer border-b border-slate-100 flex items-center justify-between transition-colors"
+                    >
+                      <div>
+                        <div className="text-xs font-bold text-slate-900 flex items-center gap-2">
+                          <span>{item.service_name}</span>
+                          <span className="text-[10px] font-mono bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded">
+                            {item.service_code}
+                          </span>
+                        </div>
+                        {item.description && (
+                          <div className="text-[11px] text-slate-500 line-clamp-1">{item.description}</div>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <span className="text-xs font-black text-purple-700">
+                          ₹{Number(item.standard_rate || 0).toFixed(2)}
+                        </span>
+                        <span className="text-[10px] text-slate-400 block">/ {item.default_uom || 'sq_ft'}</span>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             )}
           </div>
 
-          {/* Neat Proposal Table: Elegant Alignment & Borders */}
-          <div className="rounded-xl overflow-hidden border border-slate-300 shadow-xs">
+          {/* 6. Painting Proposal Scope Table (Clean, Beautiful Tabular Layout) */}
+          <div className="overflow-x-auto border-2 border-slate-300 rounded-2xl shadow-xs">
             <table className="w-full text-xs text-left border-collapse">
               <thead>
-                <tr className="bg-slate-900 text-white font-bold uppercase text-[11px] tracking-wider">
-                  <th className="p-3 text-center w-14 border-r border-slate-800">S. No</th>
-                  <th className="p-3 border-r border-slate-800">Description</th>
-                  <th className="p-3 text-right w-44 border-r border-slate-800">Amount in INR</th>
+                <tr className="bg-slate-900 text-white font-black text-[11px] uppercase tracking-wider">
+                  <th className="p-3 text-center w-14">S. No</th>
+                  <th className="p-3">Specification / Service Scope</th>
+                  <th className="p-3 text-center w-28">Area (Sq.Ft)</th>
+                  <th className="p-3 text-right w-28">Rate / Sq.Ft (₹)</th>
+                  <th className="p-3 text-right w-32">Amount (₹)</th>
                   <th className="p-3 text-center w-12">Act</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200">
+              <tbody className="divide-y divide-slate-200 bg-white">
                 {rows.map((r, idx) => (
-                  <tr key={r.id} className={idx % 2 === 1 ? 'bg-slate-50/70' : 'bg-white'}>
-                    <td className="p-3.5 text-center font-bold text-slate-500 align-top border-r border-slate-200">
+                  <tr key={r.id} className="hover:bg-slate-50/70 transition-colors">
+                    <td className="p-3 text-center font-bold text-slate-600 align-top">
                       {idx + 1}.
                     </td>
-                    <td className="p-3.5 space-y-2 align-top border-r border-slate-200">
+                    <td className="p-3 space-y-1">
                       <input
                         type="text"
                         value={r.name}
                         onChange={(e) => handleUpdateRow(r.id, 'name', e.target.value.toUpperCase())}
-                        placeholder="SCOPE TITLE (e.g. INTERIOR WALL PAINTING)"
-                        className="w-full font-black text-slate-900 border border-slate-300 rounded-md p-1.5 text-xs uppercase focus:ring-1 focus:ring-purple-500"
+                        placeholder="Item Title (e.g. INTERIOR WALL PAINTING)"
+                        className="w-full font-black text-slate-900 uppercase border border-slate-200 rounded-lg p-1.5 focus:ring-1 focus:ring-purple-500"
                       />
                       <input
                         type="text"
                         value={r.service_type}
                         onChange={(e) => handleUpdateRow(r.id, 'service_type', e.target.value.toUpperCase())}
-                        placeholder="BRAND / SPECIFICATION (e.g. ASIAN PAINT TRACTOR EMULSION)"
-                        className="w-full font-bold text-purple-900 border border-purple-200 rounded-md p-1.5 text-xs uppercase bg-purple-50/30"
+                        placeholder="Service Type (e.g. ASIAN PAINT TRACTOR EMULSION)"
+                        className="w-full text-[11px] font-bold text-purple-700 uppercase border border-slate-200 rounded p-1"
                       />
                       <textarea
                         rows={2}
                         value={r.description}
                         onChange={(e) => handleUpdateRow(r.id, 'description', e.target.value)}
-                        placeholder="Detailed coating specification (e.g. APPLY TWO CODE PREMIER EMULSION...)"
-                        className="w-full text-[11px] text-slate-700 border border-slate-200 rounded-md p-1.5 leading-relaxed"
+                        placeholder="Application specifications (e.g. APPLY TWO COAT PREMIER EMULSION...)"
+                        className="w-full text-[11px] text-slate-600 border border-slate-200 rounded p-1.5 focus:ring-1 focus:ring-purple-500"
                       />
-                      <div className="flex items-center gap-4 text-[11px] text-slate-600 bg-white border border-slate-200 p-2 rounded-md">
-                        <label className="flex items-center gap-1 font-semibold">
-                          <span>Area:</span>
-                          <input
-                            type="number"
-                            value={r.area_sqft}
-                            onChange={(e) => handleUpdateRow(r.id, 'area_sqft', Number(e.target.value))}
-                            className="w-20 font-bold border border-slate-300 rounded p-1 text-center bg-slate-50"
-                          />
-                          <span>sq.ft</span>
-                        </label>
-                        <label className="flex items-center gap-1 font-semibold">
-                          <span>Rate: ₹</span>
-                          <input
-                            type="number"
-                            step="0.1"
-                            value={r.rate_per_sqft}
-                            onChange={(e) => handleUpdateRow(r.id, 'rate_per_sqft', Number(e.target.value))}
-                            className="w-20 font-bold border border-slate-300 rounded p-1 text-center bg-slate-50"
-                          />
-                          <span>/ sq.ft</span>
-                        </label>
-                      </div>
                     </td>
-                    <td className="p-3.5 text-right align-top border-r border-slate-200">
-                      <div className="space-y-1">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase block">Line Amount</span>
-                        <div className="flex items-center justify-end gap-1">
-                          <span className="font-bold text-slate-700">RS.</span>
-                          <input
-                            type="number"
-                            value={r.amount}
-                            onChange={(e) => handleUpdateRow(r.id, 'amount', Number(e.target.value))}
-                            className="w-32 font-black text-sm text-right border border-slate-300 rounded-md p-1.5 bg-white text-slate-900 focus:ring-1 focus:ring-purple-500"
-                          />
-                        </div>
-                      </div>
+                    <td className="p-3 align-top">
+                      <input
+                        type="number"
+                        value={r.area_sqft}
+                        onChange={(e) => handleUpdateRow(r.id, 'area_sqft', Number(e.target.value))}
+                        className="w-full text-center font-bold text-slate-900 border border-slate-200 rounded p-1.5 focus:ring-1 focus:ring-purple-500"
+                      />
                     </td>
-                    <td className="p-3.5 text-center align-top">
+                    <td className="p-3 align-top">
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={r.rate_per_sqft}
+                        onChange={(e) => handleUpdateRow(r.id, 'rate_per_sqft', Number(e.target.value))}
+                        className="w-full text-right font-bold text-slate-900 border border-slate-200 rounded p-1.5 focus:ring-1 focus:ring-purple-500"
+                      />
+                    </td>
+                    <td className="p-3 align-top">
+                      <input
+                        type="number"
+                        value={r.amount}
+                        onChange={(e) => handleUpdateRow(r.id, 'amount', Number(e.target.value))}
+                        className="w-full text-right font-black text-purple-900 border border-purple-200 rounded p-1.5 bg-purple-50/50"
+                      />
+                    </td>
+                    <td className="p-3 text-center align-top">
                       <button
                         type="button"
                         onClick={() => handleRemoveRow(r.id)}
-                        className="p-1.5 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-lg transition-colors"
-                        title="Delete row"
+                        disabled={rows.length <= 1}
+                        className="p-1 text-slate-400 hover:text-red-600 rounded"
+                        title="Remove row"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -944,285 +1052,486 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
                   </tr>
                 ))}
 
-                {/* Optional Tax Checkbox Row */}
-                <tr className="bg-slate-50 border-t border-slate-200 text-xs">
-                  <td colSpan={2} className="p-3 text-right font-bold text-slate-600 border-r border-slate-200">
-                    <label className="inline-flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={applyTax}
-                        onChange={(e) => setApplyTax(e.target.checked)}
-                        className="rounded text-purple-600 focus:ring-purple-500"
-                      />
-                      <span>Apply 18% GST Extra to Total Value</span>
-                    </label>
+                {/* Sub Total */}
+                <tr className="border-t-2 border-slate-300 font-bold bg-slate-50">
+                  <td colSpan={4} className="p-2.5 text-right uppercase tracking-wider text-slate-700">
+                    SUB TOTAL:
                   </td>
-                  <td className="p-3 text-right font-bold text-slate-700 border-r border-slate-200">
-                    {applyTax ? `RS.${gstAmount.toLocaleString('en-IN')}` : 'GST 18% Extra (As Quoted)'}
+                  <td className="p-2.5 text-right font-black text-slate-900">
+                    ₹{subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </td>
                   <td></td>
                 </tr>
 
-                {/* TOTAL PROJECT VALUE Row */}
-                <tr className="bg-purple-100/90 font-black text-sm border-t-2 border-purple-900">
-                  <td colSpan={2} className="p-3.5 text-right uppercase tracking-wider text-slate-900 border-r border-purple-200">
+                {/* Tax Option Toggle */}
+                <tr className="border-t border-slate-200 bg-slate-50/50">
+                  <td colSpan={4} className="p-2 text-right">
+                    <label className="inline-flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={applyTax}
+                        onChange={(e) => setApplyTax(e.target.checked)}
+                        className="rounded text-purple-600 focus:ring-purple-500 w-4 h-4"
+                      />
+                      <span>Apply GST (18% Extra):</span>
+                    </label>
+                  </td>
+                  <td className="p-2 text-right font-bold text-slate-700">
+                    {applyTax ? `₹${gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '—'}
+                  </td>
+                  <td></td>
+                </tr>
+
+                {/* Total Row */}
+                <tr className="border-t-2 border-purple-950 font-black bg-purple-100 text-sm">
+                  <td colSpan={4} className="p-3 text-right text-purple-950 uppercase tracking-wide">
                     TOTAL PROJECT VALUE :
                   </td>
-                  <td className="p-3.5 text-right text-purple-950 font-black text-base whitespace-nowrap border-r border-purple-200">
-                    RS.{finalTotal.toLocaleString('en-IN')}
+                  <td className="p-3 text-right font-black text-purple-950 text-base">
+                    ₹{finalTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </td>
                   <td></td>
                 </tr>
               </tbody>
             </table>
           </div>
-        </div>
 
-        {/* ========================================================================= */}
-        {/* SHEET 2: MACHINERIES, CONSUMABLES, TERMS & SIGNATURE (NO HEADER BANNER)  */}
-        {/* ========================================================================= */}
-        <div className="bg-white border border-slate-300 rounded-2xl shadow-lg p-8 md:p-10 text-slate-800 space-y-6 transition-all">
-          <div className="text-xs font-bold text-slate-400 uppercase tracking-widest text-center border-b border-slate-100 pb-1">
-            — Page 2 of 3: Machineries & Consumables Specification —
-          </div>
-
-          {/* List of Machineries and consumables (Directly Editable) */}
-          <div className="space-y-3">
+          {/* 7. List of Machineries and Consumables */}
+          <div className="bg-slate-50/70 p-5 rounded-2xl border border-slate-200 space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-black text-slate-900 uppercase underline tracking-wide">
-                List of Machineries and consumables:
-              </h3>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  placeholder="Add item..."
-                  value={newMachineryInput}
-                  onChange={(e) => setNewMachineryInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleAddMachinery()}
-                  className="text-xs border border-slate-300 rounded-lg px-2.5 py-1 w-48"
-                />
-                <button
-                  type="button"
-                  onClick={handleAddMachinery}
-                  className="text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white px-2.5 py-1 rounded-lg"
-                >
-                  + Add
-                </button>
-              </div>
+              <span className="text-xs font-black uppercase text-slate-900 flex items-center gap-1.5">
+                <Layers className="w-4 h-4 text-purple-600" />
+                List of Machineries and Consumables
+              </span>
+              <span className="text-[10px] text-slate-400 font-mono">15 Standard Tools & Materials</span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <div className="flex flex-wrap gap-2">
               {machineries.map((m, idx) => (
-                <div key={idx} className="flex items-center justify-between gap-2 text-xs text-slate-800 bg-white p-2 rounded-lg border border-slate-200">
-                  <div className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-purple-600 shrink-0" />
-                    <span>{m}</span>
-                  </div>
+                <span
+                  key={idx}
+                  className="inline-flex items-center gap-1.5 bg-white border border-slate-300 text-slate-800 text-xs px-2.5 py-1 rounded-xl shadow-2xs"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-purple-600" />
+                  <span>{m}</span>
                   <button
                     type="button"
                     onClick={() => handleRemoveMachinery(idx)}
-                    className="text-slate-400 hover:text-red-500 p-0.5"
+                    className="text-slate-400 hover:text-red-500 ml-1"
                   >
-                    <X className="w-3.5 h-3.5" />
+                    ×
                   </button>
-                </div>
+                </span>
               ))}
+            </div>
+
+            <div className="flex items-center gap-2 pt-2">
+              <input
+                type="text"
+                placeholder="Add machinery or consumable item..."
+                value={newMachineryInput}
+                onChange={(e) => setNewMachineryInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddMachinery()}
+                className="text-xs border border-slate-300 rounded-xl p-2 bg-white flex-1 focus:ring-1 focus:ring-purple-500"
+              />
+              <button
+                type="button"
+                onClick={handleAddMachinery}
+                className="px-3 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold flex items-center gap-1"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add</span>
+              </button>
             </div>
           </div>
 
-          {/* Call Notice (Directly Editable) */}
-          <div>
-            <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Call Order Notice:</label>
+          {/* 8. Call Notice Box */}
+          <div className="bg-purple-50/50 border border-purple-200 rounded-2xl p-4">
+            <label className="block text-[10px] font-black uppercase text-purple-800 mb-1">
+              Call Notice Box:
+            </label>
             <input
               type="text"
               value={callNotice}
               onChange={(e) => setCallNotice(e.target.value)}
-              className="w-full text-xs font-black text-slate-900 border border-slate-300 rounded-lg p-2.5 bg-purple-50/40"
+              className="w-full text-xs font-bold text-purple-950 bg-white border border-purple-300 rounded-xl p-2.5 focus:ring-1 focus:ring-purple-500"
             />
           </div>
 
-          {/* Terms & Conditions (Directly Editable) */}
-          <div className="space-y-3 pt-2">
+          {/* 9. Terms & Conditions */}
+          <div className="bg-slate-50/70 p-5 rounded-2xl border border-slate-200 space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-black text-slate-900 uppercase underline tracking-wide">
-                Terms & Conditions:
-              </h3>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  placeholder="Add term..."
-                  value={newTermInput}
-                  onChange={(e) => setNewTermInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleAddTerm()}
-                  className="text-xs border border-slate-300 rounded-lg px-2.5 py-1 w-48"
-                />
-                <button
-                  type="button"
-                  onClick={handleAddTerm}
-                  className="text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white px-2.5 py-1 rounded-lg"
-                >
-                  + Add
-                </button>
-              </div>
+              <span className="text-xs font-black uppercase text-slate-900 flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-purple-600" />
+                Terms & Conditions
+              </span>
+              <span className="text-[10px] text-slate-400 font-mono">Authentic Terms</span>
             </div>
 
-            <div className="space-y-1.5 bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <ul className="space-y-2">
               {terms.map((t, idx) => (
-                <div key={idx} className="flex items-center justify-between gap-2 text-xs text-slate-800 bg-white p-2 rounded-lg border border-slate-200">
-                  <div className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-slate-900 shrink-0" />
+                <li key={idx} className="flex items-center justify-between text-xs bg-white border border-slate-200 rounded-xl p-2">
+                  <div className="flex items-start gap-2 text-slate-700">
+                    <span className="w-1.5 h-1.5 rounded-full bg-purple-600 mt-1.5 shrink-0" />
                     <span>{t}</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => handleRemoveTerm(idx)}
-                    className="text-slate-400 hover:text-red-500 p-0.5"
+                    className="text-slate-400 hover:text-red-500 p-1"
                   >
-                    <X className="w-3.5 h-3.5" />
+                    ×
                   </button>
-                </div>
+                </li>
               ))}
+            </ul>
+
+            <div className="flex items-center gap-2 pt-2">
+              <input
+                type="text"
+                placeholder="Add new term & condition..."
+                value={newTermInput}
+                onChange={(e) => setNewTermInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddTerm()}
+                className="text-xs border border-slate-300 rounded-xl p-2 bg-white flex-1 focus:ring-1 focus:ring-purple-500"
+              />
+              <button
+                type="button"
+                onClick={handleAddTerm}
+                className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold flex items-center gap-1"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add Term</span>
+              </button>
             </div>
           </div>
 
-          {/* Goal Closing */}
+          {/* 10. Satisfaction Statement */}
           <div>
-            <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Satisfaction Statement:</label>
+            <label className="block text-[10px] font-black uppercase text-slate-500 mb-1">
+              Satisfaction Statement:
+            </label>
             <input
               type="text"
               value={satisfactionGoal}
               onChange={(e) => setSatisfactionGoal(e.target.value)}
-              className="w-full text-xs text-slate-800 border border-slate-300 rounded-lg p-2.5 bg-white"
+              className="w-full text-xs font-medium text-slate-800 border border-slate-300 rounded-xl p-2.5 bg-white"
             />
           </div>
 
-          {/* Signatory Block (Direct In-Sheet Editing) */}
-          <div className="flex flex-wrap justify-between items-end pt-8 border-t border-slate-300 gap-6">
-            <div className="space-y-1.5 text-xs">
-              <div className="text-slate-600 font-bold">Regards</div>
+          {/* 11. Signatory Block (Direct In-Sheet Editing - NO CLIENT SIGNATURE) */}
+          <div className="pt-6 border-t-2 border-slate-200">
+            <div className="bg-slate-50/80 p-5 rounded-2xl border border-slate-200 max-w-md space-y-2">
+              <div className="text-xs font-bold text-slate-500">Regards,</div>
               <input
                 type="text"
                 value={sigCompany}
                 onChange={(e) => setSigCompany(e.target.value)}
-                className="font-black text-sm text-purple-900 border border-slate-300 rounded p-1 w-48 block"
+                className="w-full font-black text-sm text-purple-900 border border-slate-300 rounded-lg p-1.5 bg-white"
               />
               <input
                 type="text"
                 value={sigName}
                 onChange={(e) => setSigName(e.target.value)}
-                className="font-bold text-xs text-slate-800 border border-slate-300 rounded p-1 w-48 block"
+                className="w-full font-bold text-xs text-slate-800 border border-slate-300 rounded-lg p-1.5 bg-white"
               />
               <input
                 type="text"
                 value={sigTitle}
                 onChange={(e) => setSigTitle(e.target.value)}
-                className="text-xs text-slate-600 border border-slate-300 rounded p-1 w-48 block"
+                className="w-full text-xs text-slate-600 border border-slate-300 rounded-lg p-1.5 bg-white"
               />
               <input
                 type="text"
                 value={sigPhones}
                 onChange={(e) => setSigPhones(e.target.value)}
-                className="text-xs text-slate-600 border border-slate-300 rounded p-1 w-48 block font-mono"
+                className="w-full text-xs text-slate-600 font-mono border border-slate-300 rounded-lg p-1.5 bg-white"
               />
             </div>
+          </div>
 
-            <div className="text-right space-y-10">
-              <div className="text-xs font-black text-slate-900">Client Signature</div>
-              <div className="w-56 border-t-2 border-slate-400 ml-auto"></div>
+          {/* 12. Upcoming Future Technology Showcase (High-Definition Generated Images) */}
+          <div className="pt-8 border-t-2 border-slate-200 space-y-6">
+            <div className="text-center space-y-1">
+              <span className="text-[11px] font-black uppercase tracking-widest text-purple-700 bg-purple-100 px-3 py-1 rounded-full">
+                Future Painting & Wall-Tech Innovation
+              </span>
+              <h2 className="text-base font-black text-slate-900">
+                Advanced Mechanized Application Machinery
+              </h2>
+            </div>
+
+            {/* 3D Wall Printing Machine */}
+            <div className="space-y-3 bg-slate-50/60 p-5 rounded-3xl border border-slate-200">
+              <h3 className="text-xs md:text-sm font-black text-purple-800 uppercase underline tracking-wide">
+                UPCOMING OUR FUTURE TECHNOLOGY; 3D WALL PRINTING MACHINE:
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="border border-slate-200 rounded-2xl p-3 bg-white text-center shadow-xs">
+                  <img
+                    src="/unique_painters/wall_printing_machine_1.jpeg"
+                    alt="3D Wall Printing Machine"
+                    className="max-h-56 mx-auto rounded-xl object-contain"
+                  />
+                  <div className="text-xs font-bold text-slate-800 mt-2.5">
+                    High-Precision 3D Vertical Wall Printer
+                  </div>
+                  <div className="text-[10px] text-slate-500">
+                    Industrial direct-to-wall automated UV inkjet system
+                  </div>
+                </div>
+
+                <div className="border border-slate-200 rounded-2xl p-3 bg-white text-center shadow-xs">
+                  <img
+                    src="/unique_painters/wall_printing_machine_2.jpeg"
+                    alt="3D Wall Printing Sample"
+                    className="max-h-56 mx-auto rounded-xl object-contain"
+                  />
+                  <div className="text-xs font-bold text-slate-800 mt-2.5">
+                    Direct-on-Wall Architectural Graphic Application
+                  </div>
+                  <div className="text-[10px] text-slate-500">
+                    High-resolution 3D murals for corporate and luxury spaces
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Robotic Plastering and Painting Machine */}
+            <div className="space-y-3 bg-slate-50/60 p-5 rounded-3xl border border-slate-200">
+              <h3 className="text-xs md:text-sm font-black text-purple-800 uppercase underline tracking-wide">
+                ROBOTIC PLASTERING AND PAINTING MACHINE :
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="border border-slate-200 rounded-2xl p-3 bg-white text-center shadow-xs">
+                  <img
+                    src="/unique_painters/robotic_plastering_1.jpeg"
+                    alt="Robotic Plastering Machine"
+                    className="max-h-56 mx-auto rounded-xl object-contain"
+                  />
+                  <div className="text-xs font-bold text-slate-800 mt-2.5">
+                    Robotic Surface Leveling & Plastering Unit
+                  </div>
+                  <div className="text-[10px] text-slate-500">
+                    High-efficiency automated plaster render & smoothing
+                  </div>
+                </div>
+
+                <div className="border border-slate-200 rounded-2xl p-3 bg-white text-center shadow-xs">
+                  <img
+                    src="/unique_painters/robotic_plastering_2.jpeg"
+                    alt="Robotic Spraying System"
+                    className="max-h-56 mx-auto rounded-xl object-contain"
+                  />
+                  <div className="text-xs font-bold text-slate-800 mt-2.5">
+                    Automated Mechanized Spray Coating System
+                  </div>
+                  <div className="text-[10px] text-slate-500">
+                    Uniform micron-controlled paint & protective finish
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
+
         </div>
-
-        {/* ========================================================================= */}
-        {/* SHEET 3: FUTURE TECHNOLOGY SHOWCASE (NO HEADER BANNER)                    */}
-        {/* ========================================================================= */}
-        <div className="bg-white border border-slate-300 rounded-2xl shadow-lg p-8 md:p-10 text-slate-800 space-y-6 transition-all">
-          <div className="text-xs font-bold text-slate-400 uppercase tracking-widest text-center border-b border-slate-100 pb-1">
-            — Page 3 of 3: Future Painting & Wall-Tech Innovation —
-          </div>
-
-          {/* 3D Wall Printing Machine */}
-          <div className="space-y-3">
-            <h3 className="text-xs md:text-sm font-black text-purple-700 uppercase underline tracking-wide">
-              UPCOMING OUR FUTURE TECHNOLOGY; 3D WALL PRINTING MACHINE:
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="border border-slate-200 rounded-xl p-3 bg-slate-50 text-center shadow-xs">
-                <img
-                  src="/unique_painters/wall_printing_machine_1.jpeg"
-                  alt="3D Wall Printing Machine"
-                  className="max-h-56 mx-auto rounded-lg object-contain"
-                />
-                <div className="text-xs font-bold text-slate-700 mt-2">
-                  High-Precision 3D Vertical Wall Printer
-                </div>
-                <div className="text-[10px] text-slate-400">
-                  Industrial direct-to-wall automated UV inkjet system
-                </div>
-              </div>
-              <div className="border border-slate-200 rounded-xl p-3 bg-slate-50 text-center shadow-xs">
-                <img
-                  src="/unique_painters/wall_printing_machine_2.jpeg"
-                  alt="3D Wall Printing Sample"
-                  className="max-h-56 mx-auto rounded-lg object-contain"
-                />
-                <div className="text-xs font-bold text-slate-700 mt-2">
-                  Direct-on-Wall Architectural Graphic Application
-                </div>
-                <div className="text-[10px] text-slate-400">
-                  High-resolution 3D murals for corporate and luxury spaces
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Robotic Plastering and Painting Machine */}
-          <div className="space-y-3 pt-4">
-            <h3 className="text-xs md:text-sm font-black text-purple-700 uppercase underline tracking-wide">
-              ROBOTIC PLASTERING AND PAINTING MACHINE ;
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="border border-slate-200 rounded-xl p-3 bg-slate-50 text-center shadow-xs">
-                <img
-                  src="/unique_painters/robotic_plastering_1.jpeg"
-                  alt="Robotic Plastering Machine"
-                  className="max-h-56 mx-auto rounded-lg object-contain"
-                />
-                <div className="text-xs font-bold text-slate-700 mt-2">
-                  Robotic Surface Leveling & Plastering Unit
-                </div>
-                <div className="text-[10px] text-slate-400">
-                  High-efficiency automated plaster render & smoothing
-                </div>
-              </div>
-              <div className="border border-slate-200 rounded-xl p-3 bg-slate-50 text-center shadow-xs">
-                <img
-                  src="/unique_painters/robotic_plastering_2.jpeg"
-                  alt="Robotic Spraying System"
-                  className="max-h-56 mx-auto rounded-lg object-contain"
-                />
-                <div className="text-xs font-bold text-slate-700 mt-2">
-                  Automated Mechanized Spray Coating System
-                </div>
-                <div className="text-[10px] text-slate-400">
-                  Uniform micron-controlled paint & protective finish
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
       </div>
 
-      {/* Official In-Page A4 Preview Modal (Matches Kleanmax Pro) */}
-      <PdfPreviewModal
-        quotationId={savedQuoteId}
-        isOpen={inPagePreviewOpen}
-        onClose={() => setInPagePreviewOpen(false)}
-        onNavigate={onNavigate}
-      />
+      {/* ========================================================================= */}
+      {/* INSTANT LIVE A4 SHEET PREVIEW MODAL (Identical Experience to Cleantech)   */}
+      {/* ========================================================================= */}
+      {inPagePreviewOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[92vh] overflow-hidden shadow-2xl flex flex-col font-sans">
+            <div className="p-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <Eye className="w-5 h-5 text-purple-400" />
+                <span className="font-black text-sm">A4 Document Print Preview — Unique Painters</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleDownloadDocx}
+                  className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-sm transition-colors"
+                  title="Download editable Microsoft Word document (.docx)"
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  <span>Download Word (.docx)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDownloadPdf}
+                  className="px-3.5 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-sm transition-colors"
+                  title="Download official PDF"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download PDF</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setInPagePreviewOpen(false)}
+                  className="p-1.5 hover:bg-slate-800 text-slate-300 rounded-lg"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* A4 Sheet Preview Body (Immediate Live Reflection) */}
+            <div className="p-8 max-h-[80vh] overflow-y-auto space-y-6 bg-slate-100">
+              <div className="bg-white p-8 shadow-md rounded-2xl space-y-6 max-w-3xl mx-auto border border-slate-200 text-slate-800">
+                {/* Header Banner - Full Width Edge-to-Edge */}
+                <div className="w-full -mx-8 -mt-8 mb-6 overflow-hidden border-b-2 border-purple-600">
+                  <img
+                    src="/headers/header_uniquepainters.png"
+                    className="w-full block"
+                    alt="Unique Painters Letterhead Header"
+                  />
+                </div>
+                
+                <div className="text-center font-black text-lg text-slate-950 uppercase underline">
+                  {quotationTitle}
+                </div>
+
+                <div className="flex justify-between text-xs">
+                  <div>
+                    <div className="font-black text-slate-900">To,</div>
+                    <div className="font-black text-sm text-slate-900 uppercase">{customerName || 'TRUE NUTRITION'}</div>
+                    <div>{addressLine1}</div>
+                    <div>{addressLine2}</div>
+                    {contactPerson && <div>Attn: {contactPerson}</div>}
+                    {phone && <div>Ph: {phone}</div>}
+                    <div className="font-black mt-2">{salutation}</div>
+                  </div>
+                  <div className="text-right space-y-1">
+                    <div>DATE: <strong>{quotationDate}</strong></div>
+                    <div>QUOTATION NO: <strong>{quotationNo}</strong></div>
+                  </div>
+                </div>
+
+                {/* Intro Paragraphs */}
+                <div className="text-xs text-slate-700 leading-relaxed space-y-1.5">
+                  <p>{introText1}</p>
+                  <p>{introText2}</p>
+                </div>
+
+                {/* Table */}
+                <table className="w-full text-xs border border-slate-300 border-collapse">
+                  <thead>
+                    <tr className="bg-slate-900 text-white font-bold">
+                      <th className="p-2 text-center w-12">S. No</th>
+                      <th className="p-2 text-left">Description</th>
+                      <th className="p-2 text-right w-36">Amount in INR</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map((r, idx) => (
+                      <tr key={r.id} className="border-t border-slate-200">
+                        <td className="p-2 text-center font-bold">{idx + 1}.</td>
+                        <td className="p-2">
+                          <div className="font-bold text-slate-900 uppercase">
+                            {r.name}{r.service_type ? `: ${r.service_type}` : ''}
+                          </div>
+                          {r.description && <div className="text-[10px] text-slate-500 mt-0.5">{r.description}</div>}
+                          {r.area_sqft > 0 && (
+                            <div className="text-[10px] text-slate-600 font-mono mt-0.5">
+                              Area: {r.area_sqft.toLocaleString('en-IN')} sq.ft @ Rs.{Number(r.rate_per_sqft).toFixed(2)} / sq.ft
+                            </div>
+                          )}
+                        </td>
+                        <td className="p-2 text-right font-black text-slate-900">
+                          Rs.{Number(r.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                        </td>
+                      </tr>
+                    ))}
+                    <tr className="border-t-2 border-slate-300 font-bold bg-slate-50">
+                      <td colSpan={2} className="p-2 text-right">SUB TOTAL:</td>
+                      <td className="p-2 text-right">Rs.{subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                    </tr>
+                    {applyTax && (
+                      <tr className="border-t border-slate-200 text-slate-700">
+                        <td colSpan={2} className="p-1.5 text-right">GST (18%):</td>
+                        <td className="p-1.5 text-right">Rs.{gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                      </tr>
+                    )}
+                    <tr className="border-t-2 border-purple-900 font-black bg-purple-100 text-sm">
+                      <td colSpan={2} className="p-2 text-right text-purple-950">TOTAL PROJECT VALUE :</td>
+                      <td className="p-2 text-right text-purple-950">Rs.{finalTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                {/* Machineries */}
+                <div className="text-xs space-y-1 pt-2">
+                  <div className="font-bold text-slate-900">List of Machineries and consumables:</div>
+                  <ul className="grid grid-cols-2 gap-1 text-[11px] text-slate-700 list-disc list-inside">
+                    {machineries.map((m, i) => <li key={i}>{m}</li>)}
+                  </ul>
+                </div>
+
+                {/* Call Notice */}
+                <div className="text-xs bg-purple-50 p-2.5 rounded-lg border border-purple-200 font-bold text-purple-900">
+                  {callNotice}
+                </div>
+
+                {/* Terms */}
+                <div className="text-xs space-y-1">
+                  <div className="font-bold text-slate-900">Terms & Conditions:</div>
+                  <ul className="list-disc list-inside text-slate-700 space-y-0.5 text-[11px]">
+                    {terms.map((t, i) => <li key={i}>{t}</li>)}
+                  </ul>
+                </div>
+
+                {/* Satisfaction */}
+                <div className="text-xs italic text-slate-600">
+                  {satisfactionGoal}
+                </div>
+
+                {/* Signatory (NO CLIENT SIGNATURE) */}
+                <div className="pt-4 border-t border-slate-200 text-xs">
+                  <div className="text-slate-600">Regards</div>
+                  <div className="font-black text-sm text-purple-900">{sigCompany}</div>
+                  <div className="font-bold text-slate-800">{sigName}</div>
+                  <div className="text-slate-600">{sigTitle}</div>
+                  <div className="text-slate-600 font-mono">{sigPhones}</div>
+                </div>
+
+                {/* Technology Showcase in Preview */}
+                <div className="pt-6 border-t-2 border-slate-200 space-y-4">
+                  <div className="font-black text-xs uppercase text-purple-800">
+                    UPCOMING OUR FUTURE TECHNOLOGY; 3D WALL PRINTING MACHINE:
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="border border-slate-200 rounded p-2 text-center bg-slate-50">
+                      <img src="/unique_painters/wall_printing_machine_1.jpeg" className="h-32 mx-auto object-contain rounded" alt="3D Wall Printer" />
+                      <div className="text-[10px] font-bold mt-1 text-slate-800">High-Precision 3D Vertical Wall Printer</div>
+                    </div>
+                    <div className="border border-slate-200 rounded p-2 text-center bg-slate-50">
+                      <img src="/unique_painters/wall_printing_machine_2.jpeg" className="h-32 mx-auto object-contain rounded" alt="3D Sample" />
+                      <div className="text-[10px] font-bold mt-1 text-slate-800">Direct-on-Wall Architectural Graphic</div>
+                    </div>
+                  </div>
+
+                  <div className="font-black text-xs uppercase text-purple-800 pt-2">
+                    ROBOTIC PLASTERING AND PAINTING MACHINE :
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="border border-slate-200 rounded p-2 text-center bg-slate-50">
+                      <img src="/unique_painters/robotic_plastering_1.jpeg" className="h-32 mx-auto object-contain rounded" alt="Robotic Plastering" />
+                      <div className="text-[10px] font-bold mt-1 text-slate-800">Robotic Surface Leveling & Plastering Unit</div>
+                    </div>
+                    <div className="border border-slate-200 rounded p-2 text-center bg-slate-50">
+                      <img src="/unique_painters/robotic_plastering_2.jpeg" className="h-32 mx-auto object-contain rounded" alt="Robotic Spray" />
+                      <div className="text-[10px] font-bold mt-1 text-slate-800">Automated Mechanized Spray Coating</div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
-
-export default UniquePaintersGenerator;

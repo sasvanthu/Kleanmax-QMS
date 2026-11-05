@@ -1,6 +1,5 @@
 import React from 'react';
 import { Navbar } from './Navbar';
-import { Sidebar } from './Sidebar';
 import { User } from '../services/types';
 
 interface LayoutProps {
@@ -8,6 +7,7 @@ interface LayoutProps {
   currentPage: string;
   currentUser: User | null;
   onNavigate: (page: string, params?: any) => void;
+  onLogout?: () => void;
 }
 
 export const Layout: React.FC<LayoutProps> = ({
@@ -15,6 +15,7 @@ export const Layout: React.FC<LayoutProps> = ({
   currentPage,
   currentUser,
   onNavigate,
+  onLogout = () => {},
 }) => {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
@@ -22,13 +23,11 @@ export const Layout: React.FC<LayoutProps> = ({
         currentUser={currentUser}
         currentPage={currentPage}
         onNavigate={onNavigate}
+        onLogout={onLogout}
       />
-      <div className="flex flex-1">
-        <Sidebar currentPage={currentPage} onNavigate={onNavigate} />
-        <main className="flex-1 p-4 md:p-8 max-w-7xl mx-auto w-full">
-          {children}
-        </main>
-      </div>
+      <main className="flex-1 p-4 md:p-8 max-w-7xl mx-auto w-full">
+        {children}
+      </main>
     </div>
   );
 };

@@ -23,6 +23,36 @@ from docx.oxml.ns import nsdecls, qn
 
 STATIC_DIR = Path(__file__).parent.parent / "static"
 
+import urllib.request
+import logging
+
+logger = logging.getLogger(__name__)
+
+def _load_image_stream(img_ref: str):
+    """Load image from local path or remote URL (e.g. Supabase storage public URL)."""
+    if not img_ref:
+        return None
+    try:
+        s = str(img_ref).strip()
+        if s.startswith("http://") or s.startswith("https://"):
+            req = urllib.request.Request(
+                s,
+                headers={"User-Agent": "Mozilla/5.0"}
+            )
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                data = resp.read()
+                return io.BytesIO(data)
+        else:
+            p = Path(s)
+            if not p.is_absolute():
+                p = STATIC_DIR / s.lstrip("/\\")
+            if p.exists():
+                with open(p, "rb") as f:
+                    return io.BytesIO(f.read())
+    except Exception as e:
+        logger.warning(f"Could not load image {img_ref}: {e}")
+    return None
+
 
 def _set_cell_background(cell, fill_hex):
     """Sets background color of a table cell."""
@@ -54,7 +84,7 @@ def _add_unp_section_header(sec, img_path):
     sec.right_margin = Inches(0.5)
     sec.page_width = Inches(8.27)
     sec.page_height = Inches(11.69)
-    
+
     header = sec.header
     header.is_linked_to_previous = False
     p = header.paragraphs[0]
@@ -83,12 +113,12 @@ def _generate_uniquepainters_docx(
     if not header_img.exists():
         header_img = STATIC_DIR / "unique_painters" / "header_sec0_image1.jpeg"
 
-    # Balanced, equal corner margins: 0.7 inches on all sides
+    # Balanced, generous corner margins: 0.85 inches on left and right
     sec = doc.sections[0]
     sec.top_margin = Inches(0.65)
     sec.bottom_margin = Inches(0.65)
-    sec.left_margin = Inches(0.7)
-    sec.right_margin = Inches(0.7)
+    sec.left_margin = Inches(0.85)
+    sec.right_margin = Inches(0.85)
     sec.page_width = Inches(8.27)
     sec.page_height = Inches(11.69)
 
@@ -104,7 +134,7 @@ def _generate_uniquepainters_docx(
         p_hdr.paragraph_format.space_before = Pt(0)
         p_hdr.paragraph_format.space_after = Pt(12)
         r_hdr = p_hdr.add_run()
-        r_hdr.add_picture(str(header_img), width=Inches(6.87))
+        r_hdr.add_picture(str(header_img), width=Inches(6.57))
 
     # 2. Quotation Title
     p_title = doc.add_paragraph()
@@ -123,8 +153,8 @@ def _generate_uniquepainters_docx(
     meta_tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
     meta_tbl.autofit = False
     c_left, c_right = meta_tbl.cell(0, 0), meta_tbl.cell(0, 1)
-    c_left.width = Inches(4.3)
-    c_right.width = Inches(2.57)
+    c_left.width = Inches(4.1)
+    c_right.width = Inches(2.47)
 
     # Left: Client Address ("TO :-")
     p_to = c_left.paragraphs[0]
@@ -221,8 +251,8 @@ def _generate_uniquepainters_docx(
     r.font.name = "Arial"
     r.font.color.rgb = RGBColor(30, 41, 59)
 
-    # 5. Neat Proposal Table (Equal Page Margin Width: 6.87 in)
-    col_widths = [Inches(0.6), Inches(4.67), Inches(1.60)]
+    # 5. Neat Proposal Table (Balanced Page Margin Width: 6.57 in)
+    col_widths = [Inches(0.6), Inches(4.37), Inches(1.60)]
     tbl = doc.add_table(rows=1, cols=3)
     tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
     tbl.autofit = False
@@ -454,24 +484,28 @@ def _generate_uniquepainters_docx(
     sig_tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
     sig_tbl.autofit = False
     s_left, s_right = sig_tbl.cell(0, 0), sig_tbl.cell(0, 1)
-    s_left.width = Inches(4.3)
-    s_right.width = Inches(2.57)
+    s_left.width = Inches(4.1)
+    s_right.width = Inches(2.47)
 
     p_sl = s_left.paragraphs[0]
     p_sl.paragraph_format.space_after = Pt(2)
     p_sl.paragraph_format.line_spacing = 1.2
 
+    sig_comp = getattr(company, 'company_name', None) or "Unique Painters"
+    sig_user = getattr(company, 'bank_account_name', None) or "K. SRIDHAR"
+    sig_phone = getattr(company, 'phone1', None) or "9710148218 / 7338882034"
+
     r = p_sl.add_run("Regards\n")
     r.font.size = Pt(10.5)
     r.font.name = "Arial"
 
-    r = p_sl.add_run("Unique Painters\n\n")
+    r = p_sl.add_run(f"{sig_comp}\n\n")
     r.bold = True
     r.font.size = Pt(11.5)
     r.font.name = "Arial"
     r.font.color.rgb = RGBColor(88, 28, 135)
 
-    r = p_sl.add_run("K. SRIDHAR\n")
+    r = p_sl.add_run(f"{sig_user}\n")
     r.bold = True
     r.font.size = Pt(10.5)
     r.font.name = "Arial"
@@ -480,18 +514,8 @@ def _generate_uniquepainters_docx(
     r.font.size = Pt(9.5)
     r.font.name = "Arial"
 
-    r = p_sl.add_run("9710148218 / 7338882034")
+    r = p_sl.add_run(sig_phone)
     r.font.size = Pt(9.5)
-    r.font.name = "Arial"
-
-    p_sr = s_right.paragraphs[0]
-    p_sr.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-    p_sr.paragraph_format.space_after = Pt(2)
-    p_sr.paragraph_format.line_spacing = 1.2
-
-    r = p_sr.add_run("\nClient Signature\n\n\n\n______________________")
-    r.bold = True
-    r.font.size = Pt(10.5)
     r.font.name = "Arial"
 
     # ==================== PAGE 3 (NO HEADER BANNER) ====================
@@ -512,19 +536,19 @@ def _generate_uniquepainters_docx(
     img_tbl1.alignment = WD_TABLE_ALIGNMENT.CENTER
     img_tbl1.autofit = False
     c1, c2 = img_tbl1.cell(0, 0), img_tbl1.cell(0, 1)
-    c1.width = Inches(3.43)
-    c2.width = Inches(3.43)
+    c1.width = Inches(3.28)
+    c2.width = Inches(3.28)
 
     img_w1 = STATIC_DIR / "unique_painters" / "wall_printing_machine_1.jpeg"
     img_w2 = STATIC_DIR / "unique_painters" / "wall_printing_machine_2.jpeg"
     if img_w1.exists():
         p1 = c1.paragraphs[0]
         p1.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        p1.add_run().add_picture(str(img_w1), width=Inches(3.2))
+        p1.add_run().add_picture(str(img_w1), width=Inches(3.0))
     if img_w2.exists():
         p2 = c2.paragraphs[0]
         p2.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        p2.add_run().add_picture(str(img_w2), width=Inches(3.2))
+        p2.add_run().add_picture(str(img_w2), width=Inches(3.0))
 
     p_f2 = doc.add_paragraph()
     p_f2.paragraph_format.space_before = Pt(16)
@@ -540,19 +564,19 @@ def _generate_uniquepainters_docx(
     img_tbl2.alignment = WD_TABLE_ALIGNMENT.CENTER
     img_tbl2.autofit = False
     c3, c4 = img_tbl2.cell(0, 0), img_tbl2.cell(0, 1)
-    c3.width = Inches(3.43)
-    c4.width = Inches(3.43)
+    c3.width = Inches(3.28)
+    c4.width = Inches(3.28)
 
     img_r1 = STATIC_DIR / "unique_painters" / "robotic_plastering_1.jpeg"
     img_r2 = STATIC_DIR / "unique_painters" / "robotic_plastering_2.jpeg"
     if img_r1.exists():
         p3 = c3.paragraphs[0]
         p3.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        p3.add_run().add_picture(str(img_r1), width=Inches(3.2))
+        p3.add_run().add_picture(str(img_r1), width=Inches(3.0))
     if img_r2.exists():
         p4 = c4.paragraphs[0]
         p4.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        p4.add_run().add_picture(str(img_r2), width=Inches(3.2))
+        p4.add_run().add_picture(str(img_r2), width=Inches(3.0))
 
     buf = io.BytesIO()
     doc.save(buf)
@@ -755,6 +779,27 @@ def generate_quotation_docx_bytes(
             r_name.font.size = Pt(8.5)
             if itm.description:
                 p_desc.add_run(f"\n{itm.description}").font.size = Pt(7.5)
+
+            # Embed machine or uploaded image if available
+            img_to_embed = None
+            if idx == 1 and getattr(quotation, 'image_url', None):
+                img_to_embed = quotation.image_url
+            elif 'RB-800' in itm.item_name.upper() or '800' in itm.item_name:
+                img_to_embed = str(STATIC_DIR / "products" / "rb800.png")
+            elif 'RB-650' in itm.item_name.upper() or '650' in itm.item_name:
+                img_to_embed = str(STATIC_DIR / "products" / "rb650.png")
+            elif 'BD-50' in itm.item_name.upper() or 'BD50' in itm.item_name.upper():
+                img_to_embed = str(STATIC_DIR / "products" / "bd5050.png")
+
+            if img_to_embed:
+                stream = _load_image_stream(img_to_embed)
+                if stream:
+                    try:
+                        p_desc.add_run("\n")
+                        r_img = p_desc.add_run()
+                        r_img.add_picture(stream, width=Inches(1.8))
+                    except Exception as err:
+                        logger.warning(f"Error embedding item picture in docx: {err}")
 
             row_cells[2].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
             row_cells[2].paragraphs[0].add_run(f"{safe_decimal(getattr(itm, 'quantity', 0), '0'):.2f}").font.size = Pt(8.5)
@@ -981,32 +1026,25 @@ def generate_quotation_docx_bytes(
     r_bh.bold = True
     r_bh.font.size = Pt(8.5)
 
-    if 'cleantech' in company_code:
-        bank_text = (
-            "• A/c Holder: CLEANTECH\n"
-            "• Bank Name: IDFC BANK\n"
-            "• A/c No: 73388820361\n"
-            "• Branch & IFSC: Chennai - Iyyapanthangal & IDFB0081831"
-        )
-    elif 'kleanmax' in company_code:
-        bank_text = (
-            "• A/c Holder: KLEAN MAX BANK\n"
-            "• Bank Name: KVB BANK A/C 1278135000007113\n"
-            "• A/c No: 1278135000007113\n"
-            "• Branch & IFSC: ASHOK NAGAR & KVBL0001278"
-        )
-    else:
-        bank_name = getattr(company, 'bank_name', 'HDFC Bank') or 'HDFC Bank'
-        bank_acc = getattr(company, 'bank_account_no', '50200088991122') or '50200088991122'
-        bank_ifsc = getattr(company, 'bank_ifsc', 'HDFC0001234') or 'HDFC0001234'
-        bank_branch = getattr(company, 'bank_branch', 'Chennai Branch') or 'Chennai Branch'
-        holder = getattr(company, 'company_name', 'KLEAN MAX PRO').upper()
-        bank_text = (
-            f"• A/c Holder: {holder}\n"
-            f"• Bank Name: {bank_name}\n"
-            f"• A/c No: {bank_acc}\n"
-            f"• Branch & IFSC: {bank_branch} & {bank_ifsc}"
-        )
+    # Dynamic bank details from DB (reflects Super Admin edits instantly)
+    default_holder = 'CLEANTECH' if 'cleantech' in company_code else ('KLEAN MAX BANK' if 'kleanmax' in company_code else 'KLEAN MAX PRO')
+    default_bank = 'IDFC BANK' if 'cleantech' in company_code else ('KVB BANK' if 'kleanmax' in company_code else 'ICICI BANK KMP')
+    default_acc = '73388820361' if 'cleantech' in company_code else ('1278135000007113' if 'kleanmax' in company_code else '027505010327')
+    default_branch = 'Chennai - Iyyapanthangal' if 'cleantech' in company_code else ('ASHOK NAGAR' if 'kleanmax' in company_code else 'PORUR')
+    default_ifsc = 'IDFB0081831' if 'cleantech' in company_code else ('KVBL0001278' if 'kleanmax' in company_code else 'ICIC0000275')
+
+    holder = (getattr(company, 'bank_account_name', None) or getattr(company, 'company_name', None) or default_holder).upper()
+    bank_name = getattr(company, 'bank_name', None) or default_bank
+    bank_acc = getattr(company, 'bank_account_no', None) or default_acc
+    bank_branch = getattr(company, 'bank_branch', None) or default_branch
+    bank_ifsc = getattr(company, 'bank_ifsc', None) or default_ifsc
+
+    bank_text = (
+        f"• A/c Holder: {holder}\n"
+        f"• Bank Name: {bank_name}\n"
+        f"• A/c No: {bank_acc}\n"
+        f"• Branch & IFSC: {bank_branch} & {bank_ifsc}"
+    )
     p_b.add_run(bank_text).font.size = Pt(7.5)
 
     # Signatory Block on LEFT

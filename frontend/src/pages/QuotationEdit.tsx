@@ -5,8 +5,9 @@ import {
   FileText, Download, Eye, Save, Sparkles, Plus, Trash2,
   RefreshCw, CheckCircle2, ArrowLeft, Search, Check,
   ShieldCheck, Lock, X, Layers, AlignLeft, Calculator,
-  Wrench, Building2
+  Wrench, Building2, Upload, Image as ImageIcon
 } from 'lucide-react';
+import { uploadImageToSupabase } from '../services/supabase';
 
 export interface QuotationEditProps {
   quotationId?: string | null;
@@ -192,6 +193,8 @@ export const QuotationEdit: React.FC<QuotationEditProps> = ({
   const [saving, setSaving] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [activeQuotationId, setActiveQuotationId] = useState<string | null>(quotationId || null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   // Auto-resize textarea when scopeText changes
   useEffect(() => {
@@ -271,11 +274,15 @@ export const QuotationEdit: React.FC<QuotationEditProps> = ({
             setTerms(quote.terms_and_conditions.split('\n').filter(Boolean));
           }
 
+          if (quote.image_url) {
+            setImageUrl(quote.image_url);
+          }
           if (quote.snapshot_json) {
             try {
-              const snap = JSON.parse(quote.snapshot_json);
+              const snap = typeof quote.snapshot_json === 'string' ? JSON.parse(quote.snapshot_json) : quote.snapshot_json;
               if (snap.cleanable_sqft) setCleanableSqft(snap.cleanable_sqft);
               if (snap.special_notes) setSpecialNotes(snap.special_notes);
+              if (snap.image_url && !quote.image_url) setImageUrl(snap.image_url);
             } catch (e) {
               // ignore
             }
@@ -426,7 +433,9 @@ export const QuotationEdit: React.FC<QuotationEditProps> = ({
         cleanable_sqft: cleanableSqft,
         special_notes: specialNotes,
         mode: mode,
+        image_url: imageUrl,
       }),
+      image_url: imageUrl,
       items: payloadItems,
     };
   };
@@ -837,6 +846,78 @@ export const QuotationEdit: React.FC<QuotationEditProps> = ({
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* PROPOSAL / MACHINE PHOTO UPLOAD (SUPABASE STORAGE) */}
+          <div className="bg-amber-50/60 border border-amber-200 rounded-2xl p-5 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-xs font-black uppercase text-amber-900 tracking-wider flex items-center gap-1.5">
+                <ImageIcon className="w-4 h-4 text-amber-600" />
+                <span>Machine / Proposal Photo (Supabase Storage):</span>
+              </span>
+              <label className="cursor-pointer bg-[#FED10C] hover:bg-[#E5BC07] text-slate-950 px-3 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 shadow-xs transition-all">
+                {uploadingImage ? (
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Upload className="w-3.5 h-3.5" />
+                )}
+                <span>{uploadingImage ? 'Uploading...' : 'Upload to Supabase'}</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  disabled={uploadingImage}
+                  onChange={async (e) => {
+                    const f = e.target.files?.[0];
+                    if (f) {
+                      setUploadingImage(true);
+                      try {
+                        const url = await uploadImageToSupabase(f, companyCode);
+                        setImageUrl(url);
+                        setSuccessMessage('Image uploaded successfully to Supabase bucket!');
+                        setTimeout(() => setSuccessMessage(''), 3000);
+                      } catch (err: any) {
+                        alert(err.message || 'Upload failed');
+                      } finally {
+                        setUploadingImage(false);
+                      }
+                    }
+                  }}
+                  className="hidden"
+                />
+              </label>
+            </div>
+
+            {imageUrl ? (
+              <div className="flex items-center gap-4 bg-white p-3 rounded-xl border border-amber-200">
+                <img
+                  src={imageUrl}
+                  alt="Proposal Machine"
+                  className="w-24 h-24 object-contain rounded-lg border border-slate-200 bg-slate-50 p-1"
+                />
+                <div className="flex-1 space-y-1">
+                  <div className="text-xs font-bold text-slate-900">Attached Proposal Image</div>
+                  <div className="text-[10px] text-slate-500 font-mono break-all">{imageUrl}</div>
+                  <button
+                    type="button"
+                    onClick={() => setImageUrl(null)}
+                    className="text-xs text-rose-600 hover:text-rose-800 font-bold flex items-center gap-1 pt-1"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    <span>Remove Image</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <input
+                  type="text"
+                  placeholder="Or enter image URL (e.g. https://... or /products/rb800.png)"
+                  value={imageUrl || ''}
+                  onChange={(e) => setImageUrl(e.target.value || null)}
+                  className="flex-1 text-xs bg-white border border-slate-300 rounded-xl p-2.5 focus:border-amber-400 focus:outline-none"
+                />
+              </div>
+            )}
           </div>
 
           {/* DYNAMIC CONTENT AREA: ITEMS TABLE OR WORD SCOPE CANVAS */}

@@ -5,8 +5,10 @@ import {
   Download, FileText, Printer, Save, CheckCircle2,
   Calendar, Layers, ShieldCheck, Sparkles, Plus, Trash2, ArrowLeft,
   Search, Lock, Eye, Check, ChevronDown, Building, Phone, Mail, MapPin,
-  RefreshCw, Info, HelpCircle, Image as ImageIcon, X
+  RefreshCw, Info, HelpCircle, Image as ImageIcon, X, Upload
 } from 'lucide-react';
+import { uploadImageToSupabase } from '../services/supabase';
+
 
 interface QuotationProductItem {
   id: string;
@@ -304,6 +306,8 @@ Recovery / Dirty Water Tank: 100 L`,
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [inPagePreviewOpen, setInPagePreviewOpen] = useState<boolean>(false);
 
+  const [uploadingItemId, setUploadingItemId] = useState<string | null>(null);
+
   useEffect(() => {
     loadInitialData();
   }, []);
@@ -516,6 +520,21 @@ Recovery / Dirty Water Tank: 100 L`,
     return `${inWords(n).trim()} Rupees Only`;
   };
 
+  // Handle image file upload to Supabase for a specific item
+  const handleImageUpload = async (itemId: string, file: File) => {
+    setUploadingItemId(itemId);
+    try {
+      const publicUrl = await uploadImageToSupabase(file, 'kleanmaxpro');
+      handleUpdateItem(itemId, 'image_url', publicUrl);
+      setToastMsg('Image uploaded successfully to Supabase!');
+    } catch (err: any) {
+      console.error('Image upload error:', err);
+      alert(err.message || 'Failed to upload image');
+    } finally {
+      setUploadingItemId(null);
+    }
+  };
+
   // Save to Database safely
   const handleSaveToDatabase = async (): Promise<string | null> => {
     if (items.length === 0) {
@@ -561,7 +580,17 @@ Recovery / Dirty Water Tank: 100 L`,
         sgst_amount: applyTax ? (Number(it.amount) * (taxPercent / 2)) / 100 : 0,
         line_total: Number(it.amount),
         item_order: idx + 1,
+        // Store image_url in description notes if set, so it rounds-trips via snapshot
       }));
+      // Build snapshot with image URLs per item
+      const snapshotData = {
+        items: items.map(it => ({ id: it.id, item_name: it.item_name, image_url: it.image_url || null })),
+        quotation_title: quotationTitle,
+        about_us: aboutUs,
+        notes_text: notes,
+      };
+      // Use first item with an uploaded (supabase) image_url as quotation-level image
+      const firstUploadedImage = items.find(it => it.image_url && it.image_url.startsWith('http'))?.image_url || null;
 
       // Quotation creation payload
       const payload = {
@@ -578,6 +607,8 @@ Recovery / Dirty Water Tank: 100 L`,
         tax_rate: applyTax ? taxPercent : 0,
         discount_type: 'none',
         discount_value: 0,
+        image_url: firstUploadedImage,
+        snapshot_json: snapshotData,
       };
 
       let res;
@@ -1050,14 +1081,34 @@ Recovery / Dirty Water Tank: 100 L`,
                             }}
                           />
                         </div>
-                        <div className="mt-2">
+                        <div className="mt-2 space-y-1">
+                          <label className="flex items-center justify-center gap-1 cursor-pointer bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg px-2 py-1.5 text-[10px] font-bold text-amber-800 transition-colors">
+                            {uploadingItemId === item.id ? (
+                              <span className="animate-pulse">Uploading...</span>
+                            ) : (
+                              <>
+                                <Upload className="w-3 h-3" />
+                                <span>Upload Image</span>
+                              </>
+                            )}
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              disabled={uploadingItemId === item.id}
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleImageUpload(item.id, file);
+                              }}
+                            />
+                          </label>
                           <input
                             type="text"
                             value={item.image_url || ''}
                             onChange={(e) => handleUpdateItem(item.id, 'image_url', e.target.value)}
                             className="text-[10px] text-slate-500 border border-slate-200 rounded-lg px-2 py-1 w-full text-center bg-white"
-                            placeholder="Image URL (/products/rb800.png)"
-                            title="Machine Photo URL or Path"
+                            placeholder="Or paste image URL"
+                            title="Machine Photo URL or Supabase Path"
                           />
                         </div>
                       </td>

@@ -171,6 +171,8 @@ def create_quotation(
             existing.amount_in_words = calc_res.amount_in_words
             if hasattr(data, 'snapshot_json') and data.snapshot_json is not None:
                 existing.snapshot_json = data.snapshot_json
+            if hasattr(data, 'image_url') and data.image_url is not None:
+                existing.image_url = data.image_url
             existing.updated_at = datetime.utcnow()
 
             # Replace items
@@ -270,6 +272,7 @@ def create_quotation(
         final_amount=calc_res.final_amount,
         amount_in_words=calc_res.amount_in_words,
         snapshot_json=getattr(data, 'snapshot_json', None),
+        image_url=getattr(data, 'image_url', None),
         prepared_by_id=current_user.id,
     )
     db.add(quotation)
@@ -541,6 +544,8 @@ def update_quotation(
     quotation.rounding_adjustment = calc_res.rounding_adjustment
     quotation.final_amount = calc_res.final_amount
     quotation.amount_in_words = calc_res.amount_in_words
+    if hasattr(data, 'image_url') and data.image_url is not None:
+        quotation.image_url = data.image_url
     quotation.updated_at = datetime.utcnow()
 
     if data.sections is not None:

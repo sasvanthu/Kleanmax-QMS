@@ -90,6 +90,7 @@ class QuotationCreate(BaseModel):
     client_gstin: Optional[str] = None
     client_phone: Optional[str] = None
     attention_person: Optional[str] = None
+    image_url: Optional[str] = None
 
 class QuotationUpdate(BaseModel):
     company_code: Optional[str] = None
@@ -121,6 +122,7 @@ class QuotationUpdate(BaseModel):
     client_gstin: Optional[str] = None
     client_phone: Optional[str] = None
     attention_person: Optional[str] = None
+    image_url: Optional[str] = None
 
 class RevisionCreateRequest(BaseModel):
     revision_reason: str = Field(..., min_length=3, description="Explanation of why this revision was created")
@@ -172,6 +174,7 @@ class QuotationResponse(BaseModel):
     rounding_adjustment: Decimal
     final_amount: Decimal
     amount_in_words: Optional[str] = None
+    image_url: Optional[str] = None
     
     prepared_by_id: Optional[str] = None
     prepared_by_name: Optional[str] = None

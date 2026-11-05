@@ -1267,25 +1267,25 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
             {/* Bank Details Block */}
             <div className="space-y-1.5 text-xs text-slate-200">
               <div className="font-black text-sm text-white mb-2">Company's Bank Details</div>
-              <div>• A/c Holder's Name : <strong className="text-white">CLEANTECH</strong></div>
-              <div>• Bank Name : <strong className="text-white">IDFC BANK</strong></div>
-              <div>• A/c No. : <strong className="text-white font-mono">73388820361</strong></div>
-              <div>• Branch & IFS Code: <strong className="text-white font-mono">Chennai – Iyyapanthangal Branch & IDFB0081831</strong></div>
+              <div>• A/c Holder's Name : <strong className="text-white">{company?.bank_account_name || company?.company_name || 'CLEANTECH'}</strong></div>
+              <div>• Bank Name : <strong className="text-white">{company?.bank_name || 'IDFC BANK'}</strong></div>
+              <div>• A/c No. : <strong className="text-white font-mono">{company?.bank_account_no || '73388820361'}</strong></div>
+              <div>• Branch & IFS Code: <strong className="text-white font-mono">{company?.bank_branch || 'Chennai – Iyyapanthangal Branch'} & {company?.bank_ifsc || 'IDFB0081831'}</strong></div>
             </div>
 
             {/* Signatory ON THE LEFT */}
             <div className="pt-2 text-left space-y-1 border-t border-slate-800">
               <div className="text-xs font-bold text-slate-300">
-                For Clean tech
+                For {company?.company_name || 'Clean tech'}
               </div>
               <div className="text-base font-black text-white pt-3">
-                Mr. Manikandan Balamurugan
+                {company?.bank_account_name || 'Mr. Manikandan Balamurugan'}
               </div>
               <div className="text-xs text-teal-400 font-semibold">
                 Sales and Service Head
               </div>
               <div className="text-xs text-slate-300">
-                + 91 7338882036
+                {company?.phone1 || company?.phone2 || '+ 91 7338882036'}
               </div>
               <div className="text-xs font-bold text-slate-200 uppercase tracking-wider pt-2">
                 Authorised Signatory
@@ -1310,6 +1310,53 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
         </div>
       </div>
 
+      {/* Bottom Quick-Action Strip */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-wrap items-center justify-between gap-4">
+        <div className="text-xs text-slate-500 font-medium">
+          Ready to export quotation <strong>{quotationNo}</strong>?
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={handleDownloadDocx}
+            disabled={saving}
+            className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-sm transition-all transform active:scale-95"
+            title="Download formatted Microsoft Word document with letterhead"
+          >
+            <FileText className="w-4 h-4" />
+            <span>Download Word (.docx)</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleDownloadPdf}
+            disabled={saving}
+            className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-sm transition-all transform active:scale-95"
+            title="Download official PDF with letterhead"
+          >
+            <Download className="w-4 h-4 text-teal-400" />
+            <span>Download PDF</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleOpenA4Preview}
+            disabled={saving}
+            className="px-3.5 py-2 bg-white border border-slate-300 hover:border-slate-400 text-slate-800 font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-2xs transition-colors"
+          >
+            <Eye className="w-4 h-4 text-slate-600" />
+            <span>Preview A4</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleSaveToDatabase()}
+            disabled={saving}
+            className="px-4 py-2 bg-teal-500 hover:bg-teal-600 text-white font-black text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all transform active:scale-95"
+          >
+            <Save className="w-4 h-4" />
+            <span>{saving ? 'Saving...' : 'Save to DB'}</span>
+          </button>
+        </div>
+      </div>
+
       {/* Instant A4 Sheet Preview Modal */}
       {inPagePreviewOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-xs flex items-center justify-center p-4">
@@ -1322,10 +1369,21 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={handleDownloadPdf}
-                  className="px-3 py-1.5 bg-teal-500 hover:bg-teal-600 text-white font-bold text-xs rounded-xl"
+                  onClick={handleDownloadDocx}
+                  className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-sm transition-colors"
+                  title="Download editable Microsoft Word document (.docx)"
                 >
-                  Download PDF
+                  <FileText className="w-3.5 h-3.5" />
+                  <span>Download Word (.docx)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDownloadPdf}
+                  className="px-3.5 py-1.5 bg-teal-500 hover:bg-teal-600 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-sm transition-colors"
+                  title="Download official PDF"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download PDF</span>
                 </button>
                 <button
                   type="button"
@@ -1449,22 +1507,54 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
                 {/* Bank Details */}
                 <div className="text-xs bg-slate-50 p-3 rounded-lg border border-slate-200">
                   <div className="font-bold">Company's Bank Details</div>
-                  <div>• A/c Holder's Name : CLEANTECH</div>
-                  <div>• Bank Name : IDFC BANK</div>
-                  <div>• A/c No. : 73388820361</div>
-                  <div>• Branch & IFS Code: Chennai – Iyyapanthangal Branch & IDFB0081831</div>
+                  <div>• A/c Holder's Name : {company?.bank_account_name || company?.company_name || 'CLEANTECH'}</div>
+                  <div>• Bank Name : {company?.bank_name || 'IDFC BANK'}</div>
+                  <div>• A/c No. : {company?.bank_account_no || '73388820361'}</div>
+                  <div>• Branch & IFS Code: {company?.bank_branch || 'Chennai – Iyyapanthangal Branch'} & {company?.bank_ifsc || 'IDFB0081831'}</div>
                 </div>
 
                 {/* Signatory on LEFT */}
                 <div className="text-left text-xs pt-2">
-                  <div className="font-bold">For Clean tech</div>
-                  <div className="font-black text-sm pt-4">Mr. Manikandan Balamurugan</div>
+                  <div className="font-bold">For {company?.company_name || 'Clean tech'}</div>
+                  <div className="font-black text-sm pt-4">{company?.bank_account_name || 'Mr. Manikandan Balamurugan'}</div>
                   <div className="text-slate-600">Sales and Service Head</div>
-                  <div className="text-slate-600">+ 91 7338882036</div>
+                  <div className="text-slate-600">{company?.phone1 || company?.phone2 || '+ 91 7338882036'}</div>
                   <div className="font-bold pt-1">Authorised Signatory</div>
                 </div>
 
                 <img src="/headers/footer_cleantech.png" className="w-full block" alt="Footer" />
+              </div>
+            </div>
+
+            {/* Modal Bottom Action Bar */}
+            <div className="p-3.5 bg-slate-900 border-t border-slate-800 flex items-center justify-between px-6 shrink-0">
+              <span className="text-xs text-slate-400">
+                Format: Authentic Cleantech Services A4 Letterhead
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleDownloadDocx}
+                  className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-sm"
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  <span>Download Word (.docx)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDownloadPdf}
+                  className="px-3.5 py-1.5 bg-teal-500 hover:bg-teal-600 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-sm"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download PDF</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setInPagePreviewOpen(false)}
+                  className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl"
+                >
+                  Close
+                </button>
               </div>
             </div>
           </div>

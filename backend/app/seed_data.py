@@ -10,6 +10,13 @@ from backend.app.models.all_models import (
 def run_seed():
     # 1. Ensure all tables exist in database (PostgreSQL/Supabase or SQLite)
     Base.metadata.create_all(bind=engine)
+    try:
+        from sqlalchemy import text
+        with engine.connect() as conn:
+            conn.execute(text("ALTER TABLE profiles ADD COLUMN company_code VARCHAR(50)"))
+            conn.commit()
+    except Exception:
+        pass
     db = SessionLocal()
 
     try:
