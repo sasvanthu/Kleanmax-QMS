@@ -46,6 +46,9 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     } catch {
       // Keep default errorDetail
     }
+    if (response.status === 500 && (errorDetail.includes('Internal Server Error') || errorDetail.includes('ECONNREFUSED') || errorDetail.includes('<html'))) {
+      errorDetail = 'Backend server is offline or unreachable on port 8000. Please ensure the backend is running.';
+    }
     throw new ApiError(errorDetail, response.status);
   }
 

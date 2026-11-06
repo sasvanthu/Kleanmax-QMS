@@ -546,9 +546,12 @@ def update_quotation(
     quotation.amount_in_words = calc_res.amount_in_words
     if hasattr(data, 'image_url') and data.image_url is not None:
         quotation.image_url = data.image_url
+    if hasattr(data, 'snapshot_json') and data.snapshot_json is not None:
+        quotation.snapshot_json = data.snapshot_json
     quotation.updated_at = datetime.utcnow()
 
     if data.sections is not None:
+        db.query(QuotationSection).filter(QuotationSection.quotation_id == quotation.id).delete()
         for idx, (sec_input, sec_calc) in enumerate(zip(data.sections, calc_res.sections), start=1):
             s_row = QuotationSection(
                 quotation_id=quotation.id,

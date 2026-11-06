@@ -31,7 +31,7 @@ if not exist "frontend\node_modules" (
 
 :: 3. Launch Backend in a new window
 echo [1/2] Launching Backend API (Port 8000)...
-start "Klean Max Pro - Backend (Port 8000)" cmd /k "cd /d "%ROOT_DIR%" && call backend\.venv\Scripts\activate.bat && uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --reload"
+start "Klean Max Pro - Backend (Port 8000)" cmd /k "cd /d "%ROOT_DIR%" && backend\.venv\Scripts\python.exe -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --reload"
 
 :: 4. Launch Frontend in a new window
 echo [2/2] Launching Frontend Dev Server (Port 5173)...

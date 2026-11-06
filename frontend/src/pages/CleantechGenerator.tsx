@@ -565,6 +565,28 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
         item_order: idx + 1,
       }));
 
+      // Snapshot JSON for full fidelity UI restore
+      const snapshot = {
+        quotationTitle,
+        selectedHeadingOption,
+        customerName,
+        addressLine1,
+        addressLine2,
+        contactPerson,
+        phone,
+        email,
+        gstin,
+        quotationNo,
+        quotationDate,
+        items,
+        whyChooseUs,
+        terms,
+        applyTax,
+        taxPercent,
+        companyName: company?.company_name || 'Cleantech Services',
+        phone1: company?.phone1 || '9500065813',
+      };
+
       // Quotation creation payload
       const payload = {
         customer_id: targetCustId,
@@ -580,6 +602,7 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
         tax_rate: applyTax ? taxPercent : 0,
         discount_type: 'none',
         discount_value: 0,
+        snapshot_json: snapshot,
       };
 
       let res;
@@ -634,11 +657,8 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
     }
   };
 
-  const handleOpenA4Preview = async () => {
+  const handleOpenA4Preview = () => {
     setInPagePreviewOpen(true);
-    if (!savedQuoteId) {
-      handleSaveToDatabase();
-    }
   };
 
   return (
