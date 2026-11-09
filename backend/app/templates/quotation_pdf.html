@@ -115,8 +115,10 @@
                 box-sizing: border-box;
             }
             .page-break {
-                height: 24px;
-                display: block;
+                display: none !important;
+                height: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
             }
         }
         @media print {
@@ -131,6 +133,12 @@
                 box-shadow: none !important;
                 border-radius: 0 !important;
                 width: 100% !important;
+            }
+            .page-break {
+                display: none !important;
+                height: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
             }
         }
         {% endif %}
@@ -744,10 +752,9 @@
         </div>
     </div>
 
-    <div class="page-break" style="page-break-before: always; break-before: page; height: 1px;"></div>
-
     <!-- ================= PAGE 2 ================= -->
-    <div class="page unp-page" style="page-break-before: always; break-before: page; padding: 12mm 14mm 14mm 14mm; box-sizing: border-box;">
+    <div class="page unp-page" style="page-break-before: always; break-before: page;">
+        <div class="unp-page-content" style="padding: 12mm 14mm 14mm 14mm; box-sizing: border-box;">
         <!-- Top Header Bar -->
         <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #581c87; padding-bottom: 6px; margin-bottom: 12px;">
             <span style="font-weight: 900; font-size: 10.5pt; text-transform: uppercase; color: #581c87;">
@@ -816,12 +823,12 @@
         <div style="text-align: right; font-size: 8pt; color: #94a3b8; font-weight: 700; margin-top: 12px;">
             Page 2 of 3
         </div>
+        </div>
     </div>
 
-    <div class="page-break" style="page-break-before: always; break-before: page; height: 1px;"></div>
-
     <!-- ================= PAGE 3 ================= -->
-    <div class="page unp-page" style="page-break-before: always; break-before: page; padding: 12mm 14mm 14mm 14mm; box-sizing: border-box;">
+    <div class="page unp-page" style="page-break-before: always; break-before: page;">
+        <div class="unp-page-content" style="padding: 12mm 14mm 14mm 14mm; box-sizing: border-box;">
         <!-- Top Header Bar -->
         <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #581c87; padding-bottom: 6px; margin-bottom: 14px;">
             <span style="font-weight: 900; font-size: 10.5pt; text-transform: uppercase; color: #581c87;">
@@ -877,7 +884,7 @@
         <div style="text-align: right; font-size: 8pt; color: #94a3b8; font-weight: 700; margin-top: 12px;">
             Page 3 of 3
         </div>
-    </div>
+        </div>
     </div>
 {% else %}
 
@@ -929,7 +936,7 @@
                 {% endif %}
             </td>
             <td class="meta-no-date">
-                <div>Quotation No :- {{ quotation.quotation_number }}{% if quotation.revision_number > 0 %}-R{{ quotation.revision_number }}{% endif %}</div>
+                <div>Quotation No :- {{ quotation.quotation_number }}{% if quotation.revision_number and quotation.revision_number > 0 %}-R{{ quotation.revision_number }}{% endif %}</div>
                 <div style="margin-top: 4px;">Date :- {{ quotation.quotation_date|format_date('%d/%m/%Y') }}</div>
             </td>
         </tr>
@@ -1111,7 +1118,7 @@
                     <div style="font-weight: 700; color: #0f172a;">{{ s.section_name }}</div>
                     <div style="font-size: 7.5pt; color: #475569;">{{ s.service_name }}</div>
                 </td>
-                <td class="text-center">{{ s.length }} x {{ s.breadth }} {{ s.measurement_unit }}{% if s.repetitions > 1 %} (x{{ s.repetitions }}){% endif %}</td>
+                <td class="text-center">{{ s.length }} x {{ s.breadth }} {{ s.measurement_unit }}{% if s.repetitions and s.repetitions > 1 %} (x{{ s.repetitions }}){% endif %}</td>
                 <td class="text-center" style="font-weight: 700;">{{ s.billable_area }} sq ft</td>
                 <td class="text-right">₹ {{ "%.2f"|format(s.applied_rate or 0) }}</td>
                 <td class="text-right" style="font-weight: 700;">₹ {{ "%.2f"|format(s.line_total or 0) }}</td>

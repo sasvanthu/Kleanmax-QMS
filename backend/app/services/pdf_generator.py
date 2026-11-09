@@ -88,7 +88,7 @@ def render_quotation_html(
                 snapshot = {}
 
     subtotal_val = float(snapshot.get('subtotal') or quotation.subtotal or 0)
-    tax_rate_val = float(snapshot.get('taxPercent') or quotation.tax_rate or (18 if snapshot.get('applyTax') else 0))
+    tax_rate_val = float(snapshot.get('taxPercent') or getattr(quotation, 'tax_rate', None) or (18 if snapshot.get('applyTax') else 0))
     apply_tax_val = bool(snapshot.get('applyTax') if 'applyTax' in snapshot else (tax_rate_val > 0 or (quotation.total_tax and quotation.total_tax > 0)))
     tax_val = float(snapshot.get('gstAmount') or quotation.total_tax or (subtotal_val * tax_rate_val / 100 if apply_tax_val else 0))
     final_amount_val = float(snapshot.get('finalTotal') or quotation.final_amount or (subtotal_val + tax_val if apply_tax_val else subtotal_val))
