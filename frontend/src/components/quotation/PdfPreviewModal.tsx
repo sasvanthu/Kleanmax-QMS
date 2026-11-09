@@ -62,6 +62,8 @@ export const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({
     }
   };
 
+  const [downloading, setDownloading] = useState(false);
+
   const handlePrint = () => {
     if (!quotationId) return;
     const printWindow = window.open(api.quotations.getHtmlUrl(quotationId), '_blank');
@@ -72,14 +74,28 @@ export const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({
     }
   };
 
-  const handleDownloadPdf = () => {
-    if (!quotationId) return;
-    api.quotations.downloadPdf(quotationId);
+  const handleDownloadPdf = async () => {
+    if (!quotationId || downloading) return;
+    setDownloading(true);
+    try {
+      await api.quotations.downloadPdf(quotationId);
+    } catch (err: any) {
+      alert(err.message || 'Failed to download PDF');
+    } finally {
+      setDownloading(false);
+    }
   };
 
-  const handleDownloadDocx = () => {
-    if (!quotationId) return;
-    api.quotations.downloadDocx(quotationId);
+  const handleDownloadDocx = async () => {
+    if (!quotationId || downloading) return;
+    setDownloading(true);
+    try {
+      await api.quotations.downloadDocx(quotationId);
+    } catch (err: any) {
+      alert(err.message || 'Failed to download Word document');
+    } finally {
+      setDownloading(false);
+    }
   };
 
   const handleEdit = () => {

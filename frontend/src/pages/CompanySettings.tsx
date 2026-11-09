@@ -455,6 +455,20 @@ export const CompanySettings: React.FC<CompanySettingsProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                  Bank Account Holder Name
+                </label>
+                <input
+                  type="text"
+                  disabled={!isAdmin}
+                  value={activeCompany.bank_account_name || ''}
+                  onChange={(e) => setActiveCompany({ ...activeCompany, bank_account_name: e.target.value })}
+                  className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2.5 disabled:bg-slate-50"
+                  placeholder="e.g. IDFC FIRST BANK / CLEANTECH SERVICES"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
                   Bank Name
                 </label>
                 <input
@@ -502,6 +516,34 @@ export const CompanySettings: React.FC<CompanySettingsProps> = ({
                   value={activeCompany.bank_branch || ''}
                   onChange={(e) => setActiveCompany({ ...activeCompany, bank_branch: e.target.value })}
                   className="w-full text-xs border border-slate-300 rounded-lg p-2.5 disabled:bg-slate-50"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-emerald-800 uppercase mb-1">
+                  Authorised Signatory Full Name
+                </label>
+                <input
+                  type="text"
+                  disabled={!isAdmin}
+                  value={activeCompany.signatory_name || ''}
+                  onChange={(e) => setActiveCompany({ ...activeCompany, signatory_name: e.target.value })}
+                  className="w-full text-xs font-bold border border-emerald-400 bg-emerald-50/40 rounded-lg p-2.5 disabled:bg-slate-50"
+                  placeholder="Mr. Manikandan Balamurugan"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-xs font-bold text-emerald-800 uppercase mb-1">
+                  Signatory Designation
+                </label>
+                <input
+                  type="text"
+                  disabled={!isAdmin}
+                  value={activeCompany.signatory_designation || ''}
+                  onChange={(e) => setActiveCompany({ ...activeCompany, signatory_designation: e.target.value })}
+                  className="w-full text-xs font-semibold border border-emerald-400 bg-emerald-50/40 rounded-lg p-2.5 disabled:bg-slate-50"
+                  placeholder="Sales and Service Head"
                 />
               </div>
             </div>

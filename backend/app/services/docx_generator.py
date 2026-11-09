@@ -505,12 +505,14 @@ def _generate_uniquepainters_docx(
     r.font.name = "Arial"
     r.font.color.rgb = RGBColor(88, 28, 135)
 
+    sig_user = getattr(quotation, 'signatory_name', None) or getattr(company, 'signatory_name', None) or "Mr. Manikandan Balamurugan"
+    sig_desig = getattr(quotation, 'signatory_designation', None) or getattr(company, 'signatory_designation', None) or "Sales and Service Head"
     r = p_sl.add_run(f"{sig_user}\n")
     r.bold = True
     r.font.size = Pt(10.5)
     r.font.name = "Arial"
 
-    r = p_sl.add_run("Operations Head\n")
+    r = p_sl.add_run(f"{sig_desig}\n")
     r.font.size = Pt(9.5)
     r.font.name = "Arial"
 
@@ -630,7 +632,7 @@ def generate_quotation_docx_bytes(
         p_banner.paragraph_format.space_before = Pt(0)
         p_banner.paragraph_format.space_after = Pt(8)
         run_banner = p_banner.add_run()
-        if company_code == 'kleanmax':
+        if company_code in ('kleanmax', 'cleantech'):
             # Edge-to-edge header across full page width
             p_banner.paragraph_format.left_indent = Inches(-0.6)
             p_banner.paragraph_format.right_indent = Inches(-0.6)
@@ -969,7 +971,10 @@ def generate_quotation_docx_bytes(
     r_th.bold = True
     r_th.font.size = Pt(8.5)
 
-    if 'RENTAL' in job_desc or q_type == 'rental':
+    custom_terms = getattr(quotation, 'terms_and_conditions', None)
+    if custom_terms and custom_terms.strip():
+        p_t.add_run(custom_terms.strip()).font.size = Pt(7.5)
+    elif 'RENTAL' in job_desc or q_type == 'rental':
         rental_terms = (
             "NOTE:\n"
             "1. Transport is customer scope.\n"
@@ -1053,29 +1058,23 @@ def generate_quotation_docx_bytes(
     p_sign.paragraph_format.space_before = Pt(14)
     p_sign.paragraph_format.space_after = Pt(2)
 
-    if 'cleantech' in company_code:
-        r_for = p_sign.add_run("For Clean tech\n\n\n")
-        r_for.bold = True
-        r_for.font.size = Pt(8.5)
-        r_sig = p_sign.add_run("Mr. Manikandan Balamurugan\n")
-        r_sig.bold = True
-        r_sig.font.size = Pt(9)
-        p_sign.add_run("Sales and Service Head\n").font.size = Pt(8)
-        p_sign.add_run("+91 7338882036\n").font.size = Pt(7.5)
-        r_auth = p_sign.add_run("Authorised Signatory")
-        r_auth.bold = True
-        r_auth.font.size = Pt(8)
-    else:
-        r_for = p_sign.add_run(f"For {company.company_name if company else 'Klean Max Pro'}\n\n\n")
-        r_for.bold = True
-        r_for.font.size = Pt(8.5)
+    comp_name = getattr(company, 'company_name', None) or ('Cleantech Services' if 'cleantech' in company_code else 'Klean Max Pro')
+    r_for = p_sign.add_run(f"For {comp_name}\n\n\n")
+    r_for.bold = True
+    r_for.font.size = Pt(8.5)
 
-        sig_name = "Mr. Manikandan" if "kleanmax" in company_code else "Admin / Project Manager"
-        r_sig = p_sign.add_run(f"{sig_name}\n")
-        r_sig.bold = True
-        r_sig.font.size = Pt(9)
-        p_sign.add_run("Authorized Signatory\n").font.size = Pt(8)
-        p_sign.add_run(f"+91 7338882036 / {getattr(company, 'phone1', '') or ''}").font.size = Pt(7.5)
+    sig_name = getattr(quotation, 'signatory_name', None) or getattr(company, 'signatory_name', None) or "Mr. Manikandan Balamurugan"
+    sig_desig = getattr(quotation, 'signatory_designation', None) or getattr(company, 'signatory_designation', None) or "Sales and Service Head"
+    phone = getattr(company, 'phone1', None) or getattr(company, 'phone2', None) or "+91 73388 82036"
+
+    r_sig = p_sign.add_run(f"{sig_name}\n")
+    r_sig.bold = True
+    r_sig.font.size = Pt(9.5)
+    p_sign.add_run(f"{sig_desig}\n").font.size = Pt(8.5)
+    p_sign.add_run(f"{phone}\n").font.size = Pt(7.5)
+    r_auth = p_sign.add_run("Authorised Signatory")
+    r_auth.bold = True
+    r_auth.font.size = Pt(8)
 
     # Computer Notice
     p_notice = doc.add_paragraph()

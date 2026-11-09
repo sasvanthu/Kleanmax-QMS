@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Customer, CompanySetting, User } from '../services/types';
 import { api } from '../services/api';
 import {
-  FileText, Download, Eye, Save, Sparkles, RefreshCw,
+  FileText, Download, Eye, Save, Sparkles, RefreshCw, Edit3, Building, Trash2,
   CheckCircle2, ArrowLeft, Search, Check, ShieldCheck,
   Lock, X, Layers, Plus, Eraser, FileCode, AlignLeft
 } from 'lucide-react';
@@ -11,6 +11,7 @@ export interface KleanmaxGeneratorProps {
   currentUser: User | null;
   onNavigate: (page: string, params?: any) => void;
   onOpenPreview: (quotationId: string) => void;
+  quotationId?: string | null;
 }
 
 // Authentic Wilston Power Plant Scope Template from PDF
@@ -101,6 +102,15 @@ export const toISODate = (dateStr: string): string => {
   return dateStr;
 };
 
+export const fromISODate = (isoStr: string): string => {
+  if (!isoStr) return formatToIndianDate();
+  const match = isoStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (match) {
+    return `${match[3]}/${match[2]}/${match[1]}`;
+  }
+  return isoStr;
+};
+
 // Convert number to Indian currency words
 function numberToWords(num: number): string {
   if (!num || isNaN(num)) return 'Zero Rupees Only';
@@ -147,6 +157,7 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
   currentUser,
   onNavigate,
   onOpenPreview,
+  quotationId,
 }) => {
   // Document Title & Taglines
   const [docTitle, setDocTitle] = useState('Commercial Cleaning');
@@ -170,8 +181,19 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
   const [projectValue, setProjectValue] = useState<number>(480000.0);
   const [specialNotes, setSpecialNotes] = useState(DEFAULT_SPECIAL_NOTES);
 
-  // Terms & Conditions
+  // Terms & Conditions (Directly Editable)
   const [terms, setTerms] = useState<string[]>(DEFAULT_TERMS);
+  const [editTermsDetails, setEditTermsDetails] = useState<boolean>(false);
+
+  // Company & Bank Details (Directly Editable)
+  const [bankAccountName, setBankAccountName] = useState<string>('KLEAN MAX BANK');
+  const [bankName, setBankName] = useState<string>('KVB BANK');
+  const [bankAccountNo, setBankAccountNo] = useState<string>('1278135000007113');
+  const [bankBranch, setBankBranch] = useState<string>('ASHOK NAGAR');
+  const [bankIfsc, setBankIfsc] = useState<string>('KVBL0001278');
+  const [signatoryName, setSignatoryName] = useState<string>('Mr. Manikandan Balamurugan');
+  const [signatoryDesignation, setSignatoryDesignation] = useState<string>('Sales and Service Head');
+  const [editCompanyDetails, setEditCompanyDetails] = useState<boolean>(false);
 
   // Customers & Company Settings
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -183,7 +205,9 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
-  const [savedQuotationId, setSavedQuotationId] = useState<string | null>(null);
+  const [savedQuotationId, setSavedQuotationId] = useState<string | null>(quotationId || null);
+  const [isEditMode, setIsEditMode] = useState<boolean>(!!quotationId);
+  const [loadingEdit, setLoadingEdit] = useState<boolean>(!!quotationId);
 
   // Auto-resize textarea when text changes (natural MS Word flow)
   useEffect(() => {
@@ -198,24 +222,96 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
 
   useEffect(() => {
     fetchInitialData();
-  }, []);
+  }, [quotationId]);
 
   const fetchInitialData = async () => {
     setLoading(true);
     try {
-      const [compRes, custRes, nextNo] = await Promise.all([
+      const [compRes, custRes] = await Promise.all([
         api.company.get('kleanmax').catch(() => null),
         api.customers.list().catch(() => []),
-        api.quotations.getNextNumber('kleanmax').catch(() => 'KLM/0001'),
       ]);
 
-      if (compRes) setCompany(compRes);
+      if (compRes) {
+        setCompany(compRes);
+        if (compRes.bank_account_name) setBankAccountName(compRes.bank_account_name);
+        if (compRes.bank_name) setBankName(compRes.bank_name);
+        if (compRes.bank_account_no) setBankAccountNo(compRes.bank_account_no);
+        if (compRes.bank_branch) setBankBranch(compRes.bank_branch);
+        if (compRes.bank_ifsc) setBankIfsc(compRes.bank_ifsc);
+        if (compRes.signatory_name) setSignatoryName(compRes.signatory_name);
+        if (compRes.signatory_designation) setSignatoryDesignation(compRes.signatory_designation);
+        if (compRes.terms_and_conditions) {
+          setTerms(compRes.terms_and_conditions.split('\n').filter(Boolean));
+        }
+      }
       if (custRes && custRes.length > 0) setCustomers(custRes);
-      if (nextNo) {
-        const numStr = typeof nextNo === 'object' && (nextNo as any)?.next_number
-          ? (nextNo as any).next_number
-          : String(nextNo);
-        setQuotationNumber(numStr);
+
+      if (quotationId) {
+        setLoadingEdit(true);
+        try {
+          const q = await api.quotations.get(quotationId);
+          if (q) {
+            setSavedQuotationId(q.id);
+            setIsEditMode(true);
+            if (q.quotation_number) setQuotationNumber(q.quotation_number);
+            if (q.quotation_date) setQuotationDate(fromISODate(q.quotation_date));
+            if (q.job_description) setDocTitle(q.job_description);
+            if (q.notes) setScopeText(q.notes);
+            if (q.final_amount) setProjectValue(Number(q.final_amount));
+
+            let snap: any = q.snapshot_json;
+            if (typeof snap === 'string') {
+              try { snap = JSON.parse(snap); } catch (e) {}
+            }
+
+            if (snap && typeof snap === 'object') {
+              if (snap.cleanable_sqft) setCleanableSqft(snap.cleanable_sqft);
+              if (snap.special_notes) setSpecialNotes(snap.special_notes);
+              if (snap.subtitle) setDocSubtitle(snap.subtitle);
+              if (snap.attention_person) setAttentionPerson(snap.attention_person);
+              if (snap.bankAccountName) setBankAccountName(snap.bankAccountName);
+              if (snap.bankName) setBankName(snap.bankName);
+              if (snap.bankAccountNo) setBankAccountNo(snap.bankAccountNo);
+              if (snap.bankBranch) setBankBranch(snap.bankBranch);
+              if (snap.bankIfsc) setBankIfsc(snap.bankIfsc);
+              if (snap.signatoryName) setSignatoryName(snap.signatoryName);
+              if (snap.signatoryDesignation) setSignatoryDesignation(snap.signatoryDesignation);
+              if (Array.isArray(snap.terms) && snap.terms.length > 0) setTerms(snap.terms);
+            }
+            if (q.signatory_name) setSignatoryName(q.signatory_name);
+            if (q.signatory_designation) setSignatoryDesignation(q.signatory_designation);
+
+            if (q.customer) {
+              setClientName(q.customer.company_name || '');
+              setClientAddress(
+                [q.customer.billing_address_line1, q.customer.billing_address_line2, q.customer.billing_city, q.customer.billing_pincode]
+                  .filter(Boolean)
+                  .join(', ') || q.customer.billing_city || 'Chennai'
+              );
+              if (q.customer.phone) setClientPhone(q.customer.phone);
+              if (q.customer.gstin) setClientGstin(q.customer.gstin);
+              if (q.customer.contact_person) setAttentionPerson(`ATT : ${q.customer.contact_person.toUpperCase()}`);
+            }
+
+            if (q.terms_and_conditions) {
+              const lines = q.terms_and_conditions.split('\n').map((l: string) => l.trim()).filter(Boolean);
+              if (lines.length > 0) setTerms(lines);
+            }
+          }
+        } catch (e) {
+          console.error('Failed to load existing Kleanmax quote:', e);
+        } finally {
+          setLoadingEdit(false);
+        }
+      } else {
+        const nextNo = await api.quotations.getNextNumber('kleanmax').catch(() => 'KLM/0001');
+        if (nextNo) {
+          const numStr = typeof nextNo === 'object' && (nextNo as any)?.next_number
+            ? (nextNo as any).next_number
+            : String(nextNo);
+          setQuotationNumber(numStr);
+        }
       }
     } catch (err) {
       console.error('Error fetching initial data:', err);
@@ -284,11 +380,21 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
       final_amount: totalAmount,
       payment_terms: '50% advance payment required. Remaining balance due upon completion.',
       terms_and_conditions: terms.join('\n'),
+      signatory_name: signatoryName,
+      signatory_designation: signatoryDesignation,
       snapshot_json: JSON.stringify({
         cleanable_sqft: cleanableSqft,
         special_notes: specialNotes,
         subtitle: docSubtitle,
         attention_person: attentionPerson,
+        bankAccountName,
+        bankName,
+        bankAccountNo,
+        bankBranch,
+        bankIfsc,
+        signatoryName,
+        signatoryDesignation,
+        terms,
       }),
       items: [
         {
@@ -338,12 +444,14 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
       let res;
       if (savedQuotationId) {
         res = await api.quotations.update(savedQuotationId, payload);
+        setSuccessMessage(`Quotation ${res.quotation_number} updated and saved to DB!`);
       } else {
         res = await api.quotations.create(payload);
         setSavedQuotationId(res.id);
+        setIsEditMode(true);
+        setSuccessMessage(`Quotation ${res.quotation_number} created and saved to DB!`);
       }
 
-      setSuccessMessage('Quotation successfully saved to database!');
       setTimeout(() => setSuccessMessage(''), 4000);
       return res.id;
     } catch (err: any) {
@@ -422,11 +530,13 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-sky-500 animate-pulse" />
               <h1 className="text-lg font-black text-slate-900 tracking-tight">
-                Kleanmax Commercial Cleaning Proposal Generator
+                {isEditMode ? 'Kleanmax Quotation Editor' : 'Kleanmax Commercial Cleaning Proposal Generator'}
               </h1>
             </div>
             <p className="text-xs text-slate-500">
-              Multi-page proposal builder matching Wilston Power Plant specification with continuous MS Word-like flow.
+              {isEditMode
+                ? `Editing official quotation ${quotationNumber} with live authentic proposal preview.`
+                : 'Multi-page proposal builder matching Wilston Power Plant specification with continuous MS Word-like flow.'}
             </p>
           </div>
         </div>
@@ -469,10 +579,49 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
             className="px-4 py-2 bg-[#FED10C] hover:bg-[#E5BC07] text-slate-950 font-black text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all transform active:scale-95 disabled:opacity-50"
           >
             {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            <span>{saving ? 'Saving...' : 'Save to DB'}</span>
+            <span>{saving ? 'Saving...' : (isEditMode ? 'Update in DB' : 'Save to DB')}</span>
           </button>
         </div>
       </div>
+
+      {/* Editing State Banner */}
+      {isEditMode && (
+        <div className="bg-sky-50 border border-sky-300 text-sky-950 px-4 py-3 rounded-2xl shadow-xs flex flex-wrap items-center justify-between gap-3 animate-fade-in">
+          <div className="flex items-center gap-2.5">
+            <span className="px-2 py-0.5 bg-sky-600 text-white rounded text-[10px] font-black uppercase tracking-wider">
+              EDITING MODE
+            </span>
+            <span className="text-xs font-bold text-sky-900">
+              Quotation: <strong className="font-mono text-sky-950">{quotationNumber}</strong> &bull; Client: <strong>{clientName || 'Selected Client'}</strong>
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onNavigate('kleanmax_quotes')}
+              className="px-2.5 py-1 text-xs font-bold text-sky-800 hover:text-sky-950 hover:bg-sky-100/60 rounded-lg transition-colors"
+            >
+              Back to Quotes
+            </button>
+            <button
+              onClick={() => {
+                setSavedQuotationId(null);
+                setIsEditMode(false);
+                onNavigate('kleanmax_generator');
+              }}
+              className="px-3 py-1 bg-white border border-sky-300 hover:bg-sky-100 text-sky-900 text-xs font-extrabold rounded-lg shadow-2xs transition-all"
+            >
+              + Create New Quotation
+            </button>
+          </div>
+        </div>
+      )}
+
+      {loadingEdit && (
+        <div className="bg-blue-50 border border-blue-200 text-blue-900 p-3 rounded-xl text-xs font-bold flex items-center gap-2">
+          <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-600" />
+          <span>Loading quotation {quotationId} details from database...</span>
+        </div>
+      )}
 
       {successMessage && (
         <div className="bg-emerald-50 border border-emerald-300 text-emerald-800 px-4 py-3 rounded-xl text-xs font-bold flex items-center gap-2 animate-fade-in">
@@ -786,72 +935,196 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
             </div>
           </div>
 
-          {/* 2. Company's Bank Details (KVB Bank - Authentic from PDF) */}
-          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-black uppercase text-slate-900 tracking-wider">
-                Company's Bank Details :
-              </span>
-              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                <ShieldCheck className="w-3 h-3" />
-                Verified KVB Corporate Account
-              </span>
+          {/* 2. Company's Bank Details & Signatory (Directly Editable) */}
+          <div className="bg-slate-900 text-white rounded-2xl p-6 border border-slate-800 space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <Building className="w-4 h-4 text-amber-400" />
+                <span className="text-xs font-black uppercase tracking-wider text-amber-400">
+                  Company's Bank Details & Signatory
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditCompanyDetails(!editCompanyDetails)}
+                className="text-xs font-bold text-amber-300 hover:text-white flex items-center gap-1 bg-slate-800 hover:bg-slate-700 px-3 py-1 rounded-lg border border-slate-700 transition-colors"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                <span>{editCompanyDetails ? 'Done Editing' : 'Edit Company Details'}</span>
+              </button>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-              <div>
-                <span className="text-slate-400 block font-bold text-[10px]">A/C HOLDER'S NAME</span>
-                <span className="font-extrabold text-slate-900">{company?.bank_account_name || company?.company_name || 'KLEAN MAX BANK'}</span>
-              </div>
-              <div>
-                <span className="text-slate-400 block font-bold text-[10px]">BANK NAME</span>
-                <span className="font-extrabold text-slate-900">{company?.bank_name || 'KVB BANK'}</span>
-              </div>
-              <div>
-                <span className="text-slate-400 block font-bold text-[10px]">ACCOUNT NUMBER</span>
-                <span className="font-mono font-extrabold text-slate-900 text-sm">{company?.bank_account_no || '1278135000007113'}</span>
-              </div>
-              <div>
-                <span className="text-slate-400 block font-bold text-[10px]">BRANCH & IFS CODE</span>
-                <span className="font-extrabold text-slate-900">{company?.bank_branch || 'ASHOK NAGAR'} & {company?.bank_ifsc || 'KVBL0001278'}</span>
-              </div>
-            </div>
-          </div>
 
-          {/* 3. Terms and Conditions (6 Points Authentic to PDF) */}
-          <div className="space-y-3 border-t border-slate-200 pt-6">
-            <div className="text-xs font-black uppercase tracking-wider text-slate-900">
-              TERMS AND CONDITIONS :
-            </div>
-            <div className="space-y-2">
-              {terms.map((term, index) => (
-                <div key={index} className="flex items-start gap-2 text-xs font-semibold text-slate-700">
-                  <span className="text-sky-600 font-bold">•</span>
+            {editCompanyDetails ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                <div className="space-y-1">
+                  <label className="text-slate-400 font-bold">A/C Holder Name</label>
                   <input
                     type="text"
-                    value={term}
-                    onChange={e => {
-                      const updated = [...terms];
-                      updated[index] = e.target.value;
-                      setTerms(updated);
-                    }}
-                    className="w-full bg-transparent hover:bg-slate-50 focus:bg-white border-b border-transparent focus:border-sky-400 focus:outline-none py-0.5 text-xs font-medium text-slate-800"
+                    value={bankAccountName}
+                    onChange={(e) => setBankAccountName(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white font-bold"
                   />
                 </div>
-              ))}
+                <div className="space-y-1">
+                  <label className="text-slate-400 font-bold">Bank Name</label>
+                  <input
+                    type="text"
+                    value={bankName}
+                    onChange={(e) => setBankName(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-slate-400 font-bold">Account Number</label>
+                  <input
+                    type="text"
+                    value={bankAccountNo}
+                    onChange={(e) => setBankAccountNo(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white font-mono"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-slate-400 font-bold">IFS Code</label>
+                  <input
+                    type="text"
+                    value={bankIfsc}
+                    onChange={(e) => setBankIfsc(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white font-mono"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-slate-400 font-bold">Branch Name</label>
+                  <input
+                    type="text"
+                    value={bankBranch}
+                    onChange={(e) => setBankBranch(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-amber-400 font-bold">Authorised Signatory Name</label>
+                  <input
+                    type="text"
+                    value={signatoryName}
+                    onChange={(e) => setSignatoryName(e.target.value)}
+                    className="w-full bg-slate-800 border border-amber-500 rounded-lg p-2 text-white font-bold"
+                  />
+                </div>
+                <div className="space-y-1 sm:col-span-2">
+                  <label className="text-amber-400 font-bold">Designation</label>
+                  <input
+                    type="text"
+                    value={signatoryDesignation}
+                    onChange={(e) => setSignatoryDesignation(e.target.value)}
+                    className="w-full bg-slate-800 border border-amber-500 rounded-lg p-2 text-white font-medium"
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                <div>
+                  <span className="text-slate-400 block font-bold text-[10px]">A/C HOLDER'S NAME</span>
+                  <span className="font-extrabold text-white">{bankAccountName}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block font-bold text-[10px]">BANK NAME</span>
+                  <span className="font-extrabold text-white">{bankName}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block font-bold text-[10px]">ACCOUNT NUMBER</span>
+                  <span className="font-mono font-extrabold text-white text-sm">{bankAccountNo}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block font-bold text-[10px]">BRANCH & IFS CODE</span>
+                  <span className="font-extrabold text-white">{bankBranch} & {bankIfsc}</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 3. Terms and Conditions (Directly Editable) */}
+          <div className="space-y-3 border-t border-slate-200 pt-6">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="text-xs font-black uppercase tracking-wider text-slate-900">
+                TERMS AND CONDITIONS :
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditTermsDetails(!editTermsDetails)}
+                className="text-xs font-bold text-sky-700 hover:text-sky-900 flex items-center gap-1 bg-sky-50 px-2.5 py-1 rounded-lg border border-sky-200"
+              >
+                <Edit3 className="w-3 h-3" />
+                <span>{editTermsDetails ? 'Done Editing' : 'Edit Terms'}</span>
+              </button>
             </div>
+
+            {editTermsDetails ? (
+              <div className="space-y-2 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                {terms.map((term, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-400 w-5 text-right">{index + 1}.</span>
+                    <input
+                      type="text"
+                      value={term}
+                      onChange={e => {
+                        const updated = [...terms];
+                        updated[index] = e.target.value;
+                        setTerms(updated);
+                      }}
+                      className="flex-1 bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-800 focus:outline-none focus:border-sky-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setTerms(terms.filter((_, i) => i !== index))}
+                      className="text-slate-400 hover:text-red-500 p-1 rounded"
+                      title="Delete term"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+                <div className="flex items-center gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setTerms([...terms, ''])}
+                    className="px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-xs font-bold flex items-center gap-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Term</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTerms(DEFAULT_TERMS)}
+                    className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold"
+                  >
+                    Reset to Defaults
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                {terms.map((term, index) => (
+                  <div key={index} className="flex items-start gap-2 text-xs font-semibold text-slate-700">
+                    <span className="text-sky-600 font-bold mt-0.5">•</span>
+                    <span>{term}</span>
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="pt-2 text-xs font-bold text-sky-800 italic">
               YOUR SATISFACTION IS OUR GOAL. LOOKING FORWARD TO YOUR FAVORABLE ORDERS.
             </div>
           </div>
 
-          {/* 4. Thank You & Signatory */}
+          {/* 4. Thank You & Signatory (Mr. Manikandan Balamurugan above Sales and Service Head) */}
           <div className="pt-8 border-t border-slate-200 flex flex-wrap items-center justify-between gap-6">
             <div className="space-y-1">
               <div className="text-xs font-bold text-slate-700">For {company?.company_name || 'KLEAN MAX'}</div>
               <div className="h-10" />
-              <div className="text-xs font-black text-slate-900">{company?.bank_account_name || 'Mr. Manikandan'}</div>
-              <div className="text-[11px] text-slate-500">Service Head • {company?.phone1 || company?.phone2 || '+91 8122282034'}</div>
-              <div className="text-[11px] font-bold text-slate-700">Authorised Signatory</div>
+              <div className="text-sm font-black text-slate-900">{signatoryName}</div>
+              <div className="text-xs font-bold text-sky-700">{signatoryDesignation}</div>
+              <div className="text-[11px] text-slate-500">{company?.phone1 || company?.phone2 || '+91 8122282034'}</div>
+              <div className="text-[11px] font-bold text-slate-700 uppercase tracking-wider pt-1">Authorised Signatory</div>
             </div>
 
             <div className="text-center sm:text-right">

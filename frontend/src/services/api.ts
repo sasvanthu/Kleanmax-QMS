@@ -134,12 +134,13 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
-    list: (params: { search?: string; status?: string; customer_id?: string; company_code?: string } = {}) => {
+    list: (params: { search?: string; status?: string; customer_id?: string; company_code?: string; limit?: number } = {}) => {
       const q = new URLSearchParams();
       if (params.search) q.append('search', params.search);
       if (params.status) q.append('status', params.status);
       if (params.customer_id) q.append('customer_id', params.customer_id);
       if (params.company_code) q.append('company_code', params.company_code);
+      if (params.limit !== undefined) q.append('limit', String(params.limit));
       return request<Quotation[]>(`/quotations?${q.toString()}`);
     },
     get: (id: string) => request<Quotation>(`/quotations/${id}`),

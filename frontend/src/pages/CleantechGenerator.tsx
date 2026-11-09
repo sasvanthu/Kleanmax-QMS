@@ -4,13 +4,14 @@ import { api } from '../services/api';
 import {
   FileText, Download, Eye, Save, Sparkles, Plus, Trash2,
   RefreshCw, CheckCircle2, ArrowLeft, Search, Check,
-  ShieldCheck, Lock, X, Layers
+  ShieldCheck, Lock, X, Layers, Edit3, Building
 } from 'lucide-react';
 
 export interface CleantechGeneratorProps {
   currentUser: User | null;
   onNavigate: (page: string, params?: any) => void;
   onOpenPreview: (quotationId: string) => void;
+  quotationId?: string | null;
 }
 
 export interface CleantechItem {
@@ -212,6 +213,7 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
   currentUser,
   onNavigate,
   onOpenPreview,
+  quotationId,
 }) => {
   // 1. Heading Option & Text (Editable)
   const [selectedHeadingOption, setSelectedHeadingOption] = useState<string>('SERVICE QUOTATION');
@@ -309,15 +311,32 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
   const [customerList, setCustomerList] = useState<Customer[]>([]);
   const [company, setCompany] = useState<CompanySetting | null>(null);
 
+  // Directly Editable Company, Bank & Signatory Details
+  const [companyName, setCompanyName] = useState<string>('Cleantech Services');
+  const [companyAddress, setCompanyAddress] = useState<string>('NO 6, B6, Jayam Industrial Estate, Chettiyar agaram first main Road, Near Porur Toll Plaza, Vanagaram, Chennai - 600077');
+  const [companyGstin, setCompanyGstin] = useState<string>('33BWHPM8908H2ZP9');
+  const [companyPhone, setCompanyPhone] = useState<string>('+91 7338882036');
+  const [bankAccountName, setBankAccountName] = useState<string>('CLEANTECH');
+  const [bankName, setBankName] = useState<string>('IDFC BANK');
+  const [bankAccountNo, setBankAccountNo] = useState<string>('73388820361');
+  const [bankBranch, setBankBranch] = useState<string>('Chennai – Iyyapanthangal Branch');
+  const [bankIfsc, setBankIfsc] = useState<string>('IDFB0081831');
+  const [signatoryName, setSignatoryName] = useState<string>('Mr. Manikandan Balamurugan');
+  const [signatoryDesignation, setSignatoryDesignation] = useState<string>('Sales and Service Head');
+  const [editCompanyDetails, setEditCompanyDetails] = useState<boolean>(false);
+  const [editTermsDetails, setEditTermsDetails] = useState<boolean>(false);
+
   // Status & Feedback
   const [saving, setSaving] = useState<boolean>(false);
-  const [savedQuoteId, setSavedQuoteId] = useState<string | null>(null);
+  const [savedQuoteId, setSavedQuoteId] = useState<string | null>(quotationId || null);
+  const [isEditMode, setIsEditMode] = useState<boolean>(!!quotationId);
+  const [loadingEdit, setLoadingEdit] = useState<boolean>(!!quotationId);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [inPagePreviewOpen, setInPagePreviewOpen] = useState<boolean>(false);
 
   useEffect(() => {
     loadInitialData();
-  }, []);
+  }, [quotationId]);
 
   // Close search dropdown on click outside
   useEffect(() => {
@@ -332,17 +351,7 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
 
   const loadInitialData = async () => {
     try {
-      // 1. Fetch Next Quotation Number for Cleantech
-      try {
-        const nextNumRes = await api.quotations.getNextNumber('cleantech', 'short');
-        if (nextNumRes && nextNumRes.next_number) {
-          setQuotationNo(nextNumRes.next_number);
-        }
-      } catch (e) {
-        console.warn('Fallback quotation number:', e);
-      }
-
-      // 2. Fetch Customers & Company Details
+      // 1. Fetch Customers & Company Details
       const [custs, comp, services] = await Promise.all([
         api.customers.list(),
         api.company.get('cleantech'),
@@ -351,6 +360,20 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
 
       setCustomerList(custs);
       setCompany(comp);
+
+      if (comp) {
+        if (comp.company_name) setCompanyName(comp.company_name);
+        if (comp.address_line1) setCompanyAddress([comp.address_line1, comp.address_line2, comp.city, comp.state, comp.pincode].filter(Boolean).join(', '));
+        if (comp.gstin) setCompanyGstin(comp.gstin);
+        if (comp.phone1) setCompanyPhone(comp.phone1);
+        if (comp.bank_account_name) setBankAccountName(comp.bank_account_name);
+        if (comp.bank_name) setBankName(comp.bank_name);
+        if (comp.bank_account_no) setBankAccountNo(comp.bank_account_no);
+        if (comp.bank_branch) setBankBranch(comp.bank_branch);
+        if (comp.bank_ifsc) setBankIfsc(comp.bank_ifsc);
+        if (comp.signatory_name) setSignatoryName(comp.signatory_name);
+        if (comp.signatory_designation) setSignatoryDesignation(comp.signatory_designation);
+      }
 
       // Merge backend services with default products
       const combinedMap = new Map<string, Service>();
@@ -362,8 +385,121 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
       setAvailableProducts(combinedList);
       setSearchResults(combinedList);
 
-      if (custs.length > 0) {
-        setSelectedCustomerId(custs[0].id);
+      // If editing an existing quotation, fetch and restore full state
+      if (quotationId) {
+        setLoadingEdit(true);
+        try {
+          const q = await api.quotations.get(quotationId);
+          if (q) {
+            setSavedQuoteId(q.id);
+            setIsEditMode(true);
+            if (q.quotation_number) setQuotationNo(q.quotation_number);
+            if (q.quotation_date) setQuotationDate(fromISODate(q.quotation_date));
+            if (q.job_description) {
+              setQuotationTitle(q.job_description);
+              setSelectedHeadingOption(q.job_description);
+            }
+
+            // Restore from snapshot_json if available
+            let snap: any = q.snapshot_json;
+            if (typeof snap === 'string') {
+              try { snap = JSON.parse(snap); } catch (e) {}
+            }
+
+            if (snap && typeof snap === 'object') {
+              if (snap.quotationTitle) setQuotationTitle(snap.quotationTitle);
+              if (snap.selectedHeadingOption) setSelectedHeadingOption(snap.selectedHeadingOption);
+              if (snap.customerName) setCustomerName(snap.customerName);
+              if (snap.addressLine1) setAddressLine1(snap.addressLine1);
+              if (snap.addressLine2) setAddressLine2(snap.addressLine2);
+              if (snap.contactPerson) setContactPerson(snap.contactPerson);
+              if (snap.phone) setPhone(snap.phone);
+              if (snap.email) setEmail(snap.email);
+              if (snap.gstin) setGstin(snap.gstin);
+              if (Array.isArray(snap.items) && snap.items.length > 0) {
+                setItems(snap.items);
+              }
+              if (Array.isArray(snap.whyChooseUs) && snap.whyChooseUs.length > 0) {
+                setWhyChooseUs(snap.whyChooseUs);
+              }
+              if (Array.isArray(snap.terms) && snap.terms.length > 0) {
+                setTerms(snap.terms);
+              }
+              if (snap.companyName) setCompanyName(snap.companyName);
+              if (snap.companyAddress) setCompanyAddress(snap.companyAddress);
+              if (snap.companyGstin) setCompanyGstin(snap.companyGstin);
+              if (snap.companyPhone) setCompanyPhone(snap.companyPhone);
+              if (snap.bankAccountName) setBankAccountName(snap.bankAccountName);
+              if (snap.bankName) setBankName(snap.bankName);
+              if (snap.bankAccountNo) setBankAccountNo(snap.bankAccountNo);
+              if (snap.bankBranch) setBankBranch(snap.bankBranch);
+              if (snap.bankIfsc) setBankIfsc(snap.bankIfsc);
+              if (snap.signatoryName) setSignatoryName(snap.signatoryName);
+              if (snap.signatoryDesignation) setSignatoryDesignation(snap.signatoryDesignation);
+              if (snap.applyTax !== undefined) setApplyTax(snap.applyTax);
+              if (snap.taxPercent !== undefined) setTaxPercent(snap.taxPercent);
+            } else {
+              // Direct restore from database columns
+              if (q.signatory_name) setSignatoryName(q.signatory_name);
+              if (q.signatory_designation) setSignatoryDesignation(q.signatory_designation);
+              if (q.customer) {
+                setCustomerName(q.customer.company_name || '');
+                setAddressLine1(q.customer.billing_address_line1 || '');
+                setAddressLine2(`${q.customer.billing_city || ''} ${q.customer.billing_pincode ? `- ${q.customer.billing_pincode}` : ''}`.trim());
+                setContactPerson(q.customer.contact_person || '');
+                setPhone(q.customer.phone || '');
+                setEmail(q.customer.email || '');
+                setGstin(q.customer.gstin || '');
+                setSelectedCustomerId(q.customer.id);
+              }
+              if (Array.isArray(q.items) && q.items.length > 0) {
+                const parsedItems: CleantechItem[] = q.items.map((it: any, idx: number) => {
+                  const isHeader = (it.description && it.description.startsWith('HEADER:')) || Number(it.quantity) === 0;
+                  return {
+                    id: it.id || `item_${idx}_${Date.now()}`,
+                    is_header: isHeader,
+                    item_name: it.item_name || '',
+                    description: isHeader ? 'Section Header' : (it.description || ''),
+                    qty: isHeader ? 0 : (Number(it.quantity) || 1),
+                    uom: isHeader ? '' : (it.uom || 'NOS'),
+                    rate: isHeader ? 0 : Number(it.unit_price || it.applied_rate || 0),
+                    total: isHeader ? 0 : Number(it.line_total || 0),
+                  };
+                });
+                setItems(parsedItems);
+              }
+              if (q.notes) {
+                const lines = q.notes.split('\n').map((l: string) => l.trim()).filter(Boolean);
+                if (lines.length > 0) setWhyChooseUs(lines);
+              }
+              if (q.terms_and_conditions) {
+                const lines = q.terms_and_conditions.split('\n').map((l: string) => l.trim()).filter(Boolean);
+                if (lines.length > 0) setTerms(lines);
+              }
+              setApplyTax(Number(q.tax_rate || 0) > 0 || Number(q.total_tax || 0) > 0);
+              if (q.tax_rate) {
+                setTaxPercent(Number(q.tax_rate));
+              }
+            }
+          }
+        } catch (err) {
+          console.error('Failed to load existing quotation for editing:', err);
+        } finally {
+          setLoadingEdit(false);
+        }
+      } else {
+        // New quotation: fetch next sequence number
+        try {
+          const nextNumRes = await api.quotations.getNextNumber('cleantech', 'short');
+          if (nextNumRes && nextNumRes.next_number) {
+            setQuotationNo(nextNumRes.next_number);
+          }
+        } catch (e) {
+          console.warn('Fallback quotation number:', e);
+        }
+        if (custs.length > 0) {
+          setSelectedCustomerId(custs[0].id);
+        }
       }
     } catch (err) {
       console.error('Failed to load initial Cleantech data:', err);
@@ -583,8 +719,17 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
         terms,
         applyTax,
         taxPercent,
-        companyName: company?.company_name || 'Cleantech Services',
-        phone1: company?.phone1 || '9500065813',
+        companyName,
+        companyAddress,
+        companyGstin,
+        companyPhone,
+        bankAccountName,
+        bankName,
+        bankAccountNo,
+        bankBranch,
+        bankIfsc,
+        signatoryName,
+        signatoryDesignation,
       };
 
       // Quotation creation payload
@@ -603,16 +748,25 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
         discount_type: 'none',
         discount_value: 0,
         snapshot_json: snapshot,
+        client_name: customerName,
+        client_address: addressLine1,
+        client_phone: phone,
+        client_gstin: gstin,
+        attention_person: contactPerson,
+        signatory_name: signatoryName,
+        signatory_designation: signatoryDesignation,
       };
 
       let res;
       if (savedQuoteId) {
         res = await api.quotations.update(savedQuoteId, payload);
+        setToastMsg(`Quotation ${res.quotation_number} updated and saved to DB successfully!`);
       } else {
         res = await api.quotations.create(payload);
         setSavedQuoteId(res.id);
+        setIsEditMode(true);
+        setToastMsg(`Quotation ${res.quotation_number} created and saved to DB successfully!`);
       }
-      setToastMsg(`Quotation ${res.quotation_number} saved successfully!`);
       return res.id;
     } catch (err: any) {
       console.error('Save quotation error:', err);
@@ -690,11 +844,13 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-teal-500 animate-pulse" />
               <h1 className="text-base font-black text-slate-900 tracking-tight">
-                Cleantech Services Quotation Generator
+                {isEditMode ? 'Cleantech Quotation Editor' : 'Cleantech Services Quotation Generator'}
               </h1>
             </div>
             <p className="text-[11px] text-slate-500">
-              Interactive proposal builder matching authentic Cleantech Services letterhead & quotation format.
+              {isEditMode
+                ? `Editing official quotation ${quotationNo} with live authentic letterhead preview.`
+                : 'Interactive proposal builder matching authentic Cleantech Services letterhead & quotation format.'}
             </p>
           </div>
         </div>
@@ -743,10 +899,49 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
             className="px-4 py-2 bg-teal-500 hover:bg-teal-600 text-white font-black text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all transform active:scale-95"
           >
             <Save className="w-4 h-4" />
-            <span>{saving ? 'Saving...' : 'Save to DB'}</span>
+            <span>{saving ? 'Saving...' : (isEditMode ? 'Update Quotation in DB' : 'Save to DB')}</span>
           </button>
         </div>
       </div>
+
+      {/* Editing State Banner */}
+      {isEditMode && (
+        <div className="bg-teal-50 border border-teal-300 text-teal-950 px-4 py-3 rounded-2xl shadow-xs flex flex-wrap items-center justify-between gap-3 animate-fade-in">
+          <div className="flex items-center gap-2.5">
+            <span className="px-2 py-0.5 bg-teal-600 text-white rounded text-[10px] font-black uppercase tracking-wider">
+              EDITING MODE
+            </span>
+            <span className="text-xs font-bold text-teal-900">
+              Quotation: <strong className="font-mono text-teal-950">{quotationNo}</strong> &bull; Client: <strong>{customerName || 'Selected Customer'}</strong>
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onNavigate('cleantech_quotes')}
+              className="px-2.5 py-1 text-xs font-bold text-teal-800 hover:text-teal-950 hover:bg-teal-100/60 rounded-lg transition-colors"
+            >
+              Back to Quotes
+            </button>
+            <button
+              onClick={() => {
+                setSavedQuoteId(null);
+                setIsEditMode(false);
+                onNavigate('cleantech_generator');
+              }}
+              className="px-3 py-1 bg-white border border-teal-300 hover:bg-teal-100 text-teal-900 text-xs font-extrabold rounded-lg shadow-2xs transition-all"
+            >
+              + Create New Quotation
+            </button>
+          </div>
+        </div>
+      )}
+
+      {loadingEdit && (
+        <div className="bg-blue-50 border border-blue-200 text-blue-900 p-3 rounded-xl text-xs font-bold flex items-center gap-2">
+          <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-600" />
+          <span>Loading quotation {quotationId} details from database...</span>
+        </div>
+      )}
 
       {/* Main Quotation Document Sheet (A4 Letterhead Flush Width) */}
       <div className="bg-white border-2 border-slate-300 rounded-3xl shadow-xl overflow-hidden text-slate-800">
@@ -1242,17 +1437,72 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
           {/* EXACT LAST SECTIONS STACKED: Terms & Conditions -> Our Services -> Bank Details & Signatory */}
           {/* ============================================================== */}
 
-          {/* 7. Terms & Conditions (Matching PDF) */}
-          <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-2">
-            <div className="font-black text-xs text-slate-900 uppercase tracking-wide flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-teal-600" />
-              <span>Terms & Conditions</span>
+          {/* 7. Terms & Conditions (Directly Editable) */}
+          <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="font-black text-xs text-slate-900 uppercase tracking-wide flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-teal-600" />
+                <span>Terms & Conditions</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditTermsDetails(!editTermsDetails)}
+                className="text-xs font-bold text-teal-700 hover:text-teal-900 flex items-center gap-1 bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-2xs hover:bg-teal-50"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                <span>{editTermsDetails ? 'Done Editing' : 'Edit Terms'}</span>
+              </button>
             </div>
-            <ul className="space-y-1.5 text-xs text-slate-700 list-disc list-inside">
-              {terms.map((term, i) => (
-                <li key={i} className="leading-snug">{term}</li>
-              ))}
-            </ul>
+
+            {editTermsDetails ? (
+              <div className="space-y-2 pt-1">
+                {terms.map((term, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-400 w-5 text-right">{i + 1}.</span>
+                    <input
+                      type="text"
+                      value={term}
+                      onChange={(e) => {
+                        const newTerms = [...terms];
+                        newTerms[i] = e.target.value;
+                        setTerms(newTerms);
+                      }}
+                      className="flex-1 text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 focus:border-teal-500 focus:outline-none bg-white font-medium"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setTerms(terms.filter((_, idx) => idx !== i))}
+                      className="p-1 text-slate-400 hover:text-red-600 rounded-md"
+                      title="Delete term"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+                <div className="flex items-center gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setTerms([...terms, ''])}
+                    className="text-xs font-bold text-teal-700 hover:text-teal-900 px-3 py-1 bg-teal-50 rounded-lg border border-teal-200"
+                  >
+                    + Add New Term
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTerms(DEFAULT_TERMS)}
+                    className="text-xs font-bold text-slate-500 hover:text-slate-700 px-3 py-1 bg-slate-100 rounded-lg"
+                  >
+                    Reset Defaults
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <ul className="space-y-1.5 text-xs text-slate-700 list-disc list-inside">
+                {terms.map((term, i) => (
+                  <li key={i} className="leading-snug">{term}</li>
+                ))}
+              </ul>
+            )}
           </div>
 
           {/* 8. Our Services (Matching PDF) */}
@@ -1270,42 +1520,132 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
             </div>
           </div>
 
-          {/* 9. Company's Bank Details & Signatory (Cleantech) */}
+          {/* 9. Company's Bank Details & Signatory (Cleantech - Directly Editable) */}
           <div className="bg-slate-900 text-white p-6 rounded-2xl border border-slate-800 space-y-5">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2">
-                <Lock className="w-4 h-4 text-teal-400" />
+                <Building className="w-4 h-4 text-teal-400" />
                 <span className="font-black text-xs tracking-wider uppercase text-teal-400">
                   Company's Bank Details & Signatory (Cleantech Services)
                 </span>
               </div>
-              <span className="text-[10px] text-slate-400">
-                Managed by <strong>Unified Admin → Manage 4 Companies</strong>
-              </span>
+              <button
+                type="button"
+                onClick={() => setEditCompanyDetails(!editCompanyDetails)}
+                className="text-xs font-bold text-teal-300 hover:text-white flex items-center gap-1 bg-slate-800 hover:bg-slate-700 px-3 py-1 rounded-lg border border-slate-700 transition-colors"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                <span>{editCompanyDetails ? 'Done Editing' : 'Edit Company Details'}</span>
+              </button>
             </div>
 
-            {/* Bank Details Block */}
-            <div className="space-y-1.5 text-xs text-slate-200">
-              <div className="font-black text-sm text-white mb-2">Company's Bank Details</div>
-              <div>• A/c Holder's Name : <strong className="text-white">{company?.bank_account_name || company?.company_name || 'CLEANTECH'}</strong></div>
-              <div>• Bank Name : <strong className="text-white">{company?.bank_name || 'IDFC BANK'}</strong></div>
-              <div>• A/c No. : <strong className="text-white font-mono">{company?.bank_account_no || '73388820361'}</strong></div>
-              <div>• Branch & IFS Code: <strong className="text-white font-mono">{company?.bank_branch || 'Chennai – Iyyapanthangal Branch'} & {company?.bank_ifsc || 'IDFB0081831'}</strong></div>
-            </div>
+            {editCompanyDetails ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                <div className="space-y-1">
+                  <label className="text-slate-400 font-bold">Company Name</label>
+                  <input
+                    type="text"
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white font-bold"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-slate-400 font-bold">Phone Number</label>
+                  <input
+                    type="text"
+                    value={companyPhone}
+                    onChange={(e) => setCompanyPhone(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-slate-400 font-bold">Bank Name</label>
+                  <input
+                    type="text"
+                    value={bankName}
+                    onChange={(e) => setBankName(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-slate-400 font-bold">A/c Holder Name</label>
+                  <input
+                    type="text"
+                    value={bankAccountName}
+                    onChange={(e) => setBankAccountName(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-slate-400 font-bold">A/c Number</label>
+                  <input
+                    type="text"
+                    value={bankAccountNo}
+                    onChange={(e) => setBankAccountNo(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white font-mono"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-slate-400 font-bold">IFS Code</label>
+                  <input
+                    type="text"
+                    value={bankIfsc}
+                    onChange={(e) => setBankIfsc(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white font-mono"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-slate-400 font-bold">Branch Name</label>
+                  <input
+                    type="text"
+                    value={bankBranch}
+                    onChange={(e) => setBankBranch(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-teal-400 font-bold">Authorised Signatory Name</label>
+                  <input
+                    type="text"
+                    value={signatoryName}
+                    onChange={(e) => setSignatoryName(e.target.value)}
+                    className="w-full bg-slate-800 border border-teal-500 rounded-lg p-2 text-white font-bold"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-teal-400 font-bold">Designation</label>
+                  <input
+                    type="text"
+                    value={signatoryDesignation}
+                    onChange={(e) => setSignatoryDesignation(e.target.value)}
+                    className="w-full bg-slate-800 border border-teal-500 rounded-lg p-2 text-white"
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-1.5 text-xs text-slate-200">
+                <div className="font-black text-sm text-white mb-2">Company's Bank Details</div>
+                <div>• A/c Holder's Name : <strong className="text-white">{bankAccountName}</strong></div>
+                <div>• Bank Name : <strong className="text-white">{bankName}</strong></div>
+                <div>• A/c No. : <strong className="text-white font-mono">{bankAccountNo}</strong></div>
+                <div>• Branch & IFS Code: <strong className="text-white font-mono">{bankBranch} & {bankIfsc}</strong></div>
+              </div>
+            )}
 
             {/* Signatory ON THE LEFT */}
             <div className="pt-2 text-left space-y-1 border-t border-slate-800">
               <div className="text-xs font-bold text-slate-300">
-                For {company?.company_name || 'Clean tech'}
+                For {companyName}
               </div>
-              <div className="text-base font-black text-white pt-3">
-                {company?.bank_account_name || 'Mr. Manikandan Balamurugan'}
+              <div className="text-base font-black text-white pt-2">
+                {signatoryName}
               </div>
-              <div className="text-xs text-teal-400 font-semibold">
-                Sales and Service Head
+              <div className="text-xs text-teal-400 font-bold">
+                {signatoryDesignation}
               </div>
               <div className="text-xs text-slate-300">
-                {company?.phone1 || company?.phone2 || '+ 91 7338882036'}
+                {companyPhone}
               </div>
               <div className="text-xs font-bold text-slate-200 uppercase tracking-wider pt-2">
                 Authorised Signatory
@@ -1313,7 +1653,7 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
             </div>
 
             <div className="text-[10px] text-slate-400 border-t border-slate-800 pt-3 italic text-left">
-              This is a computer generated document and authenticated by Cleantech Services. Hence, it can be considered valid even if not signed manually.
+              This is a computer generated document and authenticated by {companyName}. Hence, it can be considered valid even if not signed manually.
             </div>
           </div>
 
@@ -1416,133 +1756,174 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
             </div>
 
             {/* A4 Sheet Preview Body */}
-            <div className="p-8 max-h-[80vh] overflow-y-auto space-y-6 bg-slate-100">
-              <div className="bg-white p-6 shadow-md rounded-2xl space-y-6 max-w-3xl mx-auto border border-slate-200">
-                <img src="/headers/header_cleantech.png" className="w-full block" alt="Header" />
+            <div className="p-4 md:p-8 max-h-[80vh] overflow-y-auto space-y-6 bg-slate-100">
+              {/* PAGE 1 A4 SHEET (Flush Edge-to-Edge Header) */}
+              <div className="bg-white shadow-md rounded-2xl max-w-3xl mx-auto border border-slate-200 overflow-hidden">
+                <img
+                  src="/headers/header_cleantech.png"
+                  className="w-full block select-none border-b-2 border-teal-600 m-0 p-0"
+                  alt="Cleantech Official Header"
+                />
                 
-                <div className="text-center font-black text-lg text-slate-950 uppercase underline">
-                  {quotationTitle}
-                </div>
-
-                <div className="flex justify-between text-xs">
-                  <div>
-                    <div className="font-black text-slate-900">To :</div>
-                    <div className="font-black text-sm text-slate-900 uppercase">{customerName}</div>
-                    <div>{addressLine1}</div>
-                    <div>{addressLine2}</div>
-                    {contactPerson && <div>Attn: {contactPerson}</div>}
-                    {phone && <div>Ph: {phone}</div>}
+                <div className="p-6 md:p-8 space-y-6">
+                  <div className="text-center font-black text-lg text-slate-950 uppercase underline">
+                    {quotationTitle}
                   </div>
-                  <div className="text-right">
-                    <div>Quotation No :- <strong>{quotationNo}</strong></div>
-                    <div>Date :- <strong>{quotationDate}</strong></div>
+
+                  <div className="flex justify-between text-xs">
+                    <div>
+                      <div className="font-black text-slate-900">To :</div>
+                      <div className="font-black text-sm text-slate-900 uppercase">{customerName}</div>
+                      <div>{addressLine1}</div>
+                      <div>{addressLine2}</div>
+                      {contactPerson && <div>Attn: {contactPerson}</div>}
+                      {phone && <div>Ph: {phone}</div>}
+                    </div>
+                    <div className="text-right">
+                      <div>Quotation No :- <strong>{quotationNo}</strong></div>
+                      <div>Date :- <strong>{quotationDate}</strong></div>
+                    </div>
                   </div>
-                </div>
 
-                {/* Why Choose Clean Tech in Preview */}
-                <div className="text-xs bg-slate-50 p-3 rounded-lg border border-slate-200">
-                  <div className="font-bold mb-1 text-slate-900">Why Choose Clean Tech?</div>
-                  <ul className="grid grid-cols-2 gap-1 text-[11px] text-slate-700 list-disc list-inside">
-                    {whyChooseUs.map((w, i) => (
-                      <li key={i}>{w}</li>
-                    ))}
-                  </ul>
-                </div>
+                  {/* Why Choose Clean Tech in Preview */}
+                  <div className="text-xs bg-slate-50 p-3 rounded-lg border border-slate-200">
+                    <div className="font-bold mb-1 text-slate-900">Why Choose Clean Tech?</div>
+                    <ul className="grid grid-cols-2 gap-1 text-[11px] text-slate-700 list-disc list-inside">
+                      {whyChooseUs.map((w, i) => (
+                        <li key={i}>{w}</li>
+                      ))}
+                    </ul>
+                  </div>
 
-                {/* Table */}
-                <table className="w-full text-xs border border-slate-300 border-collapse">
-                  <thead>
-                    <tr className="bg-slate-900 text-white font-bold">
-                      <th className="p-2 text-center w-12">SL NO</th>
-                      <th className="p-2 text-left">DESCRIPTION</th>
-                      <th className="p-2 text-center w-16">QTY</th>
-                      <th className="p-2 text-center w-16">UOM</th>
-                      <th className="p-2 text-right w-24">RATE</th>
-                      <th className="p-2 text-right w-24">TOTAL</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {items.map((it, idx) => {
-                      if (it.is_header) {
+                  {/* Table */}
+                  <table className="w-full text-xs border border-slate-300 border-collapse">
+                    <thead>
+                      <tr className="bg-slate-900 text-white font-bold">
+                        <th className="p-2 text-center w-12">SL NO</th>
+                        <th className="p-2 text-left">DESCRIPTION</th>
+                        <th className="p-2 text-center w-16">QTY</th>
+                        <th className="p-2 text-center w-16">UOM</th>
+                        <th className="p-2 text-right w-24">RATE</th>
+                        <th className="p-2 text-right w-24">TOTAL</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {items.map((it, idx) => {
+                        if (it.is_header) {
+                          return (
+                            <tr key={it.id} className="bg-teal-100 font-bold border-t border-b border-teal-300">
+                              <td className="p-1.5 text-center">I</td>
+                              <td colSpan={5} className="p-1.5 uppercase text-teal-950">{it.item_name}</td>
+                            </tr>
+                          );
+                        }
                         return (
-                          <tr key={it.id} className="bg-teal-100 font-bold border-t border-b border-teal-300">
-                            <td className="p-1.5 text-center">I</td>
-                            <td colSpan={5} className="p-1.5 uppercase text-teal-950">{it.item_name}</td>
+                          <tr key={it.id} className="border-t border-slate-200">
+                            <td className="p-2 text-center font-bold">{idx}.</td>
+                            <td className="p-2">
+                              <div className="font-bold text-slate-900 uppercase">{it.item_name}</div>
+                              {it.description && <div className="text-[10px] text-slate-500">{it.description}</div>}
+                            </td>
+                            <td className="p-2 text-center font-bold">{it.qty}</td>
+                            <td className="p-2 text-center">{it.uom}</td>
+                            <td className="p-2 text-right">₹{Number(it.rate).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                            <td className="p-2 text-right font-bold">₹{Number(it.total).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                           </tr>
                         );
-                      }
-                      return (
-                        <tr key={it.id} className="border-t border-slate-200">
-                          <td className="p-2 text-center font-bold">{idx}.</td>
-                          <td className="p-2">
-                            <div className="font-bold text-slate-900 uppercase">{it.item_name}</div>
-                            {it.description && <div className="text-[10px] text-slate-500">{it.description}</div>}
-                          </td>
-                          <td className="p-2 text-center font-bold">{it.qty}</td>
-                          <td className="p-2 text-center">{it.uom}</td>
-                          <td className="p-2 text-right">₹{Number(it.rate).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                          <td className="p-2 text-right font-bold">₹{Number(it.total).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                        </tr>
-                      );
-                    })}
-                    <tr className="border-t-2 border-slate-300 font-bold bg-slate-50">
-                      <td colSpan={5} className="p-2 text-right">SUB TOTAL:</td>
-                      <td className="p-2 text-right">₹{subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                    </tr>
-                    {applyTax && (
-                      <>
-                        <tr className="border-t border-slate-200 text-slate-700">
-                          <td colSpan={5} className="p-1.5 text-right">CGST (9%):</td>
-                          <td className="p-1.5 text-right">₹{cgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                        </tr>
-                        <tr className="border-t border-slate-200 text-slate-700">
-                          <td colSpan={5} className="p-1.5 text-right">SGST (9%):</td>
-                          <td className="p-1.5 text-right">₹{sgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                        </tr>
-                      </>
-                    )}
-                    <tr className="border-t-2 border-slate-900 font-black bg-teal-100 text-sm">
-                      <td colSpan={5} className="p-2 text-right">TOTAL:</td>
-                      <td className="p-2 text-right">₹{totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                    </tr>
-                  </tbody>
-                </table>
+                      })}
+                      <tr className="border-t-2 border-slate-300 font-bold bg-slate-50">
+                        <td colSpan={5} className="p-2 text-right">SUB TOTAL:</td>
+                        <td className="p-2 text-right">₹{subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                      </tr>
+                      {applyTax && (
+                        <>
+                          <tr className="border-t border-slate-200 text-slate-700">
+                            <td colSpan={5} className="p-1.5 text-right">CGST (9%):</td>
+                            <td className="p-1.5 text-right">₹{cgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                          </tr>
+                          <tr className="border-t border-slate-200 text-slate-700">
+                            <td colSpan={5} className="p-1.5 text-right">SGST (9%):</td>
+                            <td className="p-1.5 text-right">₹{sgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                          </tr>
+                        </>
+                      )}
+                      <tr className="border-t-2 border-slate-900 font-black bg-teal-100 text-sm">
+                        <td colSpan={5} className="p-2 text-right">TOTAL:</td>
+                        <td className="p-2 text-right">₹{totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <div className="text-right text-[10px] text-slate-400 font-bold">Page 1 of 2</div>
+                </div>
+              </div>
 
-                {/* Terms & Conditions */}
-                <div className="text-xs space-y-1">
-                  <div className="font-bold">Terms & Conditions:</div>
-                  <ul className="list-disc list-inside text-slate-700">
-                    {terms.map((t, i) => <li key={i}>{t}</li>)}
-                  </ul>
+              {/* PAGE BREAK INDICATOR */}
+              <div className="flex items-center justify-center gap-3 my-2">
+                <div className="h-px bg-slate-300 w-24"></div>
+                <span className="text-[11px] font-black uppercase tracking-wider text-slate-500 bg-slate-200 px-3 py-1 rounded-full shadow-2xs">
+                  Page 2 (Terms & Conditions, Bank Details, Signatures)
+                </span>
+                <div className="h-px bg-slate-300 w-24"></div>
+              </div>
+
+              {/* PAGE 2 A4 SHEET (Flush Edge-to-Edge Footer) */}
+              <div className="bg-white shadow-md rounded-2xl max-w-3xl mx-auto border border-slate-200 overflow-hidden">
+                <div className="p-6 md:p-8 space-y-6">
+                  <div className="flex justify-between items-center border-b-2 border-slate-900 pb-2">
+                    <span className="font-black text-sm text-slate-900 uppercase">
+                      {companyName}
+                    </span>
+                    <span className="text-xs font-mono font-bold text-slate-600">
+                      Quotation No: {quotationNo} • Page 2
+                    </span>
+                  </div>
+
+                  {/* Terms & Conditions */}
+                  <div className="text-xs space-y-2">
+                    <div className="font-black text-slate-900 text-sm uppercase">Terms & Conditions:</div>
+                    <ul className="list-disc list-inside text-slate-700 space-y-1">
+                      {terms.map((t, i) => <li key={i}>{t}</li>)}
+                    </ul>
+                  </div>
+
+                  {/* Our Services */}
+                  <div className="text-xs space-y-2 pt-2">
+                    <div className="font-black text-slate-900 text-sm uppercase">Our Services:</div>
+                    <ul className="list-disc list-inside text-slate-700 space-y-1">
+                      {OUR_SERVICES.map((s, i) => <li key={i}>{s}</li>)}
+                    </ul>
+                  </div>
+
+                  {/* Bank Details (Live from Editable State) */}
+                  <div className="text-xs bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-1">
+                    <div className="font-black text-slate-900 mb-1">Company's Bank Details</div>
+                    <div>• A/c Holder's Name : <strong>{bankAccountName}</strong></div>
+                    <div>• Bank Name : <strong>{bankName}</strong></div>
+                    <div>• A/c No. : <strong className="font-mono">{bankAccountNo}</strong></div>
+                    <div>• Branch & IFS Code: <strong className="font-mono">{bankBranch} & {bankIfsc}</strong></div>
+                  </div>
+
+                  {/* Signatory ON LEFT (Mr. Manikandan Balamurugan above Sales and Service Head) */}
+                  <div className="flex justify-between items-end pt-4">
+                    <div className="text-left text-xs space-y-1">
+                      <div className="font-bold text-slate-800">For {companyName}</div>
+                      <div className="text-sm font-black text-slate-950 pt-2">{signatoryName}</div>
+                      <div className="text-xs text-teal-700 font-bold">{signatoryDesignation}</div>
+                      <div className="text-xs text-slate-500">{companyPhone}</div>
+                      <div className="text-[11px] font-black uppercase tracking-wider text-slate-800 border-t border-slate-300 pt-1 mt-2 inline-block">Authorised Signatory</div>
+                    </div>
+                    <div className="text-xs text-slate-400 italic max-w-xs text-right">
+                      This is a computer generated document authenticated by {companyName}.
+                    </div>
+                  </div>
                 </div>
 
-                {/* Our Services */}
-                <div className="text-xs space-y-1">
-                  <div className="font-bold">Our Services:</div>
-                  <ul className="list-disc list-inside text-slate-700">
-                    {OUR_SERVICES.map((s, i) => <li key={i}>{s}</li>)}
-                  </ul>
-                </div>
-
-                {/* Bank Details */}
-                <div className="text-xs bg-slate-50 p-3 rounded-lg border border-slate-200">
-                  <div className="font-bold">Company's Bank Details</div>
-                  <div>• A/c Holder's Name : {company?.bank_account_name || company?.company_name || 'CLEANTECH'}</div>
-                  <div>• Bank Name : {company?.bank_name || 'IDFC BANK'}</div>
-                  <div>• A/c No. : {company?.bank_account_no || '73388820361'}</div>
-                  <div>• Branch & IFS Code: {company?.bank_branch || 'Chennai – Iyyapanthangal Branch'} & {company?.bank_ifsc || 'IDFB0081831'}</div>
-                </div>
-
-                {/* Signatory on LEFT */}
-                <div className="text-left text-xs pt-2">
-                  <div className="font-bold">For {company?.company_name || 'Clean tech'}</div>
-                  <div className="font-black text-sm pt-4">{company?.bank_account_name || 'Mr. Manikandan Balamurugan'}</div>
-                  <div className="text-slate-600">Sales and Service Head</div>
-                  <div className="text-slate-600">{company?.phone1 || company?.phone2 || '+ 91 7338882036'}</div>
-                  <div className="font-bold pt-1">Authorised Signatory</div>
-                </div>
-
-                <img src="/headers/footer_cleantech.png" className="w-full block" alt="Footer" />
+                {/* Footer Flush Edge-to-Edge */}
+                <img
+                  src="/headers/footer_cleantech.png"
+                  className="w-full block select-none border-t border-slate-200 m-0 p-0"
+                  alt="Cleantech Official Footer"
+                />
               </div>
             </div>
 

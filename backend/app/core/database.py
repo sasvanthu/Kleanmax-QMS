@@ -24,10 +24,12 @@ connect_args = {}
 if settings.DATABASE_URL.startswith("sqlite"):
     connect_args = {"check_same_thread": False}
 
-# Replace postgres:// with postgresql:// if needed for SQLAlchemy compatibility
+# Replace postgres:// or postgresql:// with postgresql+psycopg2:// for SQLAlchemy compatibility
 db_url = settings.DATABASE_URL
 if db_url.startswith("postgres://"):
-    db_url = db_url.replace("postgres://", "postgresql://", 1)
+    db_url = db_url.replace("postgres://", "postgresql+psycopg2://", 1)
+elif db_url.startswith("postgresql://") and not db_url.startswith("postgresql+"):
+    db_url = db_url.replace("postgresql://", "postgresql+psycopg2://", 1)
 elif db_url.startswith("sqlite:///./"):
     from pathlib import Path
     db_filename = db_url.replace("sqlite:///./", "")

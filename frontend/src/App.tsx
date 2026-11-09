@@ -149,6 +149,7 @@ export const App: React.FC = () => {
             currentUser={currentUser}
             onNavigate={handleNavigate}
             onOpenPreview={handleOpenPreview}
+            quotationId={pageParams?.id}
           />
         );
       case 'kleanmaxpro_quotes':
@@ -177,6 +178,7 @@ export const App: React.FC = () => {
             currentUser={currentUser}
             onNavigate={handleNavigate}
             onOpenPreview={handleOpenPreview}
+            quotationId={pageParams?.id}
           />
         );
       case 'kleanmax_sales':
@@ -212,6 +214,7 @@ export const App: React.FC = () => {
             currentUser={currentUser}
             onNavigate={handleNavigate}
             onOpenPreview={handleOpenPreview}
+            quotationId={pageParams?.id}
           />
         );
       case 'uniquepainters_quotes':
@@ -239,6 +242,7 @@ export const App: React.FC = () => {
             currentUser={currentUser}
             onNavigate={handleNavigate}
             onOpenPreview={handleOpenPreview}
+            quotationId={pageParams?.id}
           />
         );
       case 'cleantech_quotes':

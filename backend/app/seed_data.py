@@ -8,6 +8,19 @@ from backend.app.models.all_models import (
 )
 
 def run_seed():
+    db = SessionLocal()
+    try:
+        # If database already has companies and services seeded in Supabase, ready immediately
+        comp_count = db.query(CompanySetting).count()
+        svc_count = db.query(Service).count()
+        if comp_count >= 4 and svc_count >= 20:
+            print(f"Database ready: {comp_count} companies, {svc_count} services connected on Supabase.")
+            return
+    except Exception:
+        pass
+    finally:
+        db.close()
+
     # 1. Ensure all tables exist in database (PostgreSQL/Supabase or SQLite)
     Base.metadata.create_all(bind=engine)
     try:
@@ -461,15 +474,21 @@ def run_seed():
             ).first()
             if not existing_c:
                 db.add(c)
+        db.flush()
 
         # 7. Seed Sample Quotations for all 4 companies if empty
-        if not db.query(Quotation).filter(Quotation.company_code == "kleanmaxpro").first():
+        cust_kmp = db.query(Customer).filter((Customer.customer_code == "CUST-KMP-001") | (Customer.id == "cust-01")).first()
+        cust_klm = db.query(Customer).filter((Customer.customer_code == "CUST-KLM-002") | (Customer.id == "cust-02")).first()
+        cust_unp = db.query(Customer).filter((Customer.customer_code == "CUST-UNP-003") | (Customer.id == "cust-03")).first()
+        cust_cts = db.query(Customer).filter((Customer.customer_code == "CUST-CTS-004") | (Customer.id == "cust-04")).first()
+
+        if cust_kmp and not db.query(Quotation).filter(Quotation.company_code == "kleanmaxpro").first():
             q1 = Quotation(
                 id="q-kmp-001",
                 company_code="kleanmaxpro",
                 quotation_number="KMP/2026-27/0001",
                 revision_number=0,
-                customer_id="c1111111-1111-1111-1111-111111111111",
+                customer_id=cust_kmp.id,
                 quotation_type="area_based",
                 status="approved",
                 quotation_date=date.today() - timedelta(days=3),
@@ -498,13 +517,13 @@ def run_seed():
             )
             db.add(q1)
 
-        if not db.query(Quotation).filter(Quotation.company_code == "kleanmax").first():
+        if cust_klm and not db.query(Quotation).filter(Quotation.company_code == "kleanmax").first():
             q2 = Quotation(
                 id="q-klm-001",
                 company_code="kleanmax",
                 quotation_number="KLM/2026-27/0001",
                 revision_number=0,
-                customer_id="c2222222-2222-2222-2222-222222222222",
+                customer_id=cust_klm.id,
                 quotation_type="repair_service",
                 status="issued",
                 quotation_date=date.today() - timedelta(days=5),
@@ -533,13 +552,13 @@ def run_seed():
             )
             db.add(q2)
 
-        if not db.query(Quotation).filter(Quotation.company_code == "uniquepainters").first():
+        if cust_unp and not db.query(Quotation).filter(Quotation.company_code == "uniquepainters").first():
             q3 = Quotation(
                 id="q-unp-001",
                 company_code="uniquepainters",
                 quotation_number="UNP/2026-27/0001",
                 revision_number=0,
-                customer_id="c3333333-3333-3333-3333-333333333333",
+                customer_id=cust_unp.id,
                 quotation_type="area_based",
                 status="pending_approval",
                 quotation_date=date.today() - timedelta(days=1),
@@ -568,13 +587,13 @@ def run_seed():
             )
             db.add(q3)
 
-        if not db.query(Quotation).filter(Quotation.company_code == "cleantech").first():
+        if cust_cts and not db.query(Quotation).filter(Quotation.company_code == "cleantech").first():
             q4 = Quotation(
                 id="q-cts-001",
                 company_code="cleantech",
                 quotation_number="CTS/2026-27/0001",
                 revision_number=0,
-                customer_id="c4444444-4444-4444-4444-444444444444",
+                customer_id=cust_cts.id,
                 quotation_type="contract",
                 status="approved",
                 quotation_date=date.today() - timedelta(days=2),

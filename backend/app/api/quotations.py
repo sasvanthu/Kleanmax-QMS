@@ -1,5 +1,6 @@
 import re
-import logging
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
@@ -57,15 +58,30 @@ def get_next_quotation_number_endpoint(
     prefix = company.quotation_prefix if company and company.quotation_prefix else "KMP"
     prefix = prefix.strip().upper()
     
-    count = db.query(Quotation).filter(Quotation.company_code == company_code).count()
-    next_seq = count + 1
-    
-    if format_style == "short":
-        next_number = f"{prefix}/{next_seq:04d}"
-    else:
-        from backend.app.services.numbering import get_current_fiscal_year
-        fy = get_current_fiscal_year()
-        next_number = f"{prefix}/{fy}/{next_seq:04d}"
+    # Calculate next sequence safely by scanning all existing quotation numbers
+    existing_records = db.query(Quotation.quotation_number).filter(Quotation.company_code == company_code).all()
+    max_seq = 0
+    for (q_num,) in existing_records:
+        if q_num:
+            matches = re.findall(r'(\d+)', q_num)
+            if matches:
+                try:
+                    val = int(matches[-1])
+                    if val > max_seq:
+                        max_seq = val
+                except ValueError:
+                    pass
+
+    next_seq = max(max_seq + 1, len(existing_records) + 1, 1)
+
+    from backend.app.services.numbering import get_current_fiscal_year
+    fy = get_current_fiscal_year()
+    while True:
+        candidate = f"{prefix}/{next_seq:04d}" if format_style == "short" else f"{prefix}/{fy}/{next_seq:04d}"
+        if not db.query(Quotation.id).filter(Quotation.quotation_number == candidate).first():
+            next_number = candidate
+            break
+        next_seq += 1
         
     return {
         "company_code": company_code,
@@ -277,23 +293,27 @@ async def download_quotation_pdf(
     if not company:
         company = CompanySetting()
 
-    html = render_quotation_html(
-        quotation=quotation,
-        company=company,
-        customer=quotation.customer,
-        sections=quotation.sections,
-        items=quotation.items,
-    )
+    try:
+        html = render_quotation_html(
+            quotation=quotation,
+            company=company,
+            customer=quotation.customer,
+            sections=quotation.sections,
+            items=quotation.items,
+        )
 
-    pdf_bytes = await generate_pdf_bytes_async(html)
-    clean_no = re.sub(r'[\/\\?%*:|"<> ]', '_', quotation.quotation_number)
-    filename = f"Quotation_{clean_no}.pdf"
+        pdf_bytes = await generate_pdf_bytes_async(html)
+        clean_no = re.sub(r'[\/\\?%*:|"<> ]', '_', quotation.quotation_number)
+        filename = f"Quotation_{clean_no}.pdf"
 
-    return Response(
-        content=pdf_bytes,
-        media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
-    )
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+        )
+    except Exception as e:
+        logger.exception(f"Error generating PDF for {id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate PDF: {str(e)}")
 
 
 @router.get("/{id}/docx")
@@ -341,7 +361,7 @@ def download_quotation_docx(
 def delete_quotation_endpoint(
     id: str,
     db: Session = Depends(get_db),
-    current_user: Profile = Depends(require_roles(["admin"]))
+    current_user: Profile = Depends(require_roles(["admin", "super_admin"]))
 ):
     """Only Super Admin can delete a quotation."""
     quotation = db.query(Quotation).filter(Quotation.id == id).first()

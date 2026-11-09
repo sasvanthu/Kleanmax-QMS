@@ -1,3 +1,4 @@
+import re
 import json
 from datetime import datetime, date, timedelta
 from decimal import Decimal
@@ -141,99 +142,38 @@ def create_quotation(
     calc_res = calculate_quotation_totals(calc_req)
 
     # Generate sequential number safely or use custom specified number
+    prefix = company.quotation_prefix if company and company.quotation_prefix else "KMP"
     if getattr(data, 'quotation_number', None) and data.quotation_number.strip():
         quotation_number = data.quotation_number.strip()
         existing = db.query(Quotation).filter(
             Quotation.quotation_number == quotation_number,
             Quotation.revision_number == 0
         ).first()
-        if existing and existing.status not in ("cancelled", "revised"):
-            # Update existing record seamlessly without UniqueConstraint collision
-            existing.customer_id = customer.id
-            existing.company_code = data.company_code or existing.company_code
-            existing.quotation_type = data.quotation_type or existing.quotation_type
-            existing.quotation_date = data.quotation_date
-            existing.validity_date = validity_date
-            existing.job_description = data.job_description
-            existing.notes = data.notes
-            existing.terms_and_conditions = data.terms_and_conditions or existing.terms_and_conditions
-            existing.subtotal = calc_res.subtotal
-            existing.discount_type = data.discount_type
-            existing.discount_value = data.discount_value
-            existing.total_discount = calc_res.total_discount
-            existing.taxable_amount = calc_res.taxable_amount
-            existing.cgst_rate = calc_res.cgst_rate
-            existing.cgst_amount = calc_res.cgst_amount
-            existing.sgst_rate = calc_res.sgst_rate
-            existing.sgst_amount = calc_res.sgst_amount
-            existing.total_tax = calc_res.total_tax
-            existing.final_amount = calc_res.final_amount
-            existing.amount_in_words = calc_res.amount_in_words
-            if hasattr(data, 'snapshot_json') and data.snapshot_json is not None:
-                existing.snapshot_json = data.snapshot_json
-            if hasattr(data, 'image_url') and data.image_url is not None:
-                existing.image_url = data.image_url
-            existing.updated_at = datetime.utcnow()
-
-            # Replace items
-            db.query(QuotationItem).filter(QuotationItem.quotation_id == existing.id).delete()
-            for idx, (item_input, item_calc) in enumerate(zip(data.items, calc_res.items), start=1):
-                item_row = QuotationItem(
-                    quotation_id=existing.id,
-                    item_order=idx,
-                    service_id=item_input.service_id,
-                    item_code=item_input.item_code,
-                    item_name=item_input.item_name,
-                    description=item_input.description,
-                    hsn_sac=item_input.hsn_sac,
-                    quotation_type=item_input.quotation_type,
-                    quantity=item_calc.quantity,
-                    uom=item_calc.uom,
-                    unit_price=item_calc.unit_price,
-                    rate_source=item_input.rate_source,
-                    original_catalogue_rate=item_input.original_catalogue_rate,
-                    applied_rate=item_input.applied_rate,
-                    taxable_value=item_calc.taxable_value,
-                    tax_rate=item_calc.tax_rate,
-                    line_total=item_calc.line_total,
-                    notes=item_input.notes,
-                )
-                db.add(item_row)
-
-            # Replace sections
-            db.query(QuotationSection).filter(QuotationSection.quotation_id == existing.id).delete()
-            for idx, (sec_input, sec_calc) in enumerate(zip(data.sections, calc_res.sections), start=1):
-                sec_row = QuotationSection(
-                    quotation_id=existing.id,
-                    section_name=sec_calc.section_name,
-                    section_order=idx,
-                    service_id=sec_input.service_id,
-                    service_name=sec_input.service_name,
-                    length=sec_calc.length,
-                    breadth=sec_calc.breadth,
-                    measurement_unit=sec_calc.measurement_unit,
-                    calculated_area=sec_calc.calculated_area,
-                    repetitions=sec_calc.repetitions,
-                    billable_area=sec_calc.billable_area,
-                    billable_uom=sec_calc.billable_uom,
-                    rate_source=sec_input.rate_source,
-                    original_catalogue_rate=sec_input.original_catalogue_rate,
-                    applied_rate=sec_calc.applied_rate,
-                    override_reason=sec_calc.override_reason,
-                    discount_percent=sec_calc.discount_percent,
-                    line_total=sec_calc.line_total,
-                    notes=sec_input.notes,
-                )
-                db.add(sec_row)
-
-            db.commit()
-            db.refresh(existing)
-            return existing
-        elif existing:
-            prefix = company.quotation_prefix if company and company.quotation_prefix else "KMP"
-            quotation_number = generate_next_quotation_number(db, data.quotation_date, prefix=prefix)
+        if existing:
+            # Quotation number is already taken by a past record!
+            # Auto-increment to next free sequence to guarantee past records are NEVER lost or overwritten
+            existing_records = db.query(Quotation.quotation_number).filter(
+                Quotation.company_code == (data.company_code or 'kleanmaxpro')
+            ).all()
+            max_seq = 0
+            for (q_num,) in existing_records:
+                if q_num:
+                    matches = re.findall(r'(\d+)', q_num)
+                    if matches:
+                        try:
+                            val = int(matches[-1])
+                            if val > max_seq:
+                                max_seq = val
+                        except ValueError:
+                            pass
+            next_seq = max(max_seq + 1, len(existing_records) + 1, 1)
+            while True:
+                candidate = f"{prefix}/{next_seq:04d}"
+                if not db.query(Quotation.id).filter(Quotation.quotation_number == candidate).first():
+                    quotation_number = candidate
+                    break
+                next_seq += 1
     else:
-        prefix = company.quotation_prefix if company and company.quotation_prefix else "KMP"
         quotation_number = generate_next_quotation_number(db, data.quotation_date, prefix=prefix)
 
     quotation = Quotation(
@@ -273,6 +213,8 @@ def create_quotation(
         amount_in_words=calc_res.amount_in_words,
         snapshot_json=getattr(data, 'snapshot_json', None),
         image_url=getattr(data, 'image_url', None),
+        signatory_name=getattr(data, 'signatory_name', None) or (company.signatory_name if company and hasattr(company, 'signatory_name') else 'Mr. Manikandan Balamurugan'),
+        signatory_designation=getattr(data, 'signatory_designation', None) or (company.signatory_designation if company and hasattr(company, 'signatory_designation') else 'Sales and Service Head'),
         prepared_by_id=current_user.id,
     )
     db.add(quotation)
@@ -382,6 +324,17 @@ def update_quotation(
         )
 
     customer = db.query(Customer).filter(Customer.id == (data.customer_id or quotation.customer_id)).first()
+    if customer:
+        if getattr(data, 'client_name', None):
+            customer.company_name = data.client_name.strip()
+        if getattr(data, 'client_address', None):
+            customer.billing_address_line1 = data.client_address.strip()
+        if getattr(data, 'client_phone', None):
+            customer.phone = data.client_phone.strip()
+        if getattr(data, 'client_gstin', None):
+            customer.gstin = data.client_gstin.strip()
+        if getattr(data, 'attention_person', None):
+            customer.contact_person = data.attention_person.strip()
     if data.company_code:
         quotation.company_code = data.company_code
 
@@ -547,7 +500,13 @@ def update_quotation(
     if hasattr(data, 'image_url') and data.image_url is not None:
         quotation.image_url = data.image_url
     if hasattr(data, 'snapshot_json') and data.snapshot_json is not None:
-        quotation.snapshot_json = data.snapshot_json
+        quotation.snapshot_json = _serialize_for_snapshot(data.snapshot_json)
+    if hasattr(data, 'terms_and_conditions') and data.terms_and_conditions is not None:
+        quotation.terms_and_conditions = data.terms_and_conditions
+    if hasattr(data, 'signatory_name') and data.signatory_name is not None:
+        quotation.signatory_name = data.signatory_name
+    if hasattr(data, 'signatory_designation') and data.signatory_designation is not None:
+        quotation.signatory_designation = data.signatory_designation
     quotation.updated_at = datetime.utcnow()
 
     if data.sections is not None:
@@ -635,13 +594,15 @@ def transition_status(
             raise HTTPException(status_code=400, detail=f"Cannot submit quotation in status {quotation.status}")
         quotation.status = "pending_approval"
 
-    elif action == "approve":
-        if quotation.status != "pending_approval":
+    elif action in ("approve", "confirm"):
+        if quotation.status == "approved":
+            return quotation
+        if quotation.status not in ("pending_approval", "draft", "revised"):
             raise HTTPException(status_code=400, detail=f"Cannot approve quotation in status {quotation.status}")
-        if current_user.role not in ("admin", "manager"):
-            raise HTTPException(status_code=403, detail="Only Managers and Admins can approve quotations")
+        if current_user and current_user.role not in ("admin", "manager", "super_admin"):
+            raise HTTPException(status_code=403, detail="Only Managers and Admins can approve or confirm quotations")
         quotation.status = "approved"
-        quotation.approved_by_id = current_user.id
+        quotation.approved_by_id = current_user.id if current_user else None
         quotation.approved_at = datetime.utcnow()
 
     elif action == "issue":

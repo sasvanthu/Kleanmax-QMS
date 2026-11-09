@@ -528,8 +528,8 @@ export const KleanmaxSparesQuotation: React.FC<KleanmaxSparesQuotationProps> = (
 
             <div className="text-right">
               <div className="font-bold text-xs text-slate-700">For Klean max pro</div>
-              <div className="font-black text-sm text-slate-900 mt-4">Mr. Manikandan</div>
-              <div className="text-[11px] text-slate-600">Service Head</div>
+              <div className="font-black text-sm text-slate-900 mt-4">Mr. Manikandan Balamurugan</div>
+              <div className="text-[11px] font-bold text-amber-700">Sales and Service Head</div>
               <div className="text-[11px] text-slate-600">+91 7338882036</div>
               <div className="font-bold text-[11px] text-slate-800 uppercase mt-0.5">Authorised Signatory</div>
             </div>

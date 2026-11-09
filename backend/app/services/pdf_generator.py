@@ -114,16 +114,19 @@ async def generate_pdf_bytes_async(html_content: str) -> bytes:
             exec_path = p
             break
 
-    # 1. Try Playwright with native Edge or installed Chromium
+    # 1. Try Playwright with installed Chromium or system Edge/Chrome
     try:
         from playwright.async_api import async_playwright
         async with async_playwright() as p:
             launch_kwargs = {"headless": True}
-            if exec_path:
-                launch_kwargs["executable_path"] = exec_path
-            browser = await p.chromium.launch(**launch_kwargs)
+            try:
+                browser = await p.chromium.launch(**launch_kwargs)
+            except Exception:
+                if exec_path:
+                    launch_kwargs["executable_path"] = exec_path
+                browser = await p.chromium.launch(**launch_kwargs)
             page = await browser.new_page()
-            await page.set_content(html_content, wait_until="networkidle")
+            await page.set_content(html_content, wait_until="load")
             pdf_bytes = await page.pdf(
                 format="A4",
                 print_background=True,
@@ -131,7 +134,8 @@ async def generate_pdf_bytes_async(html_content: str) -> bytes:
                 margin={"top": "0", "right": "0", "bottom": "0", "left": "0"}
             )
             await browser.close()
-            return pdf_bytes
+            if pdf_bytes and pdf_bytes.startswith(b"%PDF"):
+                return pdf_bytes
     except Exception as e:
         logger.warning(f"Playwright PDF generation failed: {e}, falling back to system browser CLI")
 
@@ -155,7 +159,9 @@ async def generate_pdf_bytes_async(html_content: str) -> bytes:
             res = subprocess.run(cmd, capture_output=True, timeout=25)
             if os.path.exists(temp_pdf) and os.path.getsize(temp_pdf) > 1000:
                 with open(temp_pdf, "rb") as pf:
-                    return pf.read()
+                    data = pf.read()
+                    if data.startswith(b"%PDF"):
+                        return data
         except Exception as cli_err:
             logger.error(f"Edge CLI PDF fallback error: {cli_err}")
         finally:
@@ -166,8 +172,7 @@ async def generate_pdf_bytes_async(html_content: str) -> bytes:
                 try: os.remove(temp_pdf)
                 except Exception: pass
 
-    # 3. Final fallback: return html as bytes
-    return html_content.encode("utf-8")
+    raise RuntimeError("Failed to generate a valid PDF document. Please ensure browser is available.")
 
 
 def generate_quotation_pdf(

@@ -4,7 +4,7 @@ import { api } from '../services/api';
 import {
   ArrowLeft, Printer, Download, Eye, Lock, RotateCcw, CheckCircle,
   Clock, ShieldAlert, AlertTriangle, FileText, Building, Calendar,
-  CreditCard, Sparkles, X, Check, Send, Edit
+  CreditCard, Sparkles, X, Check, Send, Edit, Trash2
 } from 'lucide-react';
 
 interface QuotationDetailProps {
@@ -45,10 +45,26 @@ export const QuotationDetail: React.FC<QuotationDetailProps> = ({
     }
   };
 
-  const handleAction = async (action: 'submit' | 'approve' | 'issue' | 'cancel') => {
+  const isSuperAdmin = currentUser?.role === 'admin' || currentUser?.role === 'super_admin' || !currentUser?.company_code || currentUser?.company_code === 'all';
+
+  const handleDelete = async () => {
+    if (!quotation) return;
+    if (!window.confirm(`Are you sure you want to permanently remove quotation ${quotation.quotation_number}? This cannot be undone.`)) {
+      return;
+    }
+    try {
+      await api.quotations.delete(quotation.id);
+      alert(`Quotation ${quotation.quotation_number} removed successfully.`);
+      onNavigate('quotations');
+    } catch (err: any) {
+      alert(err.message || 'Failed to remove quotation.');
+    }
+  };
+
+  const handleAction = async (action: 'submit' | 'approve' | 'issue' | 'cancel' | 'confirm') => {
     try {
       if (action === 'submit') await api.quotations.submit(quotationId);
-      if (action === 'approve') await api.quotations.approve(quotationId);
+      if (action === 'approve' || action === 'confirm') await api.quotations.approve(quotationId);
       if (action === 'issue') await api.quotations.issue(quotationId);
       if (action === 'cancel') await api.quotations.cancel(quotationId);
       loadQuotation();
@@ -112,6 +128,17 @@ export const QuotationDetail: React.FC<QuotationDetailProps> = ({
               <span className="font-mono text-xl font-black text-slate-900">
                 {quotation.quotation_number}
               </span>
+              <span className={`text-[11px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
+                quotation.status === 'approved' || quotation.status === 'confirmed'
+                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                  : quotation.status === 'issued'
+                  ? 'bg-blue-100 text-blue-800 border border-blue-300'
+                  : quotation.status === 'draft'
+                  ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                  : 'bg-slate-100 text-slate-800 border border-slate-300'
+              }`}>
+                {quotation.status === 'approved' ? 'CONFIRMED' : quotation.status.toUpperCase()}
+              </span>
               {quotation.revision_number > 0 && (
                 <span className="bg-purple-100 text-purple-900 border border-purple-200 text-xs font-extrabold px-2 py-0.5 rounded">
                   Revision {quotation.revision_number}
@@ -129,7 +156,7 @@ export const QuotationDetail: React.FC<QuotationDetailProps> = ({
           {/* Edit Quotation */}
           {(!isIssued || quotation.status === 'draft' || quotation.status === 'pending_approval' || quotation.status === 'revised') && (
             <button
-              onClick={() => onNavigate('quotation_edit', { id: quotation.id })}
+              onClick={() => onNavigate('quotation_edit', { id: quotation.id, company_code: quotation.company_code || (quotation.company as any)?.company_code })}
               className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-2xs transition-colors"
               title="Edit quotation fields, items and pricing"
             >
@@ -175,6 +202,19 @@ export const QuotationDetail: React.FC<QuotationDetailProps> = ({
             <span>Download PDF</span>
           </button>
 
+          {/* Confirm Quotation Button */}
+          {(isDraft || isPending) && (
+            <button
+              type="button"
+              onClick={() => handleAction('confirm')}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl flex items-center gap-1.5 shadow-sm transition-all transform active:scale-95 cursor-pointer"
+              title="Confirm quotation and mark as approved"
+            >
+              <CheckCircle className="w-4 h-4 text-white" />
+              <span>Confirm Quotation</span>
+            </button>
+          )}
+
           {/* State Machine Transition Buttons */}
           {isDraft && (
             <button
@@ -186,13 +226,24 @@ export const QuotationDetail: React.FC<QuotationDetailProps> = ({
             </button>
           )}
 
-          {isPending && (
+          {(isPending || (isSuperAdmin && !isApproved && !isIssued)) && (
             <button
               onClick={() => handleAction('approve')}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl flex items-center gap-1.5 shadow-sm"
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
             >
               <Check className="w-4 h-4" />
               <span>Approve Quotation</span>
+            </button>
+          )}
+
+          {isSuperAdmin && (
+            <button
+              onClick={handleDelete}
+              className="px-4 py-2 bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-300 hover:border-rose-600 font-extrabold text-xs rounded-xl flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+              title="Permanently remove quotation (Super Admin Only)"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>Remove Record</span>
             </button>
           )}
 
@@ -395,13 +446,13 @@ export const QuotationDetail: React.FC<QuotationDetailProps> = ({
             {!quotation.is_interstate ? (
               <div className="grid grid-cols-2 gap-2 bg-slate-900/90 p-2.5 rounded-lg border border-slate-800 text-[11px]">
                 <div className="text-slate-400">
-                  CGST ({quotation.cgst_rate}%):<br/>
+                  CGST ({quotation.cgst_rate}%):<br />
                   <strong className="text-slate-200">
                     ₹ {Number(quotation.cgst_amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </strong>
                 </div>
                 <div className="text-slate-400 text-right">
-                  SGST ({quotation.sgst_rate}%):<br/>
+                  SGST ({quotation.sgst_rate}%):<br />
                   <strong className="text-slate-200">
                     ₹ {Number(quotation.sgst_amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </strong>

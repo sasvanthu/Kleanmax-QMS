@@ -4,29 +4,10 @@
     <meta charset="UTF-8">
     <title>Quotation {{ quotation.quotation_number }} - Klean Max Pro</title>
     <style>
-        {% if company_code == 'uniquepainters' %}
         @page {
             size: A4 portrait;
-            margin: 14mm 20mm 15mm 20mm;
-            @bottom-center {
-                content: "Unique Painters  --  Contact: 9500065813 / 9710148218 / 7338882034";
-                font-size: 8pt;
-                color: #64748b;
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-            }
+            margin: 0;
         }
-        {% else %}
-        @page {
-            size: A4 portrait;
-            margin: 8mm 12mm 12mm 12mm;
-            @bottom-center {
-                content: "Contact :- 7338882036 / 9710148218 -- Website :- www.kleanmaxpro.com";
-                font-size: 8pt;
-                color: #475569;
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-            }
-        }
-        {% endif %}
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -36,6 +17,81 @@
             font-size: 8.5pt;
             line-height: 1.35;
             background-color: #ffffff;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        @media screen {
+            body {
+                background-color: #f1f5f9;
+                padding: 20px 10px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+            .page-container, .unp-page {
+                background: #ffffff;
+                width: 210mm;
+                min-height: 297mm;
+                margin: 0 auto 24px auto;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+                box-sizing: border-box;
+                overflow: hidden;
+            }
+        }
+
+        @media print {
+            body {
+                background: #ffffff;
+                padding: 0;
+                margin: 0;
+            }
+            .page-container, .unp-page {
+                box-shadow: none !important;
+                margin: 0 !important;
+                width: 100% !important;
+            }
+        }
+
+        /* 100% Flush Edge-to-Edge Letterhead Header */
+        .banner-container, .unp-header {
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            line-height: 0 !important;
+            display: block !important;
+            border: none !important;
+            overflow: hidden !important;
+        }
+
+        .banner-img, .unp-banner-img {
+            width: 100% !important;
+            height: auto !important;
+            max-height: none !important;
+            object-fit: fill !important;
+            display: block !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: none !important;
+        }
+
+        /* Page 1 Body Padding */
+        .page-content, .unp-page-content {
+            padding: 6mm 14mm 10mm 14mm;
+            box-sizing: border-box;
+        }
+
+        /* Page 2 Body with Mandatory Page Break */
+        .page-2-body, .unp-page-2-body {
+            page-break-before: always;
+            break-before: page;
+            padding: 12mm 14mm 14mm 14mm;
+            box-sizing: border-box;
+        }
+
+        .page-break {
+            page-break-before: always;
+            break-before: page;
         }
 
         {% if company_code == 'uniquepainters' %}
@@ -79,39 +135,7 @@
         }
         {% endif %}
 
-        /* Top Letterhead Banner */
-        {% if company_code == 'kleanmax' %}
-        .banner-container {
-            width: calc(100% + 24mm);
-            margin: -8mm -12mm 16px -12mm;
-            padding: 0;
-            border-bottom: none;
-            text-align: center;
-            overflow: hidden;
-            display: block;
-        }
-        .banner-img {
-            width: 100%;
-            height: auto;
-            max-height: none;
-            display: block;
-            object-fit: fill;
-        }
-        {% else %}
-        .banner-container {
-            width: 100%;
-            text-align: center;
-            margin-bottom: 12px;
-            border-bottom: 2px solid #0f172a;
-            padding-bottom: 6px;
-        }
-
-        .banner-img {
-            width: 100%;
-            max-height: 110px;
-            object-fit: contain;
-        }
-        {% endif %}
+/* Legacy banner block removed for flush edge-to-edge layout */
 
         /* Quotation Title */
         .quote-title {
@@ -703,8 +727,9 @@
                 <td style="width: 60%; vertical-align: top;">
                     <div>Regards</div>
                     <div class="unp-sig-company">{{ company.company_name or 'Unique Painters' }}</div>
-                    <div class="unp-sig-name">{{ company.bank_account_name or 'K. SRIDHAR' }}</div>
-                    <div class="unp-sig-title">Operations Head</div>
+                    <div class="unp-sig-name">{{ quotation.signatory_name or company.signatory_name or 'Mr. Manikandan Balamurugan' }}</div>
+                    <div class="unp-sig-title">{{ quotation.signatory_designation or company.signatory_designation or 'Sales and Service Head' }}</div>
+                    <div style="font-size: 8pt; font-weight: 800; text-transform: uppercase; margin-top: 4px; color: #1e293b;">Authorised Signatory</div>
                     <div class="unp-sig-phone">{{ company.phone1 or company.phone2 or '9710148218 / 7338882034' }}</div>
                 </td>
                 <td style="width: 40%; text-align: right; vertical-align: bottom;">
@@ -751,15 +776,18 @@
     </div>
 {% else %}
 
-    <!-- 1. Top Letterhead Banner -->
+        <!-- 1. Top Letterhead Banner (100% Edge-to-Edge) -->
     <div class="banner-container">
         {% if header_base64 or banner_base64 %}
         <img src="data:image/png;base64,{{ header_base64 or banner_base64 }}" class="banner-img" alt="{{ company.company_name }} Letterhead Banner" />
         {% else %}
-        <div style="font-size: 16pt; font-weight: 900; color: #0f172a;">{{ company.company_name or 'KLEAN MAX PRO' }}</div>
-        <div style="font-size: 8pt; color: #64748b;">{{ company.address_line1 or '' }}{% if company.city %}, {{ company.city }}{% endif %}{% if company.pincode %} - {{ company.pincode }}{% endif %}</div>
+        <div style="font-size: 16pt; font-weight: 900; color: #0f172a; padding: 12px 16px;">{{ company.company_name or 'KLEAN MAX PRO' }}</div>
+        <div style="font-size: 8pt; color: #64748b; padding: 0 16px 12px 16px;">{{ company.address_line1 or '' }}{% if company.city %}, {{ company.city }}{% endif %}{% if company.pincode %} - {{ company.pincode }}{% endif %}</div>
         {% endif %}
     </div>
+
+    <!-- Page 1 Body Content -->
+    <div class="page-content">
 
     <!-- 2. Quotation Title -->
     <div class="quote-title">
@@ -1007,7 +1035,20 @@
     </table>
     {% endif %}
 
-    <!-- 6. Fixed After-Table Content -->
+    </div> <!-- End Page 1 Body Content -->
+
+    <!-- ================= PAGE 2: TERMS & CONDITIONS + BANK DETAILS ================= -->
+    <div class="page-2-body">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0f172a; padding-bottom: 4px; margin-bottom: 14px;">
+            <div style="font-weight: 900; font-size: 10.5pt; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px;">
+                {{ company.company_name or 'KLEAN MAX PRO' }}
+            </div>
+            <div style="font-size: 8pt; font-weight: 700; color: #64748b;">
+                Quotation No: {{ quotation.quotation_number }} • Page 2
+            </div>
+        </div>
+
+        <!-- 6. Fixed After-Table Content -->
     {% if 'RENTAL' in quotation.job_description|default('')|upper or quotation.quotation_type == 'rental' %}
     <!-- Rental Quotation After-Table -->
     {% if quotation.notes %}
@@ -1165,6 +1206,24 @@
         <div>• A/c No. : <strong>{{ company.bank_account_no or def_acc }}</strong></div>
         <div>• Branch & IFS Code: <strong>{{ company.bank_branch or def_branch }} & {{ company.bank_ifsc or def_ifsc }}</strong></div>
     </div>
+
+    <!-- 6. Signatory Block (Mr. Manikandan Balamurugan above Sales and Service Head) -->
+    <div style="margin-top: 18px; margin-bottom: 8px; page-break-inside: avoid; text-align: left;">
+        <div style="font-size: 8.5pt; color: #475569; font-weight: 700;">
+            For {{ company.company_name or 'Cleantech Services' }}
+        </div>
+        <div style="font-size: 11pt; font-weight: 900; color: #0f172a; margin-top: 14px;">
+            {{ quotation.signatory_name or company.signatory_name or 'Mr. Manikandan Balamurugan' }}
+        </div>
+        <div style="font-size: 8.5pt; font-weight: 700; color: {% if company_code == 'cleantech' %}#0d9488{% elif company_code == 'kleanmax' %}#0284c7{% elif company_code == 'uniquepainters' %}#7c3aed{% else %}#b45309{% endif %};">
+            {{ quotation.signatory_designation or company.signatory_designation or 'Sales and Service Head' }}
+        </div>
+        <div style="font-size: 8pt; color: #64748b; margin-top: 2px;">
+            {{ company.phone1 or company.phone2 or '+91 73388 82036' }}
+        </div>
+        <div style="font-size: 8pt; font-weight: 800; color: #1e293b; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px;">
+            Authorised Signatory
+        </div>
     </div>
 
     <!-- 7. Computer Notice & Footer -->
@@ -1179,9 +1238,11 @@
     </div>
     {% endif %}
 
+    </div> <!-- End Page 2 Body Content -->
+
     {% if footer_base64 %}
-    <div style="text-align: center; margin-top: 10px;">
-        <img src="data:image/png;base64,{{ footer_base64 }}" style="width: 100%; max-height: 55px; object-fit: contain;" alt="Footer banner" />
+    <div style="width: 100%; margin: 12px 0 0 0; padding: 0; line-height: 0; display: block;">
+        <img src="data:image/png;base64,{{ footer_base64 }}" style="width: 100%; height: auto; max-height: none; display: block; object-fit: fill; margin: 0; padding: 0;" alt="Footer banner" />
     </div>
     {% else %}
     <div class="fixed-footer-line">

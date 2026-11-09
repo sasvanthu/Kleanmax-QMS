@@ -5,7 +5,7 @@ import {
   Download, FileText, Printer, Save, CheckCircle2,
   Calendar, Layers, ShieldCheck, Sparkles, Plus, Trash2, ArrowLeft,
   Search, Lock, Eye, Check, ChevronDown, Building, Phone, Mail, MapPin,
-  RefreshCw, Info, HelpCircle, Image as ImageIcon, X, Upload
+  RefreshCw, Info, HelpCircle, Image as ImageIcon, X, Upload, Edit3,
 } from 'lucide-react';
 import { uploadImageToSupabase } from '../services/supabase';
 
@@ -25,6 +25,7 @@ interface KleanmaxProAreaQuotationProps {
   currentUser: User | null;
   onNavigate: (page: string, params?: any) => void;
   onOpenPreview: (quotationId: string) => void;
+  quotationId?: string | null;
 }
 
 const HEADING_OPTIONS = [
@@ -216,6 +217,7 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
   currentUser,
   onNavigate,
   onOpenPreview,
+  quotationId,
 }) => {
   // 1. Heading Option & Text (Editable)
   const [selectedHeadingOption, setSelectedHeadingOption] = useState<string>('MONTHLY RENTAL QUOTATION');
@@ -238,6 +240,20 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
   // 4. Content Blocks
   const [aboutUs, setAboutUs] = useState<string>(DEFAULT_ABOUT_US);
   const [notes, setNotes] = useState<string>(DEFAULT_NOTES);
+
+  // Terms & Conditions (Directly Editable)
+  const [terms, setTerms] = useState<string[]>(TERMS_AND_CONDITIONS);
+  const [editTermsDetails, setEditTermsDetails] = useState<boolean>(false);
+
+  // Company Bank & Signatory (Directly Editable)
+  const [bankAccountName, setBankAccountName] = useState<string>('KLEAN MAX PRO');
+  const [bankName, setBankName] = useState<string>('ICICI BANK KMP');
+  const [bankAccountNo, setBankAccountNo] = useState<string>('027505010327');
+  const [bankBranch, setBankBranch] = useState<string>('PORUR');
+  const [bankIfsc, setBankIfsc] = useState<string>('ICIC0000275');
+  const [signatoryName, setSignatoryName] = useState<string>('Mr. Manikandan Balamurugan');
+  const [signatoryDesignation, setSignatoryDesignation] = useState<string>('Sales and Service Head');
+  const [editCompanyDetails, setEditCompanyDetails] = useState<boolean>(false);
 
   // 5. Products & Items Table (With Machine Images)
   const [items, setItems] = useState<QuotationProductItem[]>([
@@ -302,7 +318,9 @@ Recovery / Dirty Water Tank: 100 L`,
 
   // Status & Feedback
   const [saving, setSaving] = useState<boolean>(false);
-  const [savedQuoteId, setSavedQuoteId] = useState<string | null>(null);
+  const [savedQuoteId, setSavedQuoteId] = useState<string | null>(quotationId || null);
+  const [isEditMode, setIsEditMode] = useState<boolean>(!!quotationId);
+  const [loadingEdit, setLoadingEdit] = useState<boolean>(!!quotationId);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [inPagePreviewOpen, setInPagePreviewOpen] = useState<boolean>(false);
 
@@ -310,7 +328,7 @@ Recovery / Dirty Water Tank: 100 L`,
 
   useEffect(() => {
     loadInitialData();
-  }, []);
+  }, [quotationId]);
 
   // Close search dropdown on click outside
   useEffect(() => {
@@ -325,17 +343,7 @@ Recovery / Dirty Water Tank: 100 L`,
 
   const loadInitialData = async () => {
     try {
-      // 1. Fetch Next Quotation Number for Kleanmax Pro
-      try {
-        const nextNumRes = await api.quotations.getNextNumber('kleanmaxpro', 'short');
-        if (nextNumRes && nextNumRes.next_number) {
-          setQuotationNo(nextNumRes.next_number);
-        }
-      } catch (e) {
-        console.warn('Fallback quotation number:', e);
-      }
-
-      // 2. Fetch Customers & Company Details
+      // 1. Fetch Customers & Company Details
       const [custs, comp, services] = await Promise.all([
         api.customers.list(),
         api.company.get('kleanmaxpro'),
@@ -355,8 +363,90 @@ Recovery / Dirty Water Tank: 100 L`,
       setAvailableProducts(combinedList);
       setSearchResults(combinedList);
 
-      if (custs.length > 0) {
-        setSelectedCustomerId(custs[0].id);
+      if (quotationId) {
+        setLoadingEdit(true);
+        try {
+          const q = await api.quotations.get(quotationId);
+          if (q) {
+            setSavedQuoteId(q.id);
+            setIsEditMode(true);
+            if (q.quotation_number) setQuotationNo(q.quotation_number);
+            if (q.quotation_date) setQuotationDate(fromISODate(q.quotation_date));
+            if (q.job_description) {
+              setQuotationTitle(q.job_description);
+              setSelectedHeadingOption(q.job_description);
+            }
+            if (q.notes) setNotes(q.notes);
+
+            let snap: any = q.snapshot_json;
+            if (typeof snap === 'string') {
+              try { snap = JSON.parse(snap); } catch (e) {}
+            }
+
+            if (snap && typeof snap === 'object') {
+              if (snap.about_us) setAboutUs(snap.about_us);
+              if (snap.notes_text) setNotes(snap.notes_text);
+              if (snap.quotation_title) {
+                setQuotationTitle(snap.quotation_title);
+                setSelectedHeadingOption(snap.quotation_title);
+              }
+            }
+
+            if (q.customer) {
+              setCustomerName(q.customer.company_name || '');
+              setAddressLine1(q.customer.billing_address_line1 || '');
+              setAddressLine2(`${q.customer.billing_city || ''} ${q.customer.billing_pincode ? `- ${q.customer.billing_pincode}` : ''}`.trim());
+              setContactPerson(q.customer.contact_person || '');
+              setPhone(q.customer.phone || '');
+              setEmail(q.customer.email || '');
+              setGstin(q.customer.gstin || '');
+              setSelectedCustomerId(q.customer.id);
+            }
+
+            if (Array.isArray(q.items) && q.items.length > 0) {
+              const snapItemMap = new Map<string, any>();
+              if (snap && Array.isArray(snap.items)) {
+                snap.items.forEach((si: any) => snapItemMap.set(si.item_name || si.id, si));
+              }
+
+              const parsedItems: QuotationProductItem[] = q.items.map((it: any, idx: number) => {
+                const sItem = snapItemMap.get(it.item_name) || snapItemMap.get(it.id);
+                return {
+                  id: it.id || `item_${idx}_${Date.now()}`,
+                  item_name: it.item_name || '',
+                  image_url: sItem?.image_url || q.image_url || undefined,
+                  description: it.description || '',
+                  days: Number(it.quantity) || 1,
+                  uom: it.uom || 'MONTHLY',
+                  rate: Number(it.unit_price || it.applied_rate || 0),
+                  amount: Number(it.line_total || 0),
+                };
+              });
+              setItems(parsedItems);
+            }
+
+            setApplyTax(Number(q.tax_rate || 0) > 0 || Number(q.total_tax || 0) > 0);
+            if (q.tax_rate) setTaxPercent(Number(q.tax_rate));
+          }
+        } catch (e) {
+          console.error('Failed to load existing Kleanmax Pro quote:', e);
+        } finally {
+          setLoadingEdit(false);
+        }
+      } else {
+        // Fetch Next Quotation Number for Kleanmax Pro
+        try {
+          const nextNumRes = await api.quotations.getNextNumber('kleanmaxpro', 'short');
+          if (nextNumRes && nextNumRes.next_number) {
+            setQuotationNo(nextNumRes.next_number);
+          }
+        } catch (e) {
+          console.warn('Fallback quotation number:', e);
+        }
+
+        if (custs.length > 0) {
+          setSelectedCustomerId(custs[0].id);
+        }
       }
     } catch (err) {
       console.error('Failed to load initial Kleanmax Pro data:', err);
@@ -601,7 +691,9 @@ Recovery / Dirty Water Tank: 100 L`,
         quotation_date: toISODate(quotationDate),
         job_description: quotationTitle,
         notes: notes,
-        terms_and_conditions: TERMS_AND_CONDITIONS.join('\n'),
+        terms_and_conditions: terms.join('\n'),
+        signatory_name: signatoryName,
+        signatory_designation: signatoryDesignation,
         items: payloadItems,
         sections: [],
         tax_rate: applyTax ? taxPercent : 0,
@@ -609,16 +701,23 @@ Recovery / Dirty Water Tank: 100 L`,
         discount_value: 0,
         image_url: firstUploadedImage,
         snapshot_json: snapshotData,
+        client_name: customerName,
+        client_address: addressLine1,
+        client_phone: phone,
+        client_gstin: gstin,
+        attention_person: contactPerson,
       };
 
       let res;
       if (savedQuoteId) {
         res = await api.quotations.update(savedQuoteId, payload);
+        setToastMsg(`Quotation ${res.quotation_number} updated and saved to DB successfully!`);
       } else {
         res = await api.quotations.create(payload);
         setSavedQuoteId(res.id);
+        setIsEditMode(true);
+        setToastMsg(`Quotation ${res.quotation_number} saved to DB successfully!`);
       }
-      setToastMsg(`Quotation ${res.quotation_number} saved successfully!`);
       return res.id;
     } catch (err: any) {
       console.error('Save quotation error:', err);
@@ -700,11 +799,13 @@ Recovery / Dirty Water Tank: 100 L`,
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
               <h1 className="text-base font-black text-slate-900 tracking-tight">
-                Kleanmax Pro Quotation Generator
+                {isEditMode ? 'Kleanmax Pro Quotation Editor' : 'Kleanmax Pro Quotation Generator'}
               </h1>
             </div>
             <p className="text-[11px] text-slate-500">
-              Interactive proposal builder matching authentic Kleanmax Pro manual quotations.
+              {isEditMode
+                ? `Editing official quotation ${quotationNo} with live authentic letterhead preview.`
+                : 'Interactive proposal builder matching authentic Kleanmax Pro manual quotations.'}
             </p>
           </div>
         </div>
@@ -753,10 +854,49 @@ Recovery / Dirty Water Tank: 100 L`,
             className="px-4 py-2 bg-[#FED10C] hover:bg-[#E5BC07] text-slate-950 font-black text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all transform active:scale-95"
           >
             <Save className="w-4 h-4" />
-            <span>{saving ? 'Saving...' : 'Save to DB'}</span>
+            <span>{saving ? 'Saving...' : (isEditMode ? 'Update in DB' : 'Save to DB')}</span>
           </button>
         </div>
       </div>
+
+      {/* Editing State Banner */}
+      {isEditMode && (
+        <div className="bg-amber-50 border border-amber-300 text-amber-950 px-4 py-3 rounded-2xl shadow-xs flex flex-wrap items-center justify-between gap-3 animate-fade-in">
+          <div className="flex items-center gap-2.5">
+            <span className="px-2 py-0.5 bg-amber-500 text-slate-950 rounded text-[10px] font-black uppercase tracking-wider">
+              EDITING MODE
+            </span>
+            <span className="text-xs font-bold text-amber-900">
+              Quotation: <strong className="font-mono text-amber-950">{quotationNo}</strong> &bull; Client: <strong>{customerName || 'Selected Client'}</strong>
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onNavigate('kleanmaxpro_quotes')}
+              className="px-2.5 py-1 text-xs font-bold text-amber-800 hover:text-amber-950 hover:bg-amber-100/60 rounded-lg transition-colors"
+            >
+              Back to Quotes
+            </button>
+            <button
+              onClick={() => {
+                setSavedQuoteId(null);
+                setIsEditMode(false);
+                onNavigate('kleanmaxpro_area');
+              }}
+              className="px-3 py-1 bg-white border border-amber-300 hover:bg-amber-100 text-amber-900 text-xs font-extrabold rounded-lg shadow-2xs transition-all"
+            >
+              + Create New Quotation
+            </button>
+          </div>
+        </div>
+      )}
+
+      {loadingEdit && (
+        <div className="bg-blue-50 border border-blue-200 text-blue-900 p-3 rounded-xl text-xs font-bold flex items-center gap-2">
+          <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-600" />
+          <span>Loading quotation {quotationId} details from database...</span>
+        </div>
+      )}
 
       {/* Main Quotation Document Sheet (A4 Letterhead Flush Width) */}
       <div className="bg-white border-2 border-slate-300 rounded-3xl shadow-xl overflow-hidden text-slate-800">
@@ -1296,17 +1436,73 @@ Recovery / Dirty Water Tank: 100 L`,
             </ul>
           </div>
 
-          {/* 3. Terms & Conditions */}
-          <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-2">
-            <div className="font-black text-xs text-slate-900 uppercase tracking-wide flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-amber-600" />
-              <span>Terms & Conditions</span>
+          {/* 3. Terms & Conditions (Directly Editable) */}
+          <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="font-black text-xs text-slate-900 uppercase tracking-wide flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-amber-600" />
+                <span>Terms & Conditions</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditTermsDetails(!editTermsDetails)}
+                className="text-xs font-bold text-amber-700 hover:text-amber-900 flex items-center gap-1 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200"
+              >
+                <Edit3 className="w-3 h-3" />
+                <span>{editTermsDetails ? 'Done Editing' : 'Edit Terms'}</span>
+              </button>
             </div>
-            <ul className="space-y-1.5 text-xs text-slate-700 list-disc list-inside">
-              {TERMS_AND_CONDITIONS.map((term, i) => (
-                <li key={i} className="leading-snug">{term}</li>
-              ))}
-            </ul>
+
+            {editTermsDetails ? (
+              <div className="space-y-2">
+                {terms.map((term, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-400 w-5 text-right">{index + 1}.</span>
+                    <input
+                      type="text"
+                      value={term}
+                      onChange={e => {
+                        const updated = [...terms];
+                        updated[index] = e.target.value;
+                        setTerms(updated);
+                      }}
+                      className="flex-1 bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-800 focus:outline-none focus:border-amber-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setTerms(terms.filter((_, i) => i !== index))}
+                      className="text-slate-400 hover:text-red-500 p-1 rounded"
+                      title="Delete term"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+                <div className="flex items-center gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setTerms([...terms, ''])}
+                    className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold flex items-center gap-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Term</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTerms(TERMS_AND_CONDITIONS)}
+                    className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold"
+                  >
+                    Reset to Defaults
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <ul className="space-y-1.5 text-xs text-slate-700 list-disc list-inside">
+                {terms.map((term, i) => (
+                  <li key={i} className="leading-snug">{term}</li>
+                ))}
+              </ul>
+            )}
           </div>
 
           {/* 4. Other Services */}
@@ -1324,28 +1520,100 @@ Recovery / Dirty Water Tank: 100 L`,
             </div>
           </div>
 
-          {/* 5. Company's Bank Details & Signatory ON THE LEFT LIKE A LETTER */}
+          {/* 5. Company's Bank Details & Signatory (Directly Editable) */}
           <div className="bg-slate-900 text-white p-6 rounded-2xl border border-slate-800 space-y-5">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2">
-                <Lock className="w-4 h-4 text-amber-400" />
+                <Building className="w-4 h-4 text-amber-400" />
                 <span className="font-black text-xs tracking-wider uppercase text-amber-400">
-                  Company's Bank Details & Signatory (Locked by Unified Admin)
+                  Company's Bank Details & Signatory
                 </span>
               </div>
-              <span className="text-[10px] text-slate-400">
-                To edit bank details, go to <strong>Unified Admin → Manage 4 Companies</strong>
-              </span>
+              <button
+                type="button"
+                onClick={() => setEditCompanyDetails(!editCompanyDetails)}
+                className="text-xs font-bold text-amber-300 hover:text-white flex items-center gap-1 bg-slate-800 hover:bg-slate-700 px-3 py-1 rounded-lg border border-slate-700 transition-colors"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                <span>{editCompanyDetails ? 'Done Editing' : 'Edit Company Details'}</span>
+              </button>
             </div>
 
-            {/* Bank Details Block */}
-            <div className="space-y-1.5 text-xs text-slate-200">
-              <div className="font-black text-sm text-white mb-2">Company's Bank Details</div>
-              <div>• A/c Holder's Name : <strong className="text-white">{company?.bank_account_name || company?.company_name || 'KLEAN MAX PRO'}</strong></div>
-              <div>• Bank Name : <strong className="text-white">{company?.bank_name || 'ICICI BANK KMP'}</strong></div>
-              <div>• A/c No. : <strong className="text-white font-mono">{company?.bank_account_no || '027505010327'}</strong></div>
-              <div>• Branch & IFS Code: <strong className="text-white font-mono">{company?.bank_branch || 'PORUR'} & {company?.bank_ifsc || 'ICIC0000275'}</strong></div>
-            </div>
+            {editCompanyDetails ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                <div className="space-y-1">
+                  <label className="text-slate-400 font-bold">A/C Holder Name</label>
+                  <input
+                    type="text"
+                    value={bankAccountName}
+                    onChange={(e) => setBankAccountName(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white font-bold"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-slate-400 font-bold">Bank Name</label>
+                  <input
+                    type="text"
+                    value={bankName}
+                    onChange={(e) => setBankName(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-slate-400 font-bold">Account Number</label>
+                  <input
+                    type="text"
+                    value={bankAccountNo}
+                    onChange={(e) => setBankAccountNo(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white font-mono"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-slate-400 font-bold">IFS Code</label>
+                  <input
+                    type="text"
+                    value={bankIfsc}
+                    onChange={(e) => setBankIfsc(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white font-mono"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-slate-400 font-bold">Branch Name</label>
+                  <input
+                    type="text"
+                    value={bankBranch}
+                    onChange={(e) => setBankBranch(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-amber-400 font-bold">Authorised Signatory Name</label>
+                  <input
+                    type="text"
+                    value={signatoryName}
+                    onChange={(e) => setSignatoryName(e.target.value)}
+                    className="w-full bg-slate-800 border border-amber-500 rounded-lg p-2 text-white font-bold"
+                  />
+                </div>
+                <div className="space-y-1 sm:col-span-2">
+                  <label className="text-amber-400 font-bold">Designation</label>
+                  <input
+                    type="text"
+                    value={signatoryDesignation}
+                    onChange={(e) => setSignatoryDesignation(e.target.value)}
+                    className="w-full bg-slate-800 border border-amber-500 rounded-lg p-2 text-white font-medium"
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-1.5 text-xs text-slate-200">
+                <div className="font-black text-sm text-white mb-2">Company's Bank Details</div>
+                <div>• A/c Holder's Name : <strong className="text-white">{bankAccountName}</strong></div>
+                <div>• Bank Name : <strong className="text-white">{bankName}</strong></div>
+                <div>• A/c No. : <strong className="text-white font-mono">{bankAccountNo}</strong></div>
+                <div>• Branch & IFS Code: <strong className="text-white font-mono">{bankBranch} & {bankIfsc}</strong></div>
+              </div>
+            )}
 
             {/* Partner Statement */}
             <div className="text-xs font-semibold text-slate-300 border-t border-slate-800 pt-3">
@@ -1357,11 +1625,11 @@ Recovery / Dirty Water Tank: 100 L`,
               <div className="text-xs font-bold text-slate-300">
                 For {company?.company_name || 'Klean max pro'}
               </div>
-              <div className="text-base font-black text-white pt-3">
-                {company?.signatory_name || 'Mr. Manikandan'}
+              <div className="text-base font-black text-white pt-2">
+                {signatoryName}
               </div>
-              <div className="text-xs text-amber-400 font-semibold">
-                {company?.signatory_designation || 'Service Head'}
+              <div className="text-xs text-amber-400 font-bold">
+                {signatoryDesignation}
               </div>
               <div className="text-xs text-slate-300">
                 {company?.phone || company?.phone1 || '+ 91 7338882036'}
@@ -1517,23 +1785,23 @@ Recovery / Dirty Water Tank: 100 L`,
                 <div className="text-xs space-y-1">
                   <div className="font-bold">Terms & Conditions:</div>
                   <ul className="list-disc list-inside text-slate-700">
-                    {TERMS_AND_CONDITIONS.map((t, i) => <li key={i}>{t}</li>)}
+                    {terms.map((t, i) => <li key={i}>{t}</li>)}
                   </ul>
                 </div>
 
                 <div className="text-xs bg-slate-50 p-3 rounded-lg border border-slate-200">
                   <div className="font-bold">Company's Bank Details</div>
-                  <div>• A/c Holder's Name : KLEAN MAX PRO</div>
-                  <div>• Bank Name : ICICI BANK KMP</div>
-                  <div>• A/c No. : 027505010327</div>
-                  <div>• Branch & IFS Code: PORUR & ICIC0000275</div>
+                  <div>• A/c Holder's Name : {bankAccountName}</div>
+                  <div>• Bank Name : {bankName}</div>
+                  <div>• A/c No. : {bankAccountNo}</div>
+                  <div>• Branch & IFS Code: {bankBranch} & {bankIfsc}</div>
                 </div>
 
-                {/* Signatory on LEFT */}
+                {/* Signatory on LEFT (Mr. Manikandan Balamurugan above Sales and Service Head) */}
                 <div className="text-left text-xs pt-2">
                   <div className="font-bold">For Klean max pro</div>
-                  <div className="font-black text-sm pt-4">Mr. Manikandan</div>
-                  <div className="text-slate-600">Service Head</div>
+                  <div className="font-black text-sm pt-2 text-slate-950">{signatoryName}</div>
+                  <div className="text-amber-700 font-bold text-xs">{signatoryDesignation}</div>
                   <div className="text-slate-600">+ 91 7338882036</div>
                   <div className="font-bold pt-1">Authorised Signatory</div>
                 </div>

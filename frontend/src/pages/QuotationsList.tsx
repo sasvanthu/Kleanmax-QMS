@@ -4,7 +4,8 @@ import { api } from '../services/api';
 import {
   FileText, Search, PlusCircle, Filter, Eye, Printer, Download,
   CheckCircle2, Send, RotateCcw, AlertTriangle, ChevronRight, X,
-  Wrench, ShoppingCart, Layers, Edit, Trash2, ShieldAlert
+  Wrench, ShoppingCart, Layers, Edit, Trash2, ShieldAlert,
+  Check, Lock, ShieldCheck, CheckSquare, Square
 } from 'lucide-react';
 
 interface QuotationsListProps {
@@ -25,6 +26,11 @@ export const QuotationsList: React.FC<QuotationsListProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [brandFilter, setBrandFilter] = useState<'all' | 'kleanmaxpro' | 'kleanmax' | 'uniquepainters' | 'cleantech'>(defaultBrandFilter);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+  const [toastMsg, setToastMsg] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  const isSuperAdmin = currentUser?.role === 'admin' || currentUser?.role === 'super_admin' || !currentUser?.company_code || currentUser?.company_code === 'all';
 
   useEffect(() => {
     setBrandFilter(defaultBrandFilter);
@@ -49,27 +55,69 @@ export const QuotationsList: React.FC<QuotationsListProps> = ({
     }
   };
 
-  const handleAction = async (id: string, action: 'submit' | 'approve' | 'issue' | 'cancel') => {
+  const handleApprove = async (id: string, quotationNumber?: string) => {
+    setActionLoadingId(id);
     try {
-      if (action === 'submit') await api.quotations.submit(id);
-      if (action === 'approve') await api.quotations.approve(id);
-      if (action === 'issue') await api.quotations.issue(id);
-      if (action === 'cancel') await api.quotations.cancel(id);
+      await api.quotations.approve(id);
+      setToastMsg({ type: 'success', message: `Quotation ${quotationNumber || id} approved successfully!` });
+      setTimeout(() => setToastMsg(null), 4000);
       loadQuotations();
     } catch (err: any) {
-      alert(err.message || `Failed to ${action} quotation`);
+      alert(err.message || 'Failed to approve quotation');
+    } finally {
+      setActionLoadingId(null);
     }
   };
 
   const handleDelete = async (id: string, quotationNumber: string) => {
-    if (!window.confirm(`Are you sure you want to delete quotation ${quotationNumber}? This action is permanent.`)) {
+    if (!window.confirm(`Are you sure you want to permanently remove quotation ${quotationNumber}? This action cannot be undone.`)) {
       return;
     }
+    setActionLoadingId(id);
     try {
       await api.quotations.delete(id);
       setQuotations(prev => prev.filter(q => q.id !== id));
+      setSelectedIds(prev => prev.filter(selectedId => selectedId !== id));
+      setToastMsg({ type: 'success', message: `Quotation ${quotationNumber} removed from database!` });
+      setTimeout(() => setToastMsg(null), 4000);
     } catch (err: any) {
-      alert(err.message || 'Failed to delete quotation. Super Admin privileges required.');
+      alert(err.message || 'Failed to remove quotation. Super Admin privileges required.');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleBulkApprove = async () => {
+    if (selectedIds.length === 0) return;
+    if (!window.confirm(`Approve all ${selectedIds.length} selected quotations?`)) return;
+    setActionLoadingId('bulk');
+    try {
+      await Promise.all(selectedIds.map(id => api.quotations.approve(id).catch(e => console.warn(e))));
+      setToastMsg({ type: 'success', message: `${selectedIds.length} quotation(s) approved successfully!` });
+      setTimeout(() => setToastMsg(null), 4000);
+      setSelectedIds([]);
+      loadQuotations();
+    } catch (err: any) {
+      alert(err.message || 'Failed to approve selected quotations');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleBulkRemove = async () => {
+    if (selectedIds.length === 0) return;
+    if (!window.confirm(`Are you sure you want to permanently remove ${selectedIds.length} selected quotations from the database? This cannot be undone.`)) return;
+    setActionLoadingId('bulk');
+    try {
+      await Promise.all(selectedIds.map(id => api.quotations.delete(id).catch(e => console.warn(e))));
+      setToastMsg({ type: 'success', message: `${selectedIds.length} quotation(s) permanently removed from database!` });
+      setTimeout(() => setToastMsg(null), 4000);
+      setSelectedIds([]);
+      loadQuotations();
+    } catch (err: any) {
+      alert(err.message || 'Failed to remove selected quotations');
+    } finally {
+      setActionLoadingId(null);
     }
   };
 
@@ -245,6 +293,53 @@ export const QuotationsList: React.FC<QuotationsListProps> = ({
         </div>
       </div>
 
+      {/* Toast Notification */}
+      {toastMsg && (
+        <div className={`p-3 rounded-xl text-xs font-bold flex items-center justify-between shadow-xs animate-fade-in ${
+          toastMsg.type === 'success' ? 'bg-emerald-50 text-emerald-900 border border-emerald-300' : 'bg-rose-50 text-rose-900 border border-rose-300'
+        }`}>
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            <span>{toastMsg.message}</span>
+          </div>
+          <button onClick={() => setToastMsg(null)} className="text-slate-400 hover:text-slate-600 text-sm font-bold">×</button>
+        </div>
+      )}
+
+      {/* Super Admin Bulk Actions Bar */}
+      {isSuperAdmin && selectedIds.length > 0 && (
+        <div className="bg-slate-900 text-white px-5 py-3 rounded-2xl flex flex-wrap items-center justify-between gap-3 shadow-xl border border-slate-700 animate-fade-in">
+          <div className="flex items-center gap-2.5 text-xs font-bold">
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
+            <span><strong className="text-amber-400 text-sm">{selectedIds.length}</strong> quotation(s) selected for Super Admin action:</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleBulkApprove}
+              disabled={actionLoadingId === 'bulk'}
+              className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              <span>{actionLoadingId === 'bulk' ? 'Processing...' : `Approve Selected (${selectedIds.length})`}</span>
+            </button>
+            <button
+              onClick={handleBulkRemove}
+              disabled={actionLoadingId === 'bulk'}
+              className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-black text-xs rounded-xl flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>{actionLoadingId === 'bulk' ? 'Processing...' : `Remove Selected (${selectedIds.length})`}</span>
+            </button>
+            <button
+              onClick={() => setSelectedIds([])}
+              className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl transition-colors cursor-pointer"
+            >
+              Deselect All
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Quotations Table */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
         {loading ? (
@@ -264,13 +359,30 @@ export const QuotationsList: React.FC<QuotationsListProps> = ({
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 text-slate-700 uppercase font-bold text-[10px] border-b border-slate-200">
                 <tr>
+                  {isSuperAdmin && (
+                    <th className="p-3.5 text-center w-10">
+                      <input
+                        type="checkbox"
+                        checked={filteredQuotations.length > 0 && selectedIds.length === filteredQuotations.length}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedIds(filteredQuotations.map(q => q.id));
+                          } else {
+                            setSelectedIds([]);
+                          }
+                        }}
+                        className="rounded text-amber-500 focus:ring-amber-400 w-4 h-4 cursor-pointer"
+                        title="Select All Quotations"
+                      />
+                    </th>
+                  )}
                   <th className="p-3.5">Quotation #</th>
                   <th className="p-3.5">Division</th>
                   <th className="p-3.5">Customer</th>
                   <th className="p-3.5">Date</th>
                   <th className="p-3.5 text-right">Amount (₹)</th>
                   <th className="p-3.5 text-center">Status</th>
-                  <th className="p-3.5 text-center">Actions</th>
+                  <th className="p-3.5 text-center">Super Admin & Document Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -280,7 +392,23 @@ export const QuotationsList: React.FC<QuotationsListProps> = ({
                     (q.job_description && q.job_description.includes('Kleanmax Pro'));
 
                   return (
-                    <tr key={q.id} className="hover:bg-slate-50/80 transition-colors">
+                    <tr key={q.id} className={`hover:bg-slate-50/80 transition-colors ${selectedIds.includes(q.id) ? 'bg-amber-50/50' : ''}`}>
+                      {isSuperAdmin && (
+                        <td className="p-3.5 text-center">
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.includes(q.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedIds(prev => [...prev, q.id]);
+                              } else {
+                                setSelectedIds(prev => prev.filter(id => id !== q.id));
+                              }
+                            }}
+                            className="rounded text-amber-500 focus:ring-amber-400 w-4 h-4 cursor-pointer"
+                          />
+                        </td>
+                      )}
                       <td className="p-3.5 font-mono font-bold text-slate-900">
                         {q.quotation_number}
                         {q.revision_number > 0 && (
@@ -356,9 +484,45 @@ export const QuotationsList: React.FC<QuotationsListProps> = ({
 
                       <td className="p-3.5 text-center whitespace-nowrap">
                         <div className="flex items-center justify-center gap-1.5">
+                          {/* Super Admin APPROVE Button */}
+                          {isSuperAdmin && (
+                            q.status !== 'approved' && q.status !== 'issued' ? (
+                              <button
+                                onClick={() => handleApprove(q.id, q.quotation_number)}
+                                disabled={actionLoadingId === q.id}
+                                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[10px] rounded-lg flex items-center gap-1 shadow-xs transition-colors cursor-pointer"
+                                title="Approve quotation"
+                              >
+                                <CheckCircle2 className="w-3 h-3 text-white" />
+                                <span>{actionLoadingId === q.id ? 'Approving...' : 'Approve'}</span>
+                              </button>
+                            ) : (
+                              <span
+                                className="px-2 py-0.5 bg-emerald-50 text-emerald-800 border border-emerald-300 font-extrabold text-[10px] rounded-md flex items-center gap-1"
+                                title="Quotation Approved"
+                              >
+                                <Check className="w-3 h-3 text-emerald-600" />
+                                <span>Approved</span>
+                              </span>
+                            )
+                          )}
+
+                          {/* Super Admin REMOVE Button */}
+                          {isSuperAdmin && (
+                            <button
+                              onClick={() => handleDelete(q.id, q.quotation_number)}
+                              disabled={actionLoadingId === q.id}
+                              className="px-2.5 py-1 bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-300 hover:border-rose-600 font-black text-[10px] rounded-lg flex items-center gap-1 transition-all shadow-2xs cursor-pointer"
+                              title="Permanently remove quotation"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              <span>Remove</span>
+                            </button>
+                          )}
+
                           {/* Edit Button */}
                           <button
-                            onClick={() => onNavigate('quotation_edit', { id: q.id })}
+                            onClick={() => onNavigate('quotation_edit', { id: q.id, company_code: q.company_code || (q.company as any)?.company_code })}
                             className="p-1 hover:bg-slate-200 text-slate-600 hover:text-blue-600 rounded transition-colors"
                             title="Edit Quotation"
                           >
@@ -401,17 +565,6 @@ export const QuotationsList: React.FC<QuotationsListProps> = ({
                           >
                             View
                           </button>
-
-                          {/* Super Admin Delete Option ONLY */}
-                          {currentUser?.role === 'admin' && (
-                            <button
-                              onClick={() => handleDelete(q.id, q.quotation_number)}
-                              className="p-1 hover:bg-rose-100 text-rose-500 hover:text-rose-700 rounded transition-colors"
-                              title="Delete Quotation (Super Admin Only)"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          )}
                         </div>
                       </td>
                     </tr>

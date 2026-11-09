@@ -22,6 +22,7 @@ interface UniquePaintersGeneratorProps {
   currentUser: User | null;
   onNavigate: (page: string, params?: any) => void;
   onOpenPreview: (quotationId: string) => void;
+  quotationId?: string | null;
 }
 
 const HEADING_OPTIONS = [
@@ -153,6 +154,7 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
   currentUser,
   onNavigate,
   onOpenPreview,
+  quotationId,
 }) => {
   // 1. Heading Option & Title (Directly Editable)
   const [selectedHeadingOption, setSelectedHeadingOption] = useState<string>('SURFACE COATING & PAINTING PROPOSAL');
@@ -208,8 +210,8 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
 
   // Signatory (Dynamic from DB Company Settings)
   const [sigCompany, setSigCompany] = useState<string>('Unique Painters');
-  const [sigName, setSigName] = useState<string>('K. SRIDHAR');
-  const [sigTitle, setSigTitle] = useState<string>('Operations Head');
+  const [sigName, setSigName] = useState<string>('Mr. Manikandan Balamurugan');
+  const [sigTitle, setSigTitle] = useState<string>('Sales and Service Head');
   const [sigPhones, setSigPhones] = useState<string>('9710148218 / 7338882034');
   const [company, setCompany] = useState<CompanySetting | null>(null);
 
@@ -222,13 +224,15 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
 
   // State & Feedback
   const [saving, setSaving] = useState<boolean>(false);
-  const [savedQuoteId, setSavedQuoteId] = useState<string | null>(null);
+  const [savedQuoteId, setSavedQuoteId] = useState<string | null>(quotationId || null);
+  const [isEditMode, setIsEditMode] = useState<boolean>(!!quotationId);
+  const [loadingEdit, setLoadingEdit] = useState<boolean>(!!quotationId);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [inPagePreviewOpen, setInPagePreviewOpen] = useState<boolean>(false);
 
   useEffect(() => {
     loadInitialData();
-  }, []);
+  }, [quotationId]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -242,15 +246,6 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
 
   const loadInitialData = async () => {
     try {
-      try {
-        const nextNumRes = await api.quotations.getNextNumber('uniquepainters', 'short');
-        if (nextNumRes && nextNumRes.next_number) {
-          setQuotationNo(nextNumRes.next_number);
-        }
-      } catch (e) {
-        console.warn('Fallback sequence number:', e);
-      }
-
       const [comp, custs, services] = await Promise.all([
         api.company.get('uniquepainters').catch(() => null),
         api.customers.list().catch(() => []),
@@ -260,7 +255,9 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
       if (comp) {
         setCompany(comp);
         if (comp.company_name) setSigCompany(comp.company_name);
-        if (comp.bank_account_name) setSigName(comp.bank_account_name);
+        if (comp.signatory_name) setSigName(comp.signatory_name);
+        else if (comp.bank_account_name) setSigName(comp.bank_account_name);
+        if (comp.signatory_designation) setSigTitle(comp.signatory_designation);
         const phones = [comp.phone1, comp.phone2].filter(Boolean).join(' / ');
         if (phones) {
           setSigPhones(phones);
@@ -282,6 +279,106 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
       const combinedList = Array.from(combinedMap.values());
       setAvailableProducts(combinedList);
       setSearchResults(combinedList);
+
+      // If quotationId is provided, load existing quotation
+      if (quotationId) {
+        setLoadingEdit(true);
+        try {
+          const q = await api.quotations.get(quotationId);
+          if (q) {
+            setSavedQuoteId(q.id);
+            setIsEditMode(true);
+            if (q.quotation_number) setQuotationNo(q.quotation_number);
+            if (q.quotation_date) setQuotationDate(fromISODate(q.quotation_date));
+
+            let snap: any = q.snapshot_json;
+            if (typeof snap === 'string') {
+              try { snap = JSON.parse(snap); } catch (e) {}
+            }
+
+            if (snap && typeof snap === 'object') {
+              if (snap.quotationTitle) setQuotationTitle(snap.quotationTitle);
+              if (snap.customerName) setCustomerName(snap.customerName);
+              if (snap.addressLine1) setAddressLine1(snap.addressLine1);
+              if (snap.addressLine2) setAddressLine2(snap.addressLine2);
+              if (snap.contactPerson) setContactPerson(snap.contactPerson);
+              if (snap.phone) setPhone(snap.phone);
+              if (snap.gstin) setGstin(snap.gstin);
+              if (snap.salutation) setSalutation(snap.salutation);
+              if (snap.introText1) setIntroText1(snap.introText1);
+              if (snap.introText2) setIntroText2(snap.introText2);
+              if (Array.isArray(snap.rows) && snap.rows.length > 0) setRows(snap.rows);
+              if (Array.isArray(snap.machineries) && snap.machineries.length > 0) setMachineries(snap.machineries);
+              if (Array.isArray(snap.terms) && snap.terms.length > 0) setTerms(snap.terms);
+              if (snap.callNotice) setCallNotice(snap.callNotice);
+              if (snap.satisfactionGoal) setSatisfactionGoal(snap.satisfactionGoal);
+              if (snap.sigCompany) setSigCompany(snap.sigCompany);
+              if (snap.sigName) setSigName(snap.sigName);
+              if (snap.sigTitle) setSigTitle(snap.sigTitle);
+              if (snap.sigPhones) setSigPhones(snap.sigPhones);
+              if (snap.applyTax !== undefined) setApplyTax(snap.applyTax);
+              if (snap.taxPercent !== undefined) setTaxPercent(snap.taxPercent);
+            }
+            if (q.signatory_name) setSigName(q.signatory_name);
+            if (q.signatory_designation) setSigTitle(q.signatory_designation);
+            if (!snap) {
+              // Direct restore from database columns
+              if (q.customer) {
+                setCustomerName(q.customer.company_name || '');
+                setAddressLine1(q.customer.billing_address_line1 || '');
+                setAddressLine2(`${q.customer.billing_city || ''}${q.customer.billing_pincode ? ` - ${q.customer.billing_pincode}` : ''}`);
+                setContactPerson(q.customer.contact_person || '');
+                setPhone(q.customer.phone || '');
+                if (q.customer.gstin) setGstin(q.customer.gstin);
+                setSelectedCustomerId(q.customer.id);
+              }
+              if (Array.isArray(q.sections) && q.sections.length > 0) {
+                const parsedRows: PaintingScopeRow[] = q.sections.map((s: any, idx: number) => ({
+                  id: s.id || `row_${idx}_${Date.now()}`,
+                  name: s.section_name || `PAINTING WORK AREA ${idx + 1}`,
+                  service_type: s.service_name || 'ASIAN PAINTS',
+                  description: s.notes || '',
+                  area_sqft: Number(s.billable_area || s.calculated_area || 1000),
+                  rate_per_sqft: Number(s.applied_rate || s.original_catalogue_rate || 25),
+                  amount: Number(s.line_total || 25000),
+                }));
+                setRows(parsedRows);
+              } else if (Array.isArray(q.items) && q.items.length > 0) {
+                const parsedRows: PaintingScopeRow[] = q.items.map((it: any, idx: number) => ({
+                  id: it.id || `row_${idx}_${Date.now()}`,
+                  name: it.item_name || `PAINTING WORK AREA ${idx + 1}`,
+                  service_type: 'ASIAN PAINTS',
+                  description: it.description || '',
+                  area_sqft: Number(it.quantity || 1000),
+                  rate_per_sqft: Number(it.unit_price || 25),
+                  amount: Number(it.line_total || 25000),
+                }));
+                setRows(parsedRows);
+              }
+              if (q.terms_and_conditions) {
+                const lines = q.terms_and_conditions.split('\n').map((l: string) => l.trim()).filter(Boolean);
+                if (lines.length > 0) setTerms(lines);
+              }
+              if (q.notes) setCallNotice(q.notes);
+              setApplyTax(Number(q.tax_rate || 0) > 0 || Number(q.total_tax || 0) > 0);
+              if (q.tax_rate) setTaxPercent(Number(q.tax_rate));
+            }
+          }
+        } catch (e) {
+          console.error('Failed to load existing Unique Painters quote:', e);
+        } finally {
+          setLoadingEdit(false);
+        }
+      } else {
+        try {
+          const nextNumRes = await api.quotations.getNextNumber('uniquepainters', 'short');
+          if (nextNumRes && nextNumRes.next_number) {
+            setQuotationNo(nextNumRes.next_number);
+          }
+        } catch (e) {
+          console.warn('Fallback sequence number:', e);
+        }
+      }
     } catch (err) {
       console.error('Failed to load initial Unique Painters data:', err);
     }
@@ -515,16 +612,25 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
         discount_type: 'none',
         discount_value: 0,
         snapshot_json: snapshot,
+        client_name: customerName,
+        client_address: addressLine1,
+        client_phone: phone,
+        client_gstin: gstin,
+        attention_person: contactPerson,
+        signatory_name: sigName,
+        signatory_designation: sigTitle,
       };
 
       let res;
       if (savedQuoteId) {
         res = await api.quotations.update(savedQuoteId, payload);
+        setToastMsg(`Quotation ${res.quotation_number} updated and saved to DB successfully!`);
       } else {
         res = await api.quotations.create(payload);
         setSavedQuoteId(res.id);
+        setIsEditMode(true);
+        setToastMsg(`Quotation ${res.quotation_number} saved to DB successfully!`);
       }
-      setToastMsg(`Quotation ${res.quotation_number} saved successfully!`);
       return res.id;
     } catch (err: any) {
       console.error('Save error:', err);
@@ -607,11 +713,13 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-purple-600 animate-pulse" />
               <h1 className="text-base font-black text-slate-900 tracking-tight">
-                Unique Painters Quotation Generator
+                {isEditMode ? 'Unique Painters Quotation Editor' : 'Unique Painters Quotation Generator'}
               </h1>
             </div>
             <p className="text-[11px] text-slate-500">
-              Interactive proposal builder matching authentic Unique Painters letterhead & quotation format.
+              {isEditMode
+                ? `Editing official quotation ${quotationNo} with live authentic letterhead preview.`
+                : 'Interactive proposal builder matching authentic Unique Painters letterhead & quotation format.'}
             </p>
           </div>
         </div>
@@ -671,10 +779,49 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
             className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-black text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all transform active:scale-95"
           >
             <Save className="w-4 h-4" />
-            <span>{saving ? 'Saving...' : 'Save to DB'}</span>
+            <span>{saving ? 'Saving...' : (isEditMode ? 'Update Quotation in DB' : 'Save to DB')}</span>
           </button>
         </div>
       </div>
+
+      {/* Editing State Banner */}
+      {isEditMode && (
+        <div className="bg-purple-50 border border-purple-300 text-purple-950 px-4 py-3 rounded-2xl shadow-xs flex flex-wrap items-center justify-between gap-3 animate-fade-in">
+          <div className="flex items-center gap-2.5">
+            <span className="px-2 py-0.5 bg-purple-600 text-white rounded text-[10px] font-black uppercase tracking-wider">
+              EDITING MODE
+            </span>
+            <span className="text-xs font-bold text-purple-900">
+              Quotation: <strong className="font-mono text-purple-950">{quotationNo}</strong> &bull; Client: <strong>{customerName || 'Selected Customer'}</strong>
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onNavigate('uniquepainters_quotes')}
+              className="px-2.5 py-1 text-xs font-bold text-purple-800 hover:text-purple-950 hover:bg-purple-100/60 rounded-lg transition-colors"
+            >
+              Back to Quotes
+            </button>
+            <button
+              onClick={() => {
+                setSavedQuoteId(null);
+                setIsEditMode(false);
+                onNavigate('uniquepainters_generator');
+              }}
+              className="px-3 py-1 bg-white border border-purple-300 hover:bg-purple-100 text-purple-900 text-xs font-extrabold rounded-lg shadow-2xs transition-all"
+            >
+              + Create New Quotation
+            </button>
+          </div>
+        </div>
+      )}
+
+      {loadingEdit && (
+        <div className="bg-blue-50 border border-blue-200 text-blue-900 p-3 rounded-xl text-xs font-bold flex items-center gap-2">
+          <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-600" />
+          <span>Loading quotation {quotationId} details from database...</span>
+        </div>
+      )}
 
       {/* Main Quotation Document Sheet (A4 Letterhead Flush Width - Identical to Cleantech Layout) */}
       <div className="bg-white border-2 border-slate-300 rounded-3xl shadow-xl overflow-hidden text-slate-800">
@@ -1460,9 +1607,31 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
                     </tr>
                   </tbody>
                 </table>
+                <div className="text-right text-[10px] text-slate-400 font-bold">Page 1 of 3</div>
+              </div>
+
+              {/* PAGE BREAK 1 TO 2 */}
+              <div className="flex items-center justify-center gap-3 my-2">
+                <div className="h-px bg-slate-300 w-24"></div>
+                <span className="text-[11px] font-black uppercase tracking-wider text-purple-800 bg-purple-100 px-3 py-1 rounded-full shadow-2xs">
+                  Page 2 (Machineries, Terms & Conditions, Signatures)
+                </span>
+                <div className="h-px bg-slate-300 w-24"></div>
+              </div>
+
+              {/* PAGE 2 A4 SHEET */}
+              <div className="bg-white p-8 shadow-md rounded-2xl space-y-6 max-w-3xl mx-auto border border-slate-200 text-slate-800">
+                <div className="flex justify-between items-center border-b-2 border-purple-900 pb-2">
+                  <span className="font-black text-sm text-purple-900 uppercase">
+                    {sigCompany || 'Unique Painters'}
+                  </span>
+                  <span className="text-xs font-mono font-bold text-slate-600">
+                    Quotation No: {quotationNo} • Page 2
+                  </span>
+                </div>
 
                 {/* Machineries */}
-                <div className="text-xs space-y-1 pt-2">
+                <div className="text-xs space-y-1 pt-1">
                   <div className="font-bold text-slate-900">List of Machineries and consumables:</div>
                   <ul className="grid grid-cols-2 gap-1 text-[11px] text-slate-700 list-disc list-inside">
                     {machineries.map((m, i) => <li key={i}>{m}</li>)}
@@ -1488,45 +1657,108 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
                 </div>
 
                 {/* Signatory (NO CLIENT SIGNATURE) */}
-                <div className="pt-4 border-t border-slate-200 text-xs">
-                  <div className="text-slate-600">Regards</div>
-                  <div className="font-black text-sm text-purple-900">{sigCompany}</div>
-                  <div className="font-bold text-slate-800">{sigName}</div>
-                  <div className="text-slate-600">{sigTitle}</div>
-                  <div className="text-slate-600 font-mono">{sigPhones}</div>
-                </div>
-
-                {/* Technology Showcase in Preview */}
-                <div className="pt-6 border-t-2 border-slate-200 space-y-4">
-                  <div className="font-black text-xs uppercase text-purple-800">
-                    UPCOMING OUR FUTURE TECHNOLOGY; 3D WALL PRINTING MACHINE:
+                <div className="pt-4 border-t border-slate-200 text-xs flex justify-between items-end">
+                  <div className="text-slate-500 italic max-w-xs text-[11px]">
+                    This is a computer generated quotation authenticated by {sigCompany}.
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="border border-slate-200 rounded p-2 text-center bg-slate-50">
-                      <img src="/unique_painters/wall_printing_machine_1.jpeg" className="h-32 mx-auto object-contain rounded" alt="3D Wall Printer" />
-                      <div className="text-[10px] font-bold mt-1 text-slate-800">High-Precision 3D Vertical Wall Printer</div>
-                    </div>
-                    <div className="border border-slate-200 rounded p-2 text-center bg-slate-50">
-                      <img src="/unique_painters/wall_printing_machine_2.jpeg" className="h-32 mx-auto object-contain rounded" alt="3D Sample" />
-                      <div className="text-[10px] font-bold mt-1 text-slate-800">Direct-on-Wall Architectural Graphic</div>
-                    </div>
-                  </div>
-
-                  <div className="font-black text-xs uppercase text-purple-800 pt-2">
-                    ROBOTIC PLASTERING AND PAINTING MACHINE :
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="border border-slate-200 rounded p-2 text-center bg-slate-50">
-                      <img src="/unique_painters/robotic_plastering_1.jpeg" className="h-32 mx-auto object-contain rounded" alt="Robotic Plastering" />
-                      <div className="text-[10px] font-bold mt-1 text-slate-800">Robotic Surface Leveling & Plastering Unit</div>
-                    </div>
-                    <div className="border border-slate-200 rounded p-2 text-center bg-slate-50">
-                      <img src="/unique_painters/robotic_plastering_2.jpeg" className="h-32 mx-auto object-contain rounded" alt="Robotic Spray" />
-                      <div className="text-[10px] font-bold mt-1 text-slate-800">Automated Mechanized Spray Coating</div>
-                    </div>
+                  <div className="text-right">
+                    <div className="text-slate-600">Regards</div>
+                    <div className="font-black text-sm text-purple-900">{sigCompany}</div>
+                    <div className="font-bold text-slate-800">{sigName}</div>
+                    <div className="text-slate-600">{sigTitle}</div>
+                    <div className="text-slate-600 font-mono">{sigPhones}</div>
                   </div>
                 </div>
+                <div className="text-right text-[10px] text-slate-400 font-bold">Page 2 of 3</div>
+              </div>
 
+              {/* PAGE BREAK 2 TO 3 */}
+              <div className="flex items-center justify-center gap-3 my-2">
+                <div className="h-px bg-slate-300 w-24"></div>
+                <span className="text-[11px] font-black uppercase tracking-wider text-purple-800 bg-purple-100 px-3 py-1 rounded-full shadow-2xs">
+                  Page 3 (Next-Gen Mechanized Equipment Showcase)
+                </span>
+                <div className="h-px bg-slate-300 w-24"></div>
+              </div>
+
+              {/* PAGE 3 A4 SHEET */}
+              <div className="bg-white p-8 shadow-md rounded-2xl space-y-6 max-w-3xl mx-auto border border-slate-200 text-slate-800">
+                <div className="flex justify-between items-center border-b-2 border-purple-900 pb-2">
+                  <span className="font-black text-sm text-purple-900 uppercase">
+                    Upcoming Technology Showcase
+                  </span>
+                  <span className="text-xs font-mono font-bold text-slate-600">
+                    Unique Painters • Page 3
+                  </span>
+                </div>
+
+                {/* Technology Showcase with New Generated Images */}
+                <div className="space-y-6">
+                  <div className="space-y-3">
+                    <div className="font-black text-xs uppercase text-purple-800 border-b border-purple-100 pb-1">
+                      UPCOMING OUR FUTURE TECHNOLOGY; 3D WALL PRINTING MACHINE:
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="border border-slate-200 rounded-xl p-3 text-center bg-slate-50 shadow-2xs">
+                        <img src="/unique_painters/wall_printing_machine_1.jpeg" className="h-36 mx-auto object-contain rounded-lg" alt="3D Wall Printer" />
+                        <div className="text-[11px] font-bold mt-2 text-slate-800">High-Precision 3D Vertical Wall Printer</div>
+                      </div>
+                      <div className="border border-slate-200 rounded-xl p-3 text-center bg-slate-50 shadow-2xs">
+                        <img src="/unique_painters/wall_printing_machine_2.jpeg" className="h-36 mx-auto object-contain rounded-lg" alt="3D Sample" />
+                        <div className="text-[11px] font-bold mt-2 text-slate-800">Direct-on-Wall Architectural Graphic</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3 pt-2">
+                    <div className="font-black text-xs uppercase text-purple-800 border-b border-purple-100 pb-1">
+                      ROBOTIC PLASTERING AND PAINTING MACHINE :
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="border border-slate-200 rounded-xl p-3 text-center bg-slate-50 shadow-2xs">
+                        <img src="/unique_painters/robotic_plastering_1.jpeg" className="h-36 mx-auto object-contain rounded-lg" alt="Robotic Plastering" />
+                        <div className="text-[11px] font-bold mt-2 text-slate-800">Robotic Surface Leveling & Plastering Unit</div>
+                      </div>
+                      <div className="border border-slate-200 rounded-xl p-3 text-center bg-slate-50 shadow-2xs">
+                        <img src="/unique_painters/robotic_plastering_2.jpeg" className="h-36 mx-auto object-contain rounded-lg" alt="Robotic Spray" />
+                        <div className="text-[11px] font-bold mt-2 text-slate-800">Automated Mechanized Spray Coating</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right text-[10px] text-slate-400 font-bold">Page 3 of 3</div>
+              </div>
+            </div>
+
+            {/* Modal Bottom Action Bar */}
+            <div className="p-3.5 bg-slate-900 border-t border-slate-800 flex items-center justify-between px-6 shrink-0">
+              <span className="text-xs text-slate-400">
+                Format: Authentic Unique Painters A4 Letterhead
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleDownloadDocx}
+                  className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-sm cursor-pointer"
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  <span>Download Word (.docx)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDownloadPdf}
+                  className="px-3.5 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-sm cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download PDF</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setInPagePreviewOpen(false)}
+                  className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl cursor-pointer"
+                >
+                  Close
+                </button>
               </div>
             </div>
           </div>

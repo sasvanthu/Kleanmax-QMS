@@ -7,13 +7,12 @@ import {
   Users,
   FileText,
   Calculator,
-  ShoppingCart,
   Paintbrush,
   Sun,
-  Edit,
   Home,
   LayoutDashboard,
-  LogOut
+  LogOut,
+  Plus
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -130,26 +129,37 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* 1. Super Admin Dropdown */}
           {showSuperAdmin && (
-            <div className="relative">
-              <button
-                onClick={(e) => toggleDropdown('superadmin', e)}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  isSuperAdminActive
-                    ? 'bg-slate-900 text-amber-300 font-black shadow-xs'
-                    : activeDropdown === 'superadmin'
-                    ? 'bg-slate-200 text-slate-950'
-                    : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100'
-                }`}
-              >
-                <span className="text-xs">👑</span>
-                <span className="hidden sm:inline">Super Admin</span>
-                <span className="sm:hidden">Admin</span>
-                <ChevronDown
-                  className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                    activeDropdown === 'superadmin' ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
+            <div className="relative flex items-center">
+              <div className={`flex items-center rounded-xl transition-all border ${
+                isSuperAdminActive
+                  ? 'bg-slate-900 text-amber-300 border-slate-950 font-black shadow-xs'
+                  : activeDropdown === 'superadmin'
+                  ? 'bg-slate-200 text-slate-950 border-slate-300'
+                  : 'bg-white text-slate-700 hover:text-slate-950 hover:bg-slate-100 border-slate-200'
+              }`}>
+                <button
+                  type="button"
+                  onClick={() => handleSubOptionClick('dashboard')}
+                  className="flex items-center gap-1.5 px-2.5 py-2 text-xs font-bold cursor-pointer"
+                  title="Open Super Admin Console Hub"
+                >
+                  <span className="text-xs">👑</span>
+                  <span className="hidden sm:inline">Super Admin</span>
+                  <span className="sm:hidden">Admin</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => toggleDropdown('superadmin', e)}
+                  className="px-1.5 py-2 hover:bg-black/10 rounded-r-xl transition-colors cursor-pointer"
+                  title="Super Admin Menu"
+                >
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                      activeDropdown === 'superadmin' ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+              </div>
 
               {activeDropdown === 'superadmin' && (
                 <div className="absolute left-0 top-full mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-slate-200 p-2 z-50 animate-fade-in space-y-1">
@@ -157,17 +167,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                     <span>Super Admin Console</span>
                     <span className="text-[9px] bg-amber-50 text-amber-800 px-1.5 py-0.5 rounded font-bold">Master</span>
                   </div>
-
-                  <button
-                    onClick={() => handleSubOptionClick('dashboard')}
-                    className="w-full text-left px-3 py-2 text-xs font-bold text-slate-800 hover:bg-amber-50 rounded-xl flex items-center gap-2.5 transition-colors cursor-pointer"
-                  >
-                    <LayoutDashboard className="w-4 h-4 text-amber-600 shrink-0" />
-                    <div>
-                      <div className="font-extrabold text-slate-900">Admin Console Hub</div>
-                      <div className="text-[10px] text-slate-500 font-normal">Merged home & 4 companies overview</div>
-                    </div>
-                  </button>
 
                   <button
                     onClick={() => handleSubOptionClick('settings')}
@@ -198,7 +197,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     <FileText className="w-4 h-4 text-emerald-600 shrink-0" />
                     <div>
                       <div className="font-extrabold text-slate-900">All Past Records & Audit</div>
-                      <div className="text-[10px] text-slate-500 font-normal">Global proposals & administrative delete</div>
+                      <div className="text-[10px] text-slate-500 font-normal">Global proposals across all 4 firms</div>
                     </div>
                   </button>
                 </div>
@@ -206,55 +205,54 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           )}
 
-          {/* 2. Klean Max Pro Dropdown */}
+          {/* 2. Klean Max Pro Dropdown (Clicking Name opens Hub directly; Dropdown has strictly 2 items) */}
           {showKmp && (
-            <div className="relative">
-              <button
-                onClick={(e) => toggleDropdown('kleanmaxpro', e)}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  isKmpActive
-                    ? 'bg-amber-400 text-slate-950 font-black shadow-xs'
-                    : activeDropdown === 'kleanmaxpro'
-                    ? 'bg-amber-100 text-amber-950'
-                    : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100'
-                }`}
-              >
-                <span className="w-2 h-2 rounded-full bg-amber-500" />
-                <span className="hidden sm:inline">Klean Max Pro</span>
-                <span className="sm:hidden">KMP</span>
-                <ChevronDown
-                  className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                    activeDropdown === 'kleanmaxpro' ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
+            <div className="relative flex items-center">
+              <div className={`flex items-center rounded-xl transition-all border ${
+                isKmpActive
+                  ? 'bg-amber-400 text-slate-950 border-amber-500 font-black shadow-xs'
+                  : activeDropdown === 'kleanmaxpro'
+                  ? 'bg-amber-100 text-amber-950 border-amber-300'
+                  : 'bg-white text-slate-700 hover:text-slate-950 hover:bg-slate-100 border-slate-200'
+              }`}>
+                <button
+                  type="button"
+                  onClick={() => handleSubOptionClick('kleanmaxpro_dash')}
+                  className="flex items-center gap-1.5 px-2.5 py-2 text-xs font-bold cursor-pointer"
+                  title="Open Klean Max Pro Hub"
+                >
+                  <span className="w-2 h-2 rounded-full bg-amber-500" />
+                  <span className="hidden sm:inline">Klean Max Pro</span>
+                  <span className="sm:hidden">KMP</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => toggleDropdown('kleanmaxpro', e)}
+                  className="px-1.5 py-2 hover:bg-black/5 rounded-r-xl transition-colors cursor-pointer"
+                  title="KMP Quick Actions"
+                >
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                      activeDropdown === 'kleanmaxpro' ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+              </div>
 
               {activeDropdown === 'kleanmaxpro' && (
-                <div className="absolute left-0 top-full mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-slate-200 p-2 z-50 animate-fade-in space-y-1">
-                  <div className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-amber-600 border-b border-slate-100 flex items-center justify-between">
-                    <span>Klean Max Pro (KMP)</span>
-                    <span className="text-[9px] bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded font-bold">Floor Scrub</span>
+                <div className="absolute left-0 top-full mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-slate-200 p-2 z-50 animate-fade-in space-y-1">
+                  <div className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-amber-600 border-b border-slate-100">
+                    Klean Max Pro
                   </div>
-
-                  <button
-                    onClick={() => handleSubOptionClick('kleanmaxpro_dash')}
-                    className="w-full text-left px-3 py-2 text-xs font-bold text-slate-800 hover:bg-amber-50 rounded-xl flex items-center gap-2.5 transition-colors cursor-pointer"
-                  >
-                    <LayoutDashboard className="w-4 h-4 text-amber-600 shrink-0" />
-                    <div>
-                      <div className="font-extrabold text-slate-900">1. Company Hub</div>
-                      <div className="text-[10px] text-slate-500 font-normal">Klean Max Pro big navigation cards</div>
-                    </div>
-                  </button>
 
                   <button
                     onClick={() => handleSubOptionClick('kleanmaxpro_area')}
                     className="w-full text-left px-3 py-2 text-xs font-bold text-slate-800 hover:bg-amber-50 rounded-xl flex items-center gap-2.5 transition-colors cursor-pointer"
                   >
-                    <Calculator className="w-4 h-4 text-amber-600 shrink-0" />
+                    <Plus className="w-4 h-4 text-amber-600 shrink-0" />
                     <div>
-                      <div className="font-extrabold text-slate-900">2. Quotation Generator</div>
-                      <div className="text-[10px] text-slate-500 font-normal">Area-based warehouse floor scrubbing</div>
+                      <div className="font-extrabold text-slate-900">Generate Quotation</div>
+                      <div className="text-[10px] text-slate-500 font-normal">Floor scrubbing & area proposal</div>
                     </div>
                   </button>
 
@@ -264,96 +262,63 @@ export const Navbar: React.FC<NavbarProps> = ({
                   >
                     <FileText className="w-4 h-4 text-amber-600 shrink-0" />
                     <div>
-                      <div className="font-extrabold text-slate-900">3. Past Records</div>
+                      <div className="font-extrabold text-slate-900">Past Records</div>
                       <div className="text-[10px] text-slate-500 font-normal">View preview, Word (.docx) & PDF</div>
                     </div>
                   </button>
-
-                  <button
-                    onClick={() => handleSubOptionClick('quotation_edit', { company_code: 'kleanmaxpro' })}
-                    className="w-full text-left px-3 py-2 text-xs font-bold text-slate-800 hover:bg-amber-50 rounded-xl flex items-center gap-2.5 transition-colors cursor-pointer"
-                  >
-                    <Edit className="w-4 h-4 text-amber-600 shrink-0" />
-                    <div>
-                      <div className="font-extrabold text-slate-900">4. Quotation Editor</div>
-                      <div className="text-[10px] text-slate-500 font-normal">Custom line items, machinery & rates</div>
-                    </div>
-                  </button>
-
-                  <div className="pt-1.5 border-t border-slate-100">
-                    <button
-                      onClick={() => handleSubOptionClick('settings', { tab: 'kleanmaxpro' })}
-                      className="w-full text-left px-3 py-1.5 text-[11px] font-bold text-slate-600 hover:text-amber-800 hover:bg-amber-50/60 rounded-lg flex items-center gap-2 cursor-pointer"
-                    >
-                      <Building2 className="w-3.5 h-3.5 text-amber-600" />
-                      <span>Company Letterhead & Info</span>
-                    </button>
-                  </div>
                 </div>
               )}
             </div>
           )}
 
-          {/* 3. Kleanmax Dropdown */}
+          {/* 3. Kleanmax Dropdown (Clicking Name opens Hub directly; Dropdown has strictly 2 items) */}
           {showKlm && (
-            <div className="relative">
-              <button
-                onClick={(e) => toggleDropdown('kleanmax', e)}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  isKlmActive
-                    ? 'bg-sky-500 text-slate-950 font-black shadow-xs'
-                    : activeDropdown === 'kleanmax'
-                    ? 'bg-sky-100 text-sky-950'
-                    : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100'
-                }`}
-              >
-                <span className="w-2 h-2 rounded-full bg-sky-400" />
-                <span className="hidden sm:inline">Kleanmax</span>
-                <span className="sm:hidden">KLM</span>
-                <ChevronDown
-                  className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                    activeDropdown === 'kleanmax' ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
+            <div className="relative flex items-center">
+              <div className={`flex items-center rounded-xl transition-all border ${
+                isKlmActive
+                  ? 'bg-sky-500 text-slate-950 border-sky-600 font-black shadow-xs'
+                  : activeDropdown === 'kleanmax'
+                  ? 'bg-sky-100 text-sky-950 border-sky-300'
+                  : 'bg-white text-slate-700 hover:text-slate-950 hover:bg-slate-100 border-slate-200'
+              }`}>
+                <button
+                  type="button"
+                  onClick={() => handleSubOptionClick('kleanmax_dash')}
+                  className="flex items-center gap-1.5 px-2.5 py-2 text-xs font-bold cursor-pointer"
+                  title="Open Kleanmax Hub"
+                >
+                  <span className="w-2 h-2 rounded-full bg-sky-400" />
+                  <span className="hidden sm:inline">Kleanmax</span>
+                  <span className="sm:hidden">KLM</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => toggleDropdown('kleanmax', e)}
+                  className="px-1.5 py-2 hover:bg-black/5 rounded-r-xl transition-colors cursor-pointer"
+                  title="KLM Quick Actions"
+                >
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                      activeDropdown === 'kleanmax' ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+              </div>
 
               {activeDropdown === 'kleanmax' && (
-                <div className="absolute left-0 top-full mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-slate-200 p-2 z-50 animate-fade-in space-y-1">
-                  <div className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-sky-600 border-b border-slate-100 flex items-center justify-between">
-                    <span>Kleanmax (KLM)</span>
-                    <span className="text-[9px] bg-sky-100 text-sky-900 px-1.5 py-0.5 rounded font-bold">Cleaning & Spares</span>
+                <div className="absolute left-0 top-full mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-slate-200 p-2 z-50 animate-fade-in space-y-1">
+                  <div className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-sky-600 border-b border-slate-100">
+                    Kleanmax
                   </div>
-
-                  <button
-                    onClick={() => handleSubOptionClick('kleanmax_dash')}
-                    className="w-full text-left px-3 py-2 text-xs font-bold text-slate-800 hover:bg-sky-50 rounded-xl flex items-center gap-2.5 transition-colors cursor-pointer"
-                  >
-                    <LayoutDashboard className="w-4 h-4 text-sky-600 shrink-0" />
-                    <div>
-                      <div className="font-extrabold text-slate-900">1. Company Hub</div>
-                      <div className="text-[10px] text-slate-500 font-normal">Kleanmax big navigation cards</div>
-                    </div>
-                  </button>
 
                   <button
                     onClick={() => handleSubOptionClick('kleanmax_generator')}
                     className="w-full text-left px-3 py-2 text-xs font-bold text-slate-800 hover:bg-sky-50 rounded-xl flex items-center gap-2.5 transition-colors cursor-pointer"
                   >
-                    <FileText className="w-4 h-4 text-sky-600 shrink-0" />
+                    <Plus className="w-4 h-4 text-sky-600 shrink-0" />
                     <div>
-                      <div className="font-extrabold text-slate-900">2. Proposal Generator</div>
-                      <div className="text-[10px] text-slate-500 font-normal">Continuous Word-style cleaning proposals</div>
-                    </div>
-                  </button>
-
-                  <button
-                    onClick={() => handleSubOptionClick('kleanmax_sales')}
-                    className="w-full text-left px-3 py-2 text-xs font-bold text-slate-800 hover:bg-sky-50 rounded-xl flex items-center gap-2.5 transition-colors cursor-pointer"
-                  >
-                    <ShoppingCart className="w-4 h-4 text-sky-600 shrink-0" />
-                    <div>
-                      <div className="font-extrabold text-slate-900">3. Equipment Sales Quote</div>
-                      <div className="text-[10px] text-slate-500 font-normal">Machinery, spare parts & accessories</div>
+                      <div className="font-extrabold text-slate-900">Generate Quotation</div>
+                      <div className="text-[10px] text-slate-500 font-normal">Cleaning service & spare parts proposal</div>
                     </div>
                   </button>
 
@@ -363,85 +328,63 @@ export const Navbar: React.FC<NavbarProps> = ({
                   >
                     <FileText className="w-4 h-4 text-sky-600 shrink-0" />
                     <div>
-                      <div className="font-extrabold text-slate-900">4. Past Records</div>
+                      <div className="font-extrabold text-slate-900">Past Records</div>
                       <div className="text-[10px] text-slate-500 font-normal">View preview, Word (.docx) & PDF</div>
                     </div>
                   </button>
-
-                  <button
-                    onClick={() => handleSubOptionClick('quotation_edit', { company_code: 'kleanmax' })}
-                    className="w-full text-left px-3 py-2 text-xs font-bold text-slate-800 hover:bg-sky-50 rounded-xl flex items-center gap-2.5 transition-colors cursor-pointer"
-                  >
-                    <Edit className="w-4 h-4 text-sky-600 shrink-0" />
-                    <div>
-                      <div className="font-extrabold text-slate-900">5. Quotation Editor</div>
-                      <div className="text-[10px] text-slate-500 font-normal">Custom line items, spares & terms</div>
-                    </div>
-                  </button>
-
-                  <div className="pt-1.5 border-t border-slate-100">
-                    <button
-                      onClick={() => handleSubOptionClick('settings', { tab: 'kleanmax' })}
-                      className="w-full text-left px-3 py-1.5 text-[11px] font-bold text-slate-600 hover:text-sky-800 hover:bg-sky-50/60 rounded-lg flex items-center gap-2 cursor-pointer"
-                    >
-                      <Building2 className="w-3.5 h-3.5 text-sky-600" />
-                      <span>Company Letterhead & Info</span>
-                    </button>
-                  </div>
                 </div>
               )}
             </div>
           )}
 
-          {/* 4. Unique Painters Dropdown */}
+          {/* 4. Unique Painters Dropdown (Clicking Name opens Hub directly; Dropdown has strictly 2 items) */}
           {showUnp && (
-            <div className="relative">
-              <button
-                onClick={(e) => toggleDropdown('uniquepainters', e)}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  isUnpActive
-                    ? 'bg-purple-600 text-white font-black shadow-xs'
-                    : activeDropdown === 'uniquepainters'
-                    ? 'bg-purple-100 text-purple-950'
-                    : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100'
-                }`}
-              >
-                <span className="w-2 h-2 rounded-full bg-purple-400" />
-                <span className="hidden sm:inline">Unique Painters</span>
-                <span className="sm:hidden">UNP</span>
-                <ChevronDown
-                  className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                    activeDropdown === 'uniquepainters' ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
+            <div className="relative flex items-center">
+              <div className={`flex items-center rounded-xl transition-all border ${
+                isUnpActive
+                  ? 'bg-purple-600 text-white border-purple-700 font-black shadow-xs'
+                  : activeDropdown === 'uniquepainters'
+                  ? 'bg-purple-100 text-purple-950 border-purple-300'
+                  : 'bg-white text-slate-700 hover:text-slate-950 hover:bg-slate-100 border-slate-200'
+              }`}>
+                <button
+                  type="button"
+                  onClick={() => handleSubOptionClick('uniquepainters_dash')}
+                  className="flex items-center gap-1.5 px-2.5 py-2 text-xs font-bold cursor-pointer"
+                  title="Open Unique Painters Hub"
+                >
+                  <span className="w-2 h-2 rounded-full bg-purple-400" />
+                  <span className="hidden sm:inline">Unique Painters</span>
+                  <span className="sm:hidden">UNP</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => toggleDropdown('uniquepainters', e)}
+                  className="px-1.5 py-2 hover:bg-black/5 rounded-r-xl transition-colors cursor-pointer"
+                  title="UNP Quick Actions"
+                >
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                      activeDropdown === 'uniquepainters' ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+              </div>
 
               {activeDropdown === 'uniquepainters' && (
-                <div className="absolute left-0 sm:left-auto sm:right-0 md:left-0 top-full mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-slate-200 p-2 z-50 animate-fade-in space-y-1">
-                  <div className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-purple-600 border-b border-slate-100 flex items-center justify-between">
-                    <span>Unique Painters (UNP)</span>
-                    <span className="text-[9px] bg-purple-100 text-purple-900 px-1.5 py-0.5 rounded font-bold">Painting & Epoxy</span>
+                <div className="absolute left-0 sm:left-auto sm:right-0 md:left-0 top-full mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-slate-200 p-2 z-50 animate-fade-in space-y-1">
+                  <div className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-purple-600 border-b border-slate-100">
+                    Unique Painters
                   </div>
-
-                  <button
-                    onClick={() => handleSubOptionClick('uniquepainters_dash')}
-                    className="w-full text-left px-3 py-2 text-xs font-bold text-slate-800 hover:bg-purple-50 rounded-xl flex items-center gap-2.5 transition-colors cursor-pointer"
-                  >
-                    <LayoutDashboard className="w-4 h-4 text-purple-600 shrink-0" />
-                    <div>
-                      <div className="font-extrabold text-slate-900">1. Company Hub</div>
-                      <div className="text-[10px] text-slate-500 font-normal">Unique Painters big navigation cards</div>
-                    </div>
-                  </button>
 
                   <button
                     onClick={() => handleSubOptionClick('uniquepainters_generator')}
                     className="w-full text-left px-3 py-2 text-xs font-bold text-slate-800 hover:bg-purple-50 rounded-xl flex items-center gap-2.5 transition-colors cursor-pointer"
                   >
-                    <Paintbrush className="w-4 h-4 text-purple-600 shrink-0" />
+                    <Plus className="w-4 h-4 text-purple-600 shrink-0" />
                     <div>
-                      <div className="font-extrabold text-slate-900">2. Painting Generator</div>
-                      <div className="text-[10px] text-slate-500 font-normal">Painting & epoxy quotes (20mm margins)</div>
+                      <div className="font-extrabold text-slate-900">Generate Quotation</div>
+                      <div className="text-[10px] text-slate-500 font-normal">Surface coating & painting proposal</div>
                     </div>
                   </button>
 
@@ -451,84 +394,62 @@ export const Navbar: React.FC<NavbarProps> = ({
                   >
                     <FileText className="w-4 h-4 text-purple-600 shrink-0" />
                     <div>
-                      <div className="font-extrabold text-slate-900">3. Past Records</div>
+                      <div className="font-extrabold text-slate-900">Past Records</div>
                       <div className="text-[10px] text-slate-500 font-normal">View preview, Word (.docx) & PDF</div>
                     </div>
                   </button>
-
-                  <button
-                    onClick={() => handleSubOptionClick('quotation_edit', { company_code: 'uniquepainters' })}
-                    className="w-full text-left px-3 py-2 text-xs font-bold text-slate-800 hover:bg-purple-50 rounded-xl flex items-center gap-2.5 transition-colors cursor-pointer"
-                  >
-                    <Edit className="w-4 h-4 text-purple-600 shrink-0" />
-                    <div>
-                      <div className="font-extrabold text-slate-900">4. Quotation Editor</div>
-                      <div className="text-[10px] text-slate-500 font-normal">Custom paint lines, primer & terms</div>
-                    </div>
-                  </button>
-
-                  <div className="pt-1.5 border-t border-slate-100">
-                    <button
-                      onClick={() => handleSubOptionClick('settings', { tab: 'uniquepainters' })}
-                      className="w-full text-left px-3 py-1.5 text-[11px] font-bold text-slate-600 hover:text-purple-800 hover:bg-purple-50/60 rounded-lg flex items-center gap-2 cursor-pointer"
-                    >
-                      <Building2 className="w-3.5 h-3.5 text-purple-600" />
-                      <span>Company Letterhead & Info</span>
-                    </button>
-                  </div>
                 </div>
               )}
             </div>
           )}
 
-          {/* 5. Cleantech Services Dropdown */}
+          {/* 5. Cleantech Services Dropdown (Clicking Name opens Hub directly; Dropdown has strictly 2 items) */}
           {showCts && (
-            <div className="relative">
-              <button
-                onClick={(e) => toggleDropdown('cleantech', e)}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  isCtsActive
-                    ? 'bg-teal-500 text-slate-950 font-black shadow-xs'
-                    : activeDropdown === 'cleantech'
-                    ? 'bg-teal-100 text-teal-950'
-                    : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100'
-                }`}
-              >
-                <span className="w-2 h-2 rounded-full bg-teal-400" />
-                <span className="hidden sm:inline">Cleantech Services</span>
-                <span className="sm:hidden">CTS</span>
-                <ChevronDown
-                  className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                    activeDropdown === 'cleantech' ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
+            <div className="relative flex items-center">
+              <div className={`flex items-center rounded-xl transition-all border ${
+                isCtsActive
+                  ? 'bg-teal-500 text-slate-950 border-teal-600 font-black shadow-xs'
+                  : activeDropdown === 'cleantech'
+                  ? 'bg-teal-100 text-teal-950 border-teal-300'
+                  : 'bg-white text-slate-700 hover:text-slate-950 hover:bg-slate-100 border-slate-200'
+              }`}>
+                <button
+                  type="button"
+                  onClick={() => handleSubOptionClick('cleantech_dash')}
+                  className="flex items-center gap-1.5 px-2.5 py-2 text-xs font-bold cursor-pointer"
+                  title="Open Cleantech Services Hub"
+                >
+                  <span className="w-2 h-2 rounded-full bg-teal-400" />
+                  <span className="hidden sm:inline">Cleantech Services</span>
+                  <span className="sm:hidden">CTS</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => toggleDropdown('cleantech', e)}
+                  className="px-1.5 py-2 hover:bg-black/5 rounded-r-xl transition-colors cursor-pointer"
+                  title="CTS Quick Actions"
+                >
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                      activeDropdown === 'cleantech' ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+              </div>
 
               {activeDropdown === 'cleantech' && (
-                <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-slate-200 p-2 z-50 animate-fade-in space-y-1">
-                  <div className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-teal-600 border-b border-slate-100 flex items-center justify-between">
-                    <span>Cleantech Services (CTS)</span>
-                    <span className="text-[9px] bg-teal-100 text-teal-900 px-1.5 py-0.5 rounded font-bold">Solar & AMC</span>
+                <div className="absolute right-0 md:left-0 top-full mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-slate-200 p-2 z-50 animate-fade-in space-y-1">
+                  <div className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-teal-700 border-b border-slate-100">
+                    Cleantech Services
                   </div>
-
-                  <button
-                    onClick={() => handleSubOptionClick('cleantech_dash')}
-                    className="w-full text-left px-3 py-2 text-xs font-bold text-slate-800 hover:bg-teal-50 rounded-xl flex items-center gap-2.5 transition-colors cursor-pointer"
-                  >
-                    <LayoutDashboard className="w-4 h-4 text-teal-600 shrink-0" />
-                    <div>
-                      <div className="font-extrabold text-slate-900">1. Company Hub</div>
-                      <div className="text-[10px] text-slate-500 font-normal">Cleantech big navigation cards</div>
-                    </div>
-                  </button>
 
                   <button
                     onClick={() => handleSubOptionClick('cleantech_generator')}
                     className="w-full text-left px-3 py-2 text-xs font-bold text-slate-800 hover:bg-teal-50 rounded-xl flex items-center gap-2.5 transition-colors cursor-pointer"
                   >
-                    <Sun className="w-4 h-4 text-teal-600 shrink-0" />
+                    <Plus className="w-4 h-4 text-teal-600 shrink-0" />
                     <div>
-                      <div className="font-extrabold text-slate-900">2. Solar & AMC Generator</div>
+                      <div className="font-extrabold text-slate-900">Generate Quotation</div>
                       <div className="text-[10px] text-slate-500 font-normal">Solar panels, facade & scheduled AMC</div>
                     </div>
                   </button>
@@ -539,31 +460,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                   >
                     <FileText className="w-4 h-4 text-teal-600 shrink-0" />
                     <div>
-                      <div className="font-extrabold text-slate-900">3. Past Records</div>
+                      <div className="font-extrabold text-slate-900">Past Records</div>
                       <div className="text-[10px] text-slate-500 font-normal">View preview, Word (.docx) & PDF</div>
                     </div>
                   </button>
-
-                  <button
-                    onClick={() => handleSubOptionClick('quotation_edit', { company_code: 'cleantech' })}
-                    className="w-full text-left px-3 py-2 text-xs font-bold text-slate-800 hover:bg-teal-50 rounded-xl flex items-center gap-2.5 transition-colors cursor-pointer"
-                  >
-                    <Edit className="w-4 h-4 text-teal-600 shrink-0" />
-                    <div>
-                      <div className="font-extrabold text-slate-900">4. Quotation Editor</div>
-                      <div className="text-[10px] text-slate-500 font-normal">Custom line items, schedules & terms</div>
-                    </div>
-                  </button>
-
-                  <div className="pt-1.5 border-t border-slate-100">
-                    <button
-                      onClick={() => handleSubOptionClick('settings', { tab: 'cleantech' })}
-                      className="w-full text-left px-3 py-1.5 text-[11px] font-bold text-slate-600 hover:text-teal-800 hover:bg-teal-50/60 rounded-lg flex items-center gap-2 cursor-pointer"
-                    >
-                      <Building2 className="w-3.5 h-3.5 text-teal-600" />
-                      <span>Company Letterhead & Info</span>
-                    </button>
-                  </div>
                 </div>
               )}
             </div>

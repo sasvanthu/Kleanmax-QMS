@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'staff';
+export type UserRole = 'admin' | 'staff' | 'super_admin' | 'manager';
 
 export interface User {
   id: string;
@@ -58,6 +58,7 @@ export interface Service {
   quotation_type: 'area_based' | 'item_based' | 'repair_service' | 'rental' | 'contract';
   description?: string;
   default_uom: string;
+  uom?: string;
   hsn_sac_code?: string;
   standard_rate: number;
   company_code?: string;
@@ -116,7 +117,7 @@ export interface QuotationItem {
   notes?: string;
 }
 
-export type QuotationStatus = 'draft' | 'pending_approval' | 'approved' | 'issued' | 'revised' | 'cancelled';
+export type QuotationStatus = 'draft' | 'pending_approval' | 'approved' | 'issued' | 'revised' | 'cancelled' | 'confirmed';
 
 export interface QuotationRevision {
   id: string;
@@ -144,8 +145,11 @@ export interface Quotation {
   warranty_terms?: string;
   terms_and_conditions?: string;
   notes?: string;
-  snapshot_json?: string;
+  tax_rate?: number;
+  snapshot_json?: any;
   image_url?: string | null;
+  signatory_name?: string;
+  signatory_designation?: string;
   
   subtotal: number;
   discount_type: 'none' | 'percentage' | 'fixed';
@@ -175,6 +179,7 @@ export interface Quotation {
   issued_at?: string;
   
   customer?: Customer;
+  company?: CompanySetting;
   sections: QuotationSection[];
   items: QuotationItem[];
   revisions: QuotationRevision[];
