@@ -410,7 +410,7 @@ export const KleanmaxSparesQuotation: React.FC<KleanmaxSparesQuotationProps> = (
                   return (
                     <tr key={item.id} className="hover:bg-slate-50 transition-colors">
                       <td className="p-2 text-center font-bold text-slate-500">
-                        {idx}
+                        {items.slice(0, idx + 1).filter(x => !x.isHeader).length}.
                       </td>
                       <td className="p-2">
                         <input

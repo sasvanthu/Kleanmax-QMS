@@ -1286,7 +1286,7 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
                       <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
                         {/* SL NO */}
                         <td className="py-3 px-3 text-center font-bold text-slate-600 align-top">
-                          {idx}.
+                          {items.slice(0, idx + 1).filter(x => !x.is_header).length}.
                         </td>
 
                         {/* Description */}
@@ -1819,7 +1819,7 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
                         }
                         return (
                           <tr key={it.id} className="border-t border-slate-200">
-                            <td className="p-2 text-center font-bold">{idx}.</td>
+                            <td className="p-2 text-center font-bold">{items.slice(0, idx + 1).filter(x => !x.is_header).length}.</td>
                             <td className="p-2">
                               <div className="font-bold text-slate-900 uppercase">{it.item_name}</div>
                               {it.description && <div className="text-[10px] text-slate-500">{it.description}</div>}
