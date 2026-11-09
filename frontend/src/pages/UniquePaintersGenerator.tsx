@@ -823,210 +823,196 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
         </div>
       )}
 
-      {/* Main Quotation Document Sheet (A4 Letterhead Flush Width - Identical to Cleantech Layout) */}
-      <div className="bg-white border-2 border-slate-300 rounded-3xl shadow-xl overflow-hidden text-slate-800">
+      {/* Authentic 3-Page A4 Proposal Sheets (Matching Preview Exactly) */}
+      <div className="space-y-8 text-slate-800">
         
-        {/* 1. Authentic Header Flush to the very ends of the page (Edge-to-Edge) */}
-        <div className="w-full bg-white border-b-2 border-purple-600 p-0 m-0">
-          <img
-            src="/headers/header_uniquepainters.png"
-            alt="Unique Painters Official Letterhead Header"
-            className="w-full h-auto object-cover block select-none"
-            style={{ width: '100%', display: 'block' }}
-          />
-        </div>
-
-        <div className="p-6 md:p-10 space-y-7">
-          
-          {/* 2. Heading Selector: 3 Options + Directly Editable Title */}
-          <div className="bg-purple-50/70 border border-purple-200 rounded-2xl p-4 space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="text-[11px] font-black uppercase tracking-wider text-purple-900 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-purple-600" />
-                Select Heading Type:
-              </span>
-              <div className="flex flex-wrap items-center gap-1.5">
-                {HEADING_OPTIONS.map((opt) => (
-                  <button
-                    key={opt}
-                    type="button"
-                    onClick={() => handleSelectHeadingOption(opt)}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                      selectedHeadingOption === opt
-                        ? 'bg-purple-700 text-white font-black shadow-xs ring-2 ring-purple-800'
-                        : 'bg-white text-slate-700 hover:bg-purple-100 border border-purple-200'
-                    }`}
-                  >
-                    {opt}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-[10px] font-black uppercase text-purple-800 mb-1">
-                Editable Document Heading (Centered on Document):
-              </label>
-              <input
-                type="text"
-                value={quotationTitle}
-                onChange={(e) => setQuotationTitle(e.target.value.toUpperCase())}
-                className="w-full text-center text-lg md:text-xl font-black text-slate-950 bg-white border border-purple-300 rounded-xl py-2 px-3 tracking-wide uppercase focus:ring-2 focus:ring-purple-500 shadow-2xs"
-              />
-            </div>
+        {/* ==================== PAGE 1 A4 SHEET ==================== */}
+        <div className="bg-white border-2 border-slate-300 rounded-3xl shadow-xl overflow-hidden">
+          {/* Header Banner - Full Width Edge-to-Edge with Purple Border */}
+          <div className="w-full bg-white border-b-2 border-purple-600 p-0 m-0">
+            <img
+              src="/headers/header_uniquepainters.png"
+              alt="Unique Painters Official Letterhead Header"
+              className="w-full h-auto object-cover block select-none"
+              style={{ width: '100%', display: 'block' }}
+            />
           </div>
 
-          {/* 3. Metadata & "To :" Client Address Grid (Matching Cleantech 2-Column Responsive Grid) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 pb-4 border-b border-slate-200">
-            {/* Left: Client Address ("To :") */}
-            <div className="space-y-2.5">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-black uppercase text-slate-900 tracking-wider">
-                  To :
+          <div className="p-6 md:p-10 space-y-6">
+            {/* Heading Selector & Editable Document Title */}
+            <div className="bg-purple-50/70 border border-purple-200 rounded-2xl p-4 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-[11px] font-black uppercase tracking-wider text-purple-900 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                  Select Heading Type:
                 </span>
-                {customerList.length > 0 && (
-                  <select
-                    value={selectedCustomerId}
-                    onChange={(e) => handleSelectCustomer(e.target.value)}
-                    className="text-[11px] font-bold border border-slate-200 rounded-lg px-2 py-1 bg-slate-50 text-slate-700 hover:bg-slate-100 cursor-pointer"
-                  >
-                    <option value="">Quick Pick Existing Client...</option>
-                    {customerList.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.company_name}
-                      </option>
-                    ))}
-                  </select>
-                )}
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {HEADING_OPTIONS.map((opt) => (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => handleSelectHeadingOption(opt)}
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                        selectedHeadingOption === opt
+                          ? 'bg-purple-700 text-white font-black shadow-xs ring-2 ring-purple-800'
+                          : 'bg-white text-slate-700 hover:bg-purple-100 border border-purple-200'
+                      }`}
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div>
+                <label className="block text-[10px] font-black uppercase text-purple-800 mb-1">
+                  Editable Document Heading (Centered on Proposal):
+                </label>
                 <input
                   type="text"
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                  placeholder="Client / Company Name (e.g. TRUE NUTRITION)"
-                  className="w-full text-sm font-black text-slate-900 border border-slate-300 rounded-xl p-2.5 focus:ring-1 focus:ring-purple-500 uppercase tracking-wide bg-slate-50/50"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                <input
-                  type="text"
-                  value={addressLine1}
-                  onChange={(e) => setAddressLine1(e.target.value)}
-                  placeholder="Address Line 1 (e.g. KODUNGAIYUR)"
-                  className="w-full border border-slate-300 rounded-lg p-2 focus:ring-1 focus:ring-purple-500"
-                />
-                <input
-                  type="text"
-                  value={addressLine2}
-                  onChange={(e) => setAddressLine2(e.target.value)}
-                  placeholder="City, State - Pincode"
-                  className="w-full border border-slate-300 rounded-lg p-2 focus:ring-1 focus:ring-purple-500"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
-                <input
-                  type="text"
-                  value={contactPerson}
-                  onChange={(e) => setContactPerson(e.target.value)}
-                  placeholder="Attn: Person"
-                  className="w-full border border-slate-300 rounded-lg p-2"
-                />
-                <input
-                  type="text"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="Phone No"
-                  className="w-full border border-slate-300 rounded-lg p-2"
-                />
-                <input
-                  type="text"
-                  value={gstin}
-                  onChange={(e) => setGstin(e.target.value.toUpperCase())}
-                  placeholder="GSTIN No"
-                  className="w-full font-mono border border-slate-300 rounded-lg p-2 uppercase"
+                  value={quotationTitle}
+                  onChange={(e) => setQuotationTitle(e.target.value.toUpperCase())}
+                  className="w-full text-center text-lg md:text-xl font-black text-slate-950 bg-white border border-purple-300 rounded-xl py-2 px-3 tracking-wide uppercase focus:ring-2 focus:ring-purple-500 shadow-2xs"
                 />
               </div>
             </div>
 
-            {/* Right: Quotation Number & Date in DD/MM/YYYY */}
-            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex flex-col justify-center space-y-3">
-              <div>
-                <label className="block text-[11px] font-black uppercase text-slate-700 mb-1">
-                  Quotation No :-
-                </label>
-                <div className="flex items-center gap-2">
+            {/* Metadata & "To :" Client Address Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 pb-4 border-b border-slate-200">
+              {/* Left: Client Address */}
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black uppercase text-slate-900 tracking-wider">
+                    To :
+                  </span>
+                  {customerList.length > 0 && (
+                    <select
+                      value={selectedCustomerId}
+                      onChange={(e) => handleSelectCustomer(e.target.value)}
+                      className="text-[11px] font-bold border border-slate-200 rounded-lg px-2 py-1 bg-slate-50 text-slate-700 hover:bg-slate-100 cursor-pointer"
+                    >
+                      <option value="">Quick Pick Existing Client...</option>
+                      {customerList.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.company_name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+
+                <div>
                   <input
                     type="text"
-                    value={quotationNo}
-                    onChange={(e) => setQuotationNo(e.target.value.toUpperCase())}
-                    className="w-full text-sm font-mono font-black text-slate-900 border border-slate-300 rounded-xl p-2 bg-white uppercase focus:ring-1 focus:ring-purple-500"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    placeholder="Client / Company Name (e.g. TRUE NUTRITION)"
+                    className="w-full text-sm font-black text-slate-900 border border-slate-300 rounded-xl p-2.5 focus:ring-1 focus:ring-purple-500 uppercase tracking-wide bg-slate-50/50"
                   />
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      const res = await api.quotations.getNextNumber('uniquepainters', 'short');
-                      if (res?.next_number) setQuotationNo(res.next_number);
-                    }}
-                    className="p-2 bg-slate-200 hover:bg-slate-300 rounded-xl text-slate-700"
-                    title="Fetch latest sequence from database"
-                  >
-                    <RefreshCw className="w-4 h-4" />
-                  </button>
                 </div>
-                <span className="text-[10px] text-slate-500 block mt-0.5">
-                  Format: UNP/2026/001. Directly editable or click refresh.
-                </span>
-              </div>
 
-              <div>
-                <label className="block text-[11px] font-black uppercase text-slate-700 mb-1">
-                  Date :-
-                </label>
-                <div className="relative flex items-center">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                   <input
                     type="text"
-                    value={quotationDate}
-                    onChange={(e) => setQuotationDate(e.target.value)}
-                    placeholder="DD/MM/YYYY (e.g. 21/10/2025)"
-                    className="w-full text-xs font-bold text-slate-900 border border-slate-300 rounded-xl p-2.5 bg-white pr-9 focus:ring-1 focus:ring-purple-500"
+                    value={addressLine1}
+                    onChange={(e) => setAddressLine1(e.target.value)}
+                    placeholder="Address Line 1 (e.g. KODUNGAIYUR)"
+                    className="w-full border border-slate-300 rounded-lg p-2 focus:ring-1 focus:ring-purple-500"
                   />
                   <input
-                    type="date"
-                    tabIndex={-1}
-                    value={toISODate(quotationDate)}
-                    onChange={(e) => setQuotationDate(fromISODate(e.target.value))}
-                    className="absolute right-2 opacity-60 hover:opacity-100 cursor-pointer w-6 h-6 border-none bg-transparent"
-                    title="Select date from calendar"
+                    type="text"
+                    value={addressLine2}
+                    onChange={(e) => setAddressLine2(e.target.value)}
+                    placeholder="City, State - Pincode"
+                    className="w-full border border-slate-300 rounded-lg p-2 focus:ring-1 focus:ring-purple-500"
                   />
                 </div>
-                <span className="text-[10px] text-slate-500 block mt-0.5">
-                  Indian order: DD/MM/YYYY. Directly editable or click calendar icon.
-                </span>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                  <input
+                    type="text"
+                    value={contactPerson}
+                    onChange={(e) => setContactPerson(e.target.value)}
+                    placeholder="Attn: Person"
+                    className="w-full border border-slate-300 rounded-lg p-2"
+                  />
+                  <input
+                    type="text"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="Phone No"
+                    className="w-full border border-slate-300 rounded-lg p-2"
+                  />
+                  <input
+                    type="text"
+                    value={gstin}
+                    onChange={(e) => setGstin(e.target.value.toUpperCase())}
+                    placeholder="GSTIN No"
+                    className="w-full font-mono border border-slate-300 rounded-lg p-2 uppercase"
+                  />
+                </div>
+              </div>
+
+              {/* Right: Quotation Number & Date in DD/MM/YYYY */}
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex flex-col justify-center space-y-3">
+                <div>
+                  <label className="block text-[11px] font-black uppercase text-slate-700 mb-1">
+                    Quotation No :-
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={quotationNo}
+                      onChange={(e) => setQuotationNo(e.target.value.toUpperCase())}
+                      className="w-full text-sm font-mono font-black text-slate-900 border border-slate-300 rounded-xl p-2 bg-white uppercase focus:ring-1 focus:ring-purple-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const res = await api.quotations.getNextNumber('uniquepainters', 'short');
+                        if (res?.next_number) setQuotationNo(res.next_number);
+                      }}
+                      className="p-2 bg-slate-200 hover:bg-slate-300 rounded-xl text-slate-700"
+                      title="Fetch latest sequence from database"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-black uppercase text-slate-700 mb-1">
+                    Date :-
+                  </label>
+                  <div className="relative flex items-center">
+                    <input
+                      type="text"
+                      value={quotationDate}
+                      onChange={(e) => setQuotationDate(e.target.value)}
+                      placeholder="DD/MM/YYYY (e.g. 21/10/2025)"
+                      className="w-full text-xs font-bold text-slate-900 border border-slate-300 rounded-xl p-2.5 bg-white pr-9 focus:ring-1 focus:ring-purple-500"
+                    />
+                    <input
+                      type="date"
+                      tabIndex={-1}
+                      value={toISODate(quotationDate)}
+                      onChange={(e) => setQuotationDate(fromISODate(e.target.value))}
+                      className="absolute right-2 opacity-60 hover:opacity-100 cursor-pointer w-6 h-6 border-none bg-transparent"
+                      title="Select date from calendar"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* 4. Introductory Survey & Proposal Context */}
-          <div className="bg-slate-50/70 p-5 rounded-2xl border border-slate-200 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-black uppercase text-slate-900 flex items-center gap-1.5">
-                <Paintbrush className="w-4 h-4 text-purple-600" />
-                Introductory Letter & Site Survey Context
-              </span>
-              <span className="text-[10px] text-slate-400 font-mono">Authentic Unique Painters Intro</span>
-            </div>
-
-            <div className="space-y-2">
+            {/* Introductory Survey & Context */}
+            <div className="bg-slate-50/70 p-4 rounded-2xl border border-slate-200 space-y-2">
               <div className="text-xs font-bold text-slate-800">
                 <input
                   type="text"
                   value={salutation}
                   onChange={(e) => setSalutation(e.target.value.toUpperCase())}
-                  className="font-black text-slate-900 border border-slate-200 rounded px-2 py-1 w-36 uppercase bg-white"
+                  className="font-black text-slate-900 border border-slate-300 rounded px-2 py-1 w-36 uppercase bg-white"
                 />
               </div>
 
@@ -1044,247 +1030,274 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
                 className="w-full text-xs text-slate-700 border border-slate-300 rounded-xl p-2.5 bg-white focus:ring-1 focus:ring-purple-500 leading-relaxed"
               />
             </div>
-          </div>
 
-          {/* 5. Product / Scope Search Bar */}
-          <div className="space-y-2 relative" ref={searchContainerRef}>
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-black uppercase tracking-wider text-slate-900 flex items-center gap-1.5">
-                <Search className="w-4 h-4 text-purple-600" />
-                <span>Search & Add Painting Scope / Coatings / Epoxy Flooring:</span>
-              </label>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handleAddBlankRow}
-                  className="text-xs font-bold text-purple-800 hover:text-purple-900 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-3 py-1 rounded-lg flex items-center gap-1"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>+ Add Blank Specification Row</span>
-                </button>
+            {/* Product / Scope Search Bar & Add Button */}
+            <div className="space-y-2 relative" ref={searchContainerRef}>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-black uppercase tracking-wider text-slate-900 flex items-center gap-1.5">
+                  <Search className="w-4 h-4 text-purple-600" />
+                  <span>Search & Add Painting Scope / Coatings / Epoxy Flooring:</span>
+                </label>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleAddBlankRow}
+                    className="text-xs font-bold text-purple-800 hover:text-purple-900 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-3 py-1 rounded-lg flex items-center gap-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>+ Add Blank Specification Row</span>
+                  </button>
+                </div>
               </div>
-            </div>
 
-            <div className="relative">
-              <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400 pointer-events-none" />
-              <input
-                type="text"
-                placeholder="Search painting catalog (e.g. Tractor Emulsion, Royale, Apex Weatherproof, Epoxy Flooring, Waterproofing, Texture)..."
-                value={productSearchQuery}
-                onFocus={() => setSearchDropdownOpen(true)}
-                onChange={(e) => {
-                  setProductSearchQuery(e.target.value);
-                  setSearchDropdownOpen(true);
-                }}
-                className="w-full pl-10 pr-4 py-2.5 text-xs font-bold bg-white border-2 border-purple-300 rounded-2xl shadow-xs focus:ring-2 focus:ring-purple-400 focus:outline-none"
-              />
-            </div>
+              <div className="relative">
+                <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400 pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="Search painting catalog (e.g. Tractor Emulsion, Royale, Apex Weatherproof, Epoxy Flooring, Waterproofing, Texture)..."
+                  value={productSearchQuery}
+                  onFocus={() => setSearchDropdownOpen(true)}
+                  onChange={(e) => {
+                    setProductSearchQuery(e.target.value);
+                    setSearchDropdownOpen(true);
+                  }}
+                  className="w-full pl-10 pr-4 py-2.5 text-xs font-bold bg-white border-2 border-purple-300 rounded-2xl shadow-xs focus:ring-2 focus:ring-purple-400 focus:outline-none"
+                />
+              </div>
 
-            {/* Instant Search Results Dropdown */}
-            {searchDropdownOpen && (
-              <div className="absolute left-0 right-0 top-full mt-1 bg-white border-2 border-purple-400 rounded-2xl shadow-2xl z-40 max-h-72 overflow-y-auto">
-                {searchResults.length === 0 ? (
-                  <div className="p-4 text-xs text-slate-400 text-center">
-                    No matching painting specifications found. Click "+ Add Blank Specification Row" above.
-                  </div>
-                ) : (
-                  searchResults.map((item, i) => (
-                    <div
-                      key={item.service_code || i}
-                      onClick={() => handleAddCatalogItem(item)}
-                      className="p-3 hover:bg-purple-50/80 cursor-pointer border-b border-slate-100 flex items-center justify-between transition-colors"
-                    >
-                      <div>
-                        <div className="text-xs font-bold text-slate-900 flex items-center gap-2">
-                          <span>{item.service_name}</span>
-                          <span className="text-[10px] font-mono bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded">
-                            {item.service_code}
-                          </span>
-                        </div>
-                        {item.description && (
-                          <div className="text-[11px] text-slate-500 line-clamp-1">{item.description}</div>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        <span className="text-xs font-black text-purple-700">
-                          ₹{Number(item.standard_rate || 0).toFixed(2)}
-                        </span>
-                        <span className="text-[10px] text-slate-400 block">/ {item.default_uom || 'sq_ft'}</span>
-                      </div>
+              {/* Instant Search Results Dropdown */}
+              {searchDropdownOpen && (
+                <div className="absolute left-0 right-0 top-full mt-1 bg-white border-2 border-purple-400 rounded-2xl shadow-2xl z-40 max-h-72 overflow-y-auto">
+                  {searchResults.length === 0 ? (
+                    <div className="p-4 text-xs text-slate-400 text-center">
+                      No matching painting specifications found. Click "+ Add Blank Specification Row" above.
                     </div>
-                  ))
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* 6. Painting Proposal Scope Table (Clean, Beautiful Tabular Layout) */}
-          <div className="overflow-x-auto border-2 border-slate-300 rounded-2xl shadow-xs">
-            <table className="w-full text-xs text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-900 text-white font-black text-[11px] uppercase tracking-wider">
-                  <th className="p-3 text-center w-14">S. No</th>
-                  <th className="p-3">Specification / Service Scope</th>
-                  <th className="p-3 text-center w-28">Area (Sq.Ft)</th>
-                  <th className="p-3 text-right w-28">Rate / Sq.Ft (₹)</th>
-                  <th className="p-3 text-right w-32">Amount (₹)</th>
-                  <th className="p-3 text-center w-12">Act</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200 bg-white">
-                {rows.map((r, idx) => (
-                  <tr key={r.id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="p-3 text-center font-bold text-slate-600 align-top">
-                      {idx + 1}.
-                    </td>
-                    <td className="p-3 space-y-1">
-                      <input
-                        type="text"
-                        value={r.name}
-                        onChange={(e) => handleUpdateRow(r.id, 'name', e.target.value.toUpperCase())}
-                        placeholder="Item Title (e.g. INTERIOR WALL PAINTING)"
-                        className="w-full font-black text-slate-900 uppercase border border-slate-200 rounded-lg p-1.5 focus:ring-1 focus:ring-purple-500"
-                      />
-                      <input
-                        type="text"
-                        value={r.service_type}
-                        onChange={(e) => handleUpdateRow(r.id, 'service_type', e.target.value.toUpperCase())}
-                        placeholder="Service Type (e.g. ASIAN PAINT TRACTOR EMULSION)"
-                        className="w-full text-[11px] font-bold text-purple-700 uppercase border border-slate-200 rounded p-1"
-                      />
-                      <textarea
-                        rows={2}
-                        value={r.description}
-                        onChange={(e) => handleUpdateRow(r.id, 'description', e.target.value)}
-                        placeholder="Application specifications (e.g. APPLY TWO COAT PREMIER EMULSION...)"
-                        className="w-full text-[11px] text-slate-600 border border-slate-200 rounded p-1.5 focus:ring-1 focus:ring-purple-500"
-                      />
-                    </td>
-                    <td className="p-3 align-top">
-                      <input
-                        type="number"
-                        value={r.area_sqft}
-                        onChange={(e) => handleUpdateRow(r.id, 'area_sqft', Number(e.target.value))}
-                        className="w-full text-center font-bold text-slate-900 border border-slate-200 rounded p-1.5 focus:ring-1 focus:ring-purple-500"
-                      />
-                    </td>
-                    <td className="p-3 align-top">
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={r.rate_per_sqft}
-                        onChange={(e) => handleUpdateRow(r.id, 'rate_per_sqft', Number(e.target.value))}
-                        className="w-full text-right font-bold text-slate-900 border border-slate-200 rounded p-1.5 focus:ring-1 focus:ring-purple-500"
-                      />
-                    </td>
-                    <td className="p-3 align-top">
-                      <input
-                        type="number"
-                        value={r.amount}
-                        onChange={(e) => handleUpdateRow(r.id, 'amount', Number(e.target.value))}
-                        className="w-full text-right font-black text-purple-900 border border-purple-200 rounded p-1.5 bg-purple-50/50"
-                      />
-                    </td>
-                    <td className="p-3 text-center align-top">
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveRow(r.id)}
-                        disabled={rows.length <= 1}
-                        className="p-1 text-slate-400 hover:text-red-600 rounded"
-                        title="Remove row"
+                  ) : (
+                    searchResults.map((item, i) => (
+                      <div
+                        key={item.service_code || i}
+                        onClick={() => handleAddCatalogItem(item)}
+                        className="p-3 hover:bg-purple-50/80 cursor-pointer border-b border-slate-100 flex items-center justify-between transition-colors"
                       >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                        <div>
+                          <div className="text-xs font-bold text-slate-900 flex items-center gap-2">
+                            <span>{item.service_name}</span>
+                            <span className="text-[10px] font-mono bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded">
+                              {item.service_code}
+                            </span>
+                          </div>
+                          {item.description && (
+                            <div className="text-[11px] text-slate-500 line-clamp-1">{item.description}</div>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <span className="text-xs font-black text-purple-700">
+                            ₹{Number(item.standard_rate || 0).toFixed(2)}
+                          </span>
+                          <span className="text-[10px] text-slate-400 block">/ {item.default_uom || 'sq_ft'}</span>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* 3-Column Proposal Scope Table (Matching Preview Exactly) */}
+            <div className="overflow-x-auto border-2 border-slate-300 rounded-2xl shadow-xs">
+              <table className="w-full text-xs border border-slate-300 border-collapse">
+                <thead>
+                  <tr className="bg-slate-900 text-white font-bold">
+                    <th className="p-2.5 text-center w-12">S. No</th>
+                    <th className="p-2.5 text-left">Description</th>
+                    <th className="p-2.5 text-right w-44">Amount in INR</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((r, idx) => (
+                    <tr key={r.id} className="border-t border-slate-200 hover:bg-slate-50/70 transition-colors">
+                      <td className="p-2.5 text-center font-bold text-slate-600 align-top">
+                        {idx + 1}.
+                      </td>
+                      <td className="p-2.5 space-y-1.5 align-top">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          <input
+                            type="text"
+                            value={r.name}
+                            onChange={(e) => handleUpdateRow(r.id, 'name', e.target.value.toUpperCase())}
+                            placeholder="Item Title (e.g. INTERIOR WALL PAINTING)"
+                            className="font-black text-xs text-slate-900 uppercase border border-slate-200 rounded-lg p-1.5 focus:ring-1 focus:ring-purple-500 bg-white"
+                          />
+                          <input
+                            type="text"
+                            value={r.service_type}
+                            onChange={(e) => handleUpdateRow(r.id, 'service_type', e.target.value.toUpperCase())}
+                            placeholder="Service Type (e.g. ASIAN PAINT TRACTOR EMULSION)"
+                            className="text-[11px] font-bold text-purple-700 uppercase border border-slate-200 rounded-lg p-1.5 bg-white"
+                          />
+                        </div>
+
+                        <textarea
+                          rows={2}
+                          value={r.description}
+                          onChange={(e) => handleUpdateRow(r.id, 'description', e.target.value)}
+                          placeholder="Application specifications (e.g. APPLY TWO COAT PREMIER EMULSION...)"
+                          className="w-full text-[11px] text-slate-600 border border-slate-200 rounded-lg p-1.5 focus:ring-1 focus:ring-purple-500 bg-white"
+                        />
+
+                        {/* Calculation Bar with Area, Rate, and Delete */}
+                        <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-50 p-2 rounded-lg border border-slate-200">
+                          <div className="flex items-center gap-3 text-xs">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[11px] font-bold text-slate-600">Area:</span>
+                              <input
+                                type="number"
+                                value={r.area_sqft}
+                                onChange={(e) => handleUpdateRow(r.id, 'area_sqft', Number(e.target.value))}
+                                className="w-24 text-center font-bold text-slate-900 border border-slate-300 rounded p-1 text-xs bg-white"
+                              />
+                              <span className="text-[11px] text-slate-500">sq.ft</span>
+                            </div>
+                            <span className="text-slate-400">@</span>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[11px] font-bold text-slate-600">Rate:</span>
+                              <input
+                                type="number"
+                                step="0.01"
+                                value={r.rate_per_sqft}
+                                onChange={(e) => handleUpdateRow(r.id, 'rate_per_sqft', Number(e.target.value))}
+                                className="w-20 text-center font-bold text-slate-900 border border-slate-300 rounded p-1 text-xs bg-white"
+                              />
+                              <span className="text-[11px] text-slate-500">/ sq.ft</span>
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveRow(r.id)}
+                            disabled={rows.length <= 1}
+                            className="p-1 text-slate-400 hover:text-red-600 rounded flex items-center gap-1 text-[11px]"
+                            title="Remove row"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Remove</span>
+                          </button>
+                        </div>
+                      </td>
+
+                      <td className="p-2.5 text-right font-black text-slate-900 align-top">
+                        <div className="flex items-center justify-end gap-1">
+                          <span className="text-slate-500 font-bold">Rs.</span>
+                          <input
+                            type="number"
+                            value={r.amount}
+                            onChange={(e) => handleUpdateRow(r.id, 'amount', Number(e.target.value))}
+                            className="w-28 text-right font-black text-slate-900 border border-slate-300 rounded p-1 text-xs bg-purple-50/50"
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+
+                  {/* Sub Total */}
+                  <tr className="border-t-2 border-slate-300 font-bold bg-slate-50">
+                    <td colSpan={2} className="p-2.5 text-right font-bold text-slate-700">
+                      SUB TOTAL:
+                    </td>
+                    <td className="p-2.5 text-right font-black text-slate-900">
+                      Rs.{subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </td>
                   </tr>
-                ))}
 
-                {/* Sub Total */}
-                <tr className="border-t-2 border-slate-300 font-bold bg-slate-50">
-                  <td colSpan={4} className="p-2.5 text-right uppercase tracking-wider text-slate-700">
-                    SUB TOTAL:
-                  </td>
-                  <td className="p-2.5 text-right font-black text-slate-900">
-                    ₹{subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                  </td>
-                  <td></td>
-                </tr>
+                  {/* Tax Option Toggle */}
+                  <tr className="border-t border-slate-200 text-slate-700">
+                    <td colSpan={2} className="p-2 text-right">
+                      <label className="inline-flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700">
+                        <input
+                          type="checkbox"
+                          checked={applyTax}
+                          onChange={(e) => setApplyTax(e.target.checked)}
+                          className="rounded text-purple-600 focus:ring-purple-500 w-4 h-4"
+                        />
+                        <span>Apply GST (18% Extra):</span>
+                      </label>
+                    </td>
+                    <td className="p-2 text-right font-bold text-slate-700">
+                      {applyTax ? `Rs.${gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '—'}
+                    </td>
+                  </tr>
 
-                {/* Tax Option Toggle */}
-                <tr className="border-t border-slate-200 bg-slate-50/50">
-                  <td colSpan={4} className="p-2 text-right">
-                    <label className="inline-flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700">
-                      <input
-                        type="checkbox"
-                        checked={applyTax}
-                        onChange={(e) => setApplyTax(e.target.checked)}
-                        className="rounded text-purple-600 focus:ring-purple-500 w-4 h-4"
-                      />
-                      <span>Apply GST (18% Extra):</span>
-                    </label>
-                  </td>
-                  <td className="p-2 text-right font-bold text-slate-700">
-                    {applyTax ? `₹${gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '—'}
-                  </td>
-                  <td></td>
-                </tr>
-
-                {/* Total Row */}
-                <tr className="border-t-2 border-purple-950 font-black bg-purple-100 text-sm">
-                  <td colSpan={4} className="p-3 text-right text-purple-950 uppercase tracking-wide">
-                    TOTAL PROJECT VALUE :
-                  </td>
-                  <td className="p-3 text-right font-black text-purple-950 text-base">
-                    ₹{finalTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                  </td>
-                  <td></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          {/* 7. List of Machineries and Consumables */}
-          <div className="bg-slate-50/70 p-5 rounded-2xl border border-slate-200 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-black uppercase text-slate-900 flex items-center gap-1.5">
-                <Layers className="w-4 h-4 text-purple-600" />
-                List of Machineries and Consumables
-              </span>
-              <span className="text-[10px] text-slate-400 font-mono">15 Standard Tools & Materials</span>
+                  {/* Total Project Value Row */}
+                  <tr className="border-t-2 border-purple-900 font-black bg-purple-100 text-sm">
+                    <td colSpan={2} className="p-2.5 text-right text-purple-950 font-black">
+                      TOTAL PROJECT VALUE :
+                    </td>
+                    <td className="p-2.5 text-right text-purple-950 font-black text-base">
+                      Rs.{finalTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
 
-            <div className="flex flex-wrap gap-2">
+            <div className="text-right text-[11px] text-slate-400 font-bold pt-2">Page 1 of 3</div>
+          </div>
+        </div>
+
+        {/* PAGE BREAK 1 TO 2 */}
+        <div className="flex items-center justify-center gap-3 my-4">
+          <div className="h-px bg-slate-300 w-24"></div>
+          <span className="text-[11px] font-black uppercase tracking-wider text-purple-800 bg-purple-100 px-3 py-1 rounded-full shadow-2xs">
+            Page 2 (Machineries, Terms & Conditions, Signatures)
+          </span>
+          <div className="h-px bg-slate-300 w-24"></div>
+        </div>
+
+        {/* ==================== PAGE 2 A4 SHEET ==================== */}
+        <div className="bg-white border-2 border-slate-300 rounded-3xl shadow-xl p-6 md:p-10 space-y-6">
+          <div className="flex justify-between items-center border-b-2 border-purple-900 pb-2">
+            <input
+              type="text"
+              value={sigCompany}
+              onChange={(e) => setSigCompany(e.target.value)}
+              className="font-black text-sm text-purple-900 uppercase border-0 bg-transparent p-0 focus:ring-1 focus:ring-purple-500 rounded"
+            />
+            <span className="text-xs font-mono font-bold text-slate-600">
+              Quotation No: {quotationNo} • Page 2
+            </span>
+          </div>
+
+          {/* Machineries */}
+          <div className="text-xs space-y-2 pt-1">
+            <div className="font-bold text-slate-900">List of Machineries and consumables:</div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5 text-[11px] text-slate-700">
               {machineries.map((m, idx) => (
-                <span
-                  key={idx}
-                  className="inline-flex items-center gap-1.5 bg-white border border-slate-300 text-slate-800 text-xs px-2.5 py-1 rounded-xl shadow-2xs"
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-purple-600" />
-                  <span>{m}</span>
+                <div key={idx} className="flex items-center justify-between bg-slate-50 border border-slate-200 px-2 py-1 rounded">
+                  <span>• {m}</span>
                   <button
                     type="button"
                     onClick={() => handleRemoveMachinery(idx)}
-                    className="text-slate-400 hover:text-red-500 ml-1"
+                    className="text-slate-400 hover:text-red-500 text-xs px-1"
                   >
                     ×
                   </button>
-                </span>
+                </div>
               ))}
             </div>
 
-            <div className="flex items-center gap-2 pt-2">
+            <div className="flex items-center gap-2 pt-1">
               <input
                 type="text"
                 placeholder="Add machinery or consumable item..."
                 value={newMachineryInput}
                 onChange={(e) => setNewMachineryInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleAddMachinery()}
-                className="text-xs border border-slate-300 rounded-xl p-2 bg-white flex-1 focus:ring-1 focus:ring-purple-500"
+                className="text-xs border border-slate-300 rounded-lg p-1.5 bg-white flex-1 focus:ring-1 focus:ring-purple-500"
               />
               <button
                 type="button"
                 onClick={handleAddMachinery}
-                className="px-3 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold flex items-center gap-1"
+                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-bold flex items-center gap-1"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Add</span>
@@ -1292,8 +1305,8 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
             </div>
           </div>
 
-          {/* 8. Call Notice Box */}
-          <div className="bg-purple-50/50 border border-purple-200 rounded-2xl p-4">
+          {/* Call Notice */}
+          <div className="text-xs bg-purple-50 p-2.5 rounded-lg border border-purple-200">
             <label className="block text-[10px] font-black uppercase text-purple-800 mb-1">
               Call Notice Box:
             </label>
@@ -1301,31 +1314,21 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
               type="text"
               value={callNotice}
               onChange={(e) => setCallNotice(e.target.value)}
-              className="w-full text-xs font-bold text-purple-950 bg-white border border-purple-300 rounded-xl p-2.5 focus:ring-1 focus:ring-purple-500"
+              className="w-full text-xs font-bold text-purple-950 bg-white border border-purple-300 rounded p-1.5 focus:ring-1 focus:ring-purple-500"
             />
           </div>
 
-          {/* 9. Terms & Conditions */}
-          <div className="bg-slate-50/70 p-5 rounded-2xl border border-slate-200 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-black uppercase text-slate-900 flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-purple-600" />
-                Terms & Conditions
-              </span>
-              <span className="text-[10px] text-slate-400 font-mono">Authentic Terms</span>
-            </div>
-
-            <ul className="space-y-2">
+          {/* Terms */}
+          <div className="text-xs space-y-2">
+            <div className="font-bold text-slate-900">Terms & Conditions:</div>
+            <ul className="space-y-1 text-[11px] text-slate-700">
               {terms.map((t, idx) => (
-                <li key={idx} className="flex items-center justify-between text-xs bg-white border border-slate-200 rounded-xl p-2">
-                  <div className="flex items-start gap-2 text-slate-700">
-                    <span className="w-1.5 h-1.5 rounded-full bg-purple-600 mt-1.5 shrink-0" />
-                    <span>{t}</span>
-                  </div>
+                <li key={idx} className="flex items-center justify-between bg-slate-50 border border-slate-200 px-2 py-1 rounded">
+                  <span>• {t}</span>
                   <button
                     type="button"
                     onClick={() => handleRemoveTerm(idx)}
-                    className="text-slate-400 hover:text-red-500 p-1"
+                    className="text-slate-400 hover:text-red-500 text-xs px-1"
                   >
                     ×
                   </button>
@@ -1333,19 +1336,19 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
               ))}
             </ul>
 
-            <div className="flex items-center gap-2 pt-2">
+            <div className="flex items-center gap-2 pt-1">
               <input
                 type="text"
                 placeholder="Add new term & condition..."
                 value={newTermInput}
                 onChange={(e) => setNewTermInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleAddTerm()}
-                className="text-xs border border-slate-300 rounded-xl p-2 bg-white flex-1 focus:ring-1 focus:ring-purple-500"
+                className="text-xs border border-slate-300 rounded-lg p-1.5 bg-white flex-1 focus:ring-1 focus:ring-purple-500"
               />
               <button
                 type="button"
                 onClick={handleAddTerm}
-                className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold flex items-center gap-1"
+                className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-bold flex items-center gap-1"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Add Term</span>
@@ -1353,7 +1356,7 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
             </div>
           </div>
 
-          {/* 10. Satisfaction Statement */}
+          {/* Satisfaction */}
           <div>
             <label className="block text-[10px] font-black uppercase text-slate-500 mb-1">
               Satisfaction Statement:
@@ -1362,126 +1365,109 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
               type="text"
               value={satisfactionGoal}
               onChange={(e) => setSatisfactionGoal(e.target.value)}
-              className="w-full text-xs font-medium text-slate-800 border border-slate-300 rounded-xl p-2.5 bg-white"
+              className="w-full text-xs italic text-slate-700 border border-slate-300 rounded-lg p-2 bg-white"
             />
           </div>
 
-          {/* 11. Signatory Block (Direct In-Sheet Editing - NO CLIENT SIGNATURE) */}
-          <div className="pt-6 border-t-2 border-slate-200">
-            <div className="bg-slate-50/80 p-5 rounded-2xl border border-slate-200 max-w-md space-y-2">
-              <div className="text-xs font-bold text-slate-500">Regards,</div>
+          {/* Signatory */}
+          <div className="pt-4 border-t border-slate-200 text-xs flex flex-wrap justify-between items-end gap-4">
+            <div className="text-slate-500 italic max-w-xs text-[11px]">
+              This is a computer generated quotation authenticated by {sigCompany}.
+            </div>
+            <div className="text-right space-y-1">
+              <div className="text-slate-600">Regards</div>
               <input
                 type="text"
                 value={sigCompany}
                 onChange={(e) => setSigCompany(e.target.value)}
-                className="w-full font-black text-sm text-purple-900 border border-slate-300 rounded-lg p-1.5 bg-white"
+                className="text-right font-black text-sm text-purple-900 border border-slate-200 rounded p-1 bg-white"
               />
-              <input
-                type="text"
-                value={sigName}
-                onChange={(e) => setSigName(e.target.value)}
-                className="w-full font-bold text-xs text-slate-800 border border-slate-300 rounded-lg p-1.5 bg-white"
-              />
-              <input
-                type="text"
-                value={sigTitle}
-                onChange={(e) => setSigTitle(e.target.value)}
-                className="w-full text-xs text-slate-600 border border-slate-300 rounded-lg p-1.5 bg-white"
-              />
-              <input
-                type="text"
-                value={sigPhones}
-                onChange={(e) => setSigPhones(e.target.value)}
-                className="w-full text-xs text-slate-600 font-mono border border-slate-300 rounded-lg p-1.5 bg-white"
-              />
-            </div>
-          </div>
-
-          {/* 12. Upcoming Future Technology Showcase (High-Definition Generated Images) */}
-          <div className="pt-8 border-t-2 border-slate-200 space-y-6">
-            <div className="text-center space-y-1">
-              <span className="text-[11px] font-black uppercase tracking-widest text-purple-700 bg-purple-100 px-3 py-1 rounded-full">
-                Future Painting & Wall-Tech Innovation
-              </span>
-              <h2 className="text-base font-black text-slate-900">
-                Advanced Mechanized Application Machinery
-              </h2>
-            </div>
-
-            {/* 3D Wall Printing Machine */}
-            <div className="space-y-3 bg-slate-50/60 p-5 rounded-3xl border border-slate-200">
-              <h3 className="text-xs md:text-sm font-black text-purple-800 uppercase underline tracking-wide">
-                UPCOMING OUR FUTURE TECHNOLOGY; 3D WALL PRINTING MACHINE:
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <div className="border border-slate-200 rounded-2xl p-3 bg-white text-center shadow-xs">
-                  <img
-                    src="/unique_painters/wall_printing_machine_1.jpeg"
-                    alt="3D Wall Printing Machine"
-                    className="max-h-56 mx-auto rounded-xl object-contain"
-                  />
-                  <div className="text-xs font-bold text-slate-800 mt-2.5">
-                    High-Precision 3D Vertical Wall Printer
-                  </div>
-                  <div className="text-[10px] text-slate-500">
-                    Industrial direct-to-wall automated UV inkjet system
-                  </div>
-                </div>
-
-                <div className="border border-slate-200 rounded-2xl p-3 bg-white text-center shadow-xs">
-                  <img
-                    src="/unique_painters/wall_printing_machine_2.jpeg"
-                    alt="3D Wall Printing Sample"
-                    className="max-h-56 mx-auto rounded-xl object-contain"
-                  />
-                  <div className="text-xs font-bold text-slate-800 mt-2.5">
-                    Direct-on-Wall Architectural Graphic Application
-                  </div>
-                  <div className="text-[10px] text-slate-500">
-                    High-resolution 3D murals for corporate and luxury spaces
-                  </div>
-                </div>
+              <div>
+                <input
+                  type="text"
+                  value={sigName}
+                  onChange={(e) => setSigName(e.target.value)}
+                  className="text-right font-bold text-xs text-slate-800 border border-slate-200 rounded p-1 bg-white"
+                />
               </div>
-            </div>
-
-            {/* Robotic Plastering and Painting Machine */}
-            <div className="space-y-3 bg-slate-50/60 p-5 rounded-3xl border border-slate-200">
-              <h3 className="text-xs md:text-sm font-black text-purple-800 uppercase underline tracking-wide">
-                ROBOTIC PLASTERING AND PAINTING MACHINE :
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <div className="border border-slate-200 rounded-2xl p-3 bg-white text-center shadow-xs">
-                  <img
-                    src="/unique_painters/robotic_plastering_1.jpeg"
-                    alt="Robotic Plastering Machine"
-                    className="max-h-56 mx-auto rounded-xl object-contain"
-                  />
-                  <div className="text-xs font-bold text-slate-800 mt-2.5">
-                    Robotic Surface Leveling & Plastering Unit
-                  </div>
-                  <div className="text-[10px] text-slate-500">
-                    High-efficiency automated plaster render & smoothing
-                  </div>
-                </div>
-
-                <div className="border border-slate-200 rounded-2xl p-3 bg-white text-center shadow-xs">
-                  <img
-                    src="/unique_painters/robotic_plastering_2.jpeg"
-                    alt="Robotic Spraying System"
-                    className="max-h-56 mx-auto rounded-xl object-contain"
-                  />
-                  <div className="text-xs font-bold text-slate-800 mt-2.5">
-                    Automated Mechanized Spray Coating System
-                  </div>
-                  <div className="text-[10px] text-slate-500">
-                    Uniform micron-controlled paint & protective finish
-                  </div>
-                </div>
+              <div>
+                <input
+                  type="text"
+                  value={sigTitle}
+                  onChange={(e) => setSigTitle(e.target.value)}
+                  className="text-right text-xs text-slate-600 border border-slate-200 rounded p-1 bg-white"
+                />
+              </div>
+              <div>
+                <input
+                  type="text"
+                  value={sigPhones}
+                  onChange={(e) => setSigPhones(e.target.value)}
+                  className="text-right text-xs text-slate-600 font-mono border border-slate-200 rounded p-1 bg-white"
+                />
               </div>
             </div>
           </div>
-
+          <div className="text-right text-[11px] text-slate-400 font-bold">Page 2 of 3</div>
         </div>
+
+        {/* PAGE BREAK 2 TO 3 */}
+        <div className="flex items-center justify-center gap-3 my-4">
+          <div className="h-px bg-slate-300 w-24"></div>
+          <span className="text-[11px] font-black uppercase tracking-wider text-purple-800 bg-purple-100 px-3 py-1 rounded-full shadow-2xs">
+            Page 3 (Next-Gen Mechanized Equipment Showcase)
+          </span>
+          <div className="h-px bg-slate-300 w-24"></div>
+        </div>
+
+        {/* ==================== PAGE 3 A4 SHEET ==================== */}
+        <div className="bg-white border-2 border-slate-300 rounded-3xl shadow-xl p-6 md:p-10 space-y-6">
+          <div className="flex justify-between items-center border-b-2 border-purple-900 pb-2">
+            <span className="font-black text-sm text-purple-900 uppercase">
+              Upcoming Technology Showcase
+            </span>
+            <span className="text-xs font-mono font-bold text-slate-600">
+              Unique Painters • Page 3
+            </span>
+          </div>
+
+          {/* Technology Showcase with Generated Images */}
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <div className="font-black text-xs uppercase text-purple-800 border-b border-purple-100 pb-1">
+                UPCOMING OUR FUTURE TECHNOLOGY; 3D WALL PRINTING MACHINE:
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="border border-slate-200 rounded-xl p-3 text-center bg-slate-50 shadow-2xs">
+                  <img src="/unique_painters/wall_printing_machine_1.jpeg" className="h-36 mx-auto object-contain rounded-lg" alt="3D Wall Printer" />
+                  <div className="text-[11px] font-bold mt-2 text-slate-800">High-Precision 3D Vertical Wall Printer</div>
+                </div>
+                <div className="border border-slate-200 rounded-xl p-3 text-center bg-slate-50 shadow-2xs">
+                  <img src="/unique_painters/wall_printing_machine_2.jpeg" className="h-36 mx-auto object-contain rounded-lg" alt="3D Sample" />
+                  <div className="text-[11px] font-bold mt-2 text-slate-800">Direct-on-Wall Architectural Graphic</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3 pt-2">
+              <div className="font-black text-xs uppercase text-purple-800 border-b border-purple-100 pb-1">
+                ROBOTIC PLASTERING AND PAINTING MACHINE :
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="border border-slate-200 rounded-xl p-3 text-center bg-slate-50 shadow-2xs">
+                  <img src="/unique_painters/robotic_plastering_1.jpeg" className="h-36 mx-auto object-contain rounded-lg" alt="Robotic Plastering" />
+                  <div className="text-[11px] font-bold mt-2 text-slate-800">Robotic Surface Leveling & Plastering Unit</div>
+                </div>
+                <div className="border border-slate-200 rounded-xl p-3 text-center bg-slate-50 shadow-2xs">
+                  <img src="/unique_painters/robotic_plastering_2.jpeg" className="h-36 mx-auto object-contain rounded-lg" alt="Robotic Spray" />
+                  <div className="text-[11px] font-bold mt-2 text-slate-800">Automated Mechanized Spray Coating</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="text-right text-[11px] text-slate-400 font-bold">Page 3 of 3</div>
+        </div>
+
       </div>
 
       {/* ========================================================================= */}

@@ -108,7 +108,7 @@
                 width: 210mm;
                 max-width: 90%;
                 min-height: 297mm;
-                padding: 16mm 20mm !important;
+                padding: 0 !important;
                 margin: 0 auto 28px auto;
                 box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
                 border-radius: 4px;
@@ -568,211 +568,316 @@
 {% if company_code == 'uniquepainters' %}
     <!-- ================= PAGE 1 ================= -->
     <div class="page unp-page">
-        <!-- 1. Header Banner Image (Page 1 ALONE, balanced within margins) -->
-        <div class="unp-header">
+        <!-- 1. Header Banner Image (Page 1 ALONE, 100% Edge-to-Edge Flush) -->
+        <div class="unp-header" style="width: 100%; border-bottom: 2px solid #7c3aed; line-height: 0; margin-bottom: 14px;">
             {% if header_base64 %}
-            <img src="data:image/png;base64,{{ header_base64 }}" class="unp-banner-img" alt="Unique Painters Letterhead Header" />
+            <img src="data:image/png;base64,{{ header_base64 }}" class="unp-banner-img" style="width: 100%; display: block;" alt="Unique Painters Letterhead Header" />
             {% endif %}
         </div>
 
-        <!-- 2. Document Title -->
-        <div class="unp-quote-title">SURFACE COATING & PAINTING PROPOSAL</div>
+        <div class="unp-page-content" style="padding: 0 14mm 10mm 14mm; box-sizing: border-box;">
+            <!-- 2. Document Title -->
+            <div class="unp-quote-title" style="text-align: center; font-size: 13pt; font-weight: 900; text-decoration: underline; color: #0f172a; margin: 4px 0 14px 0; text-transform: uppercase;">
+                {{ snapshot.quotationTitle or 'SURFACE COATING & PAINTING PROPOSAL' }}
+            </div>
 
-        <!-- 3. Meta Table: To & Date (Neat 2-Column Equal Spacing) -->
-        <table class="unp-meta-table">
-            <tr>
-                <td class="unp-to-cell">
-                    <div class="unp-to-label">To,</div>
-                    <div class="unp-cust-name">{{ (customer.company_name if customer else 'TRUE NUTRITION') | upper }}</div>
-                    {% if customer and customer.billing_address_line1 %}
-                    <div class="unp-cust-addr">{{ customer.billing_address_line1 }}{% if customer.billing_city %}, {{ customer.billing_city }}{% endif %}</div>
-                    {% elif customer and customer.billing_city %}
-                    <div class="unp-cust-addr">{{ customer.billing_city }}</div>
-                    {% else %}
-                    <div class="unp-cust-addr">KODUNGAIYUR</div>
-                    {% endif %}
-                    {% if customer and customer.phone %}
-                    <div class="unp-cust-phone">Contact: {{ customer.phone }}</div>
-                    {% endif %}
-                    <div class="unp-salutation">DEAR SIR;</div>
-                </td>
-                <td class="unp-date-cell">
-                    <div class="unp-meta-line"><strong>DATE:</strong> {{ quotation.quotation_date.strftime('%d/%m/%Y') if quotation.quotation_date else '21/10/2025' }}</div>
-                    <div class="unp-meta-line"><strong>QUOTATION NO:</strong> {{ quotation.quotation_number or 'UNP/2026/001' }}</div>
-                </td>
-            </tr>
-        </table>
-
-        <!-- 4. Introductory Paragraphs -->
-        <div class="unp-intro-text">
-            We are glad to inform you that we are in the Painting and Cleaning industry for the past 12 years and we do Interior and exterior painting, wall graphics, 3D paintings, starting from 900 to 100000 Sq. using traditional and latest technology Unifying Expertise.
-        </div>
-        <div class="unp-intro-text" style="margin-top: 6px; margin-bottom: 12px;">
-            After a through survey of your site we are herewith submitting our proposal for the painting of your above property.
-        </div>
-
-        <!-- 5. Neat Proposal Table (Aligned & Formatted Cleanly) -->
-        <table class="unp-table">
-            <thead>
+            <!-- 3. Meta Table: To & Date (Neat 2-Column Responsive Grid) -->
+            <table class="unp-meta-table" style="width: 100%; border-collapse: collapse; margin-bottom: 12px;">
                 <tr>
-                    <th style="width: 8%;" class="text-center">S. No</th>
-                    <th style="width: 68%;">Description</th>
-                    <th style="width: 24%;" class="text-right">Amount in INR</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% if sections and sections|length > 0 %}
-                    {% for sec in sections %}
-                    <tr class="{% if loop.index % 2 == 0 %}unp-alt-row{% endif %}">
-                        <td class="text-center font-bold" style="color: #475569;">{{ loop.index }}.</td>
-                        <td>
-                            <div class="unp-item-title">{{ sec.section_name or 'INTERIOR WALL PAINTING' }}{% if sec.service_name %}: {{ sec.service_name }}{% endif %}</div>
-                            {% if sec.notes %}
-                            <div class="unp-spec-sub">{{ sec.notes }}</div>
-                            {% endif %}
-                            {% if sec.billable_area %}
-                            <div class="unp-spec-dim">Area: {{ "{:,.0f}".format(sec.billable_area) }} sq.ft @ Rs.{{ "{:,.2f}".format(sec.applied_rate) }} / sq.ft</div>
-                            {% endif %}
-                        </td>
-                        <td class="text-right font-bold unp-amount-col">
-                            RS.{{ "{:,.2f}".format(sec.line_total) if sec.line_total else '0.00' }}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                {% elif items and items|length > 0 %}
-                    {% for itm in items %}
-                    <tr class="{% if loop.index % 2 == 0 %}unp-alt-row{% endif %}">
-                        <td class="text-center font-bold" style="color: #475569;">{{ loop.index }}.</td>
-                        <td>
-                            <div class="unp-item-title">{{ itm.item_name }}</div>
-                            {% if itm.description %}
-                            <div class="unp-spec-sub">{{ itm.description }}</div>
-                            {% endif %}
-                        </td>
-                        <td class="text-right font-bold unp-amount-col">
-                            RS.{{ "{:,.2f}".format(itm.line_total) if itm.line_total else '0.00' }}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                {% else %}
-                    <tr>
-                        <td class="text-center font-bold" style="color: #475569;">1.</td>
-                        <td>
-                            <div class="unp-item-title">INTERIOR WALL PAINTING: ASIAN PAINT TRACTOR EMULSION</div>
-                            <div class="unp-spec-sub">APPLY TWO CODE PREMIER EMULSION SHYNE INTERIOR WALLS CEILING WALL PUTTY AREA TWO CODE</div>
-                            <div class="unp-spec-dim">Area: 4,200 sq.ft @ Rs.22.14 / sq.ft</div>
-                        </td>
-                        <td class="text-right font-bold unp-amount-col">
-                            RS.{{ "{:,.0f}".format(quotation.final_amount or quotation.subtotal or 93000) }}
-                        </td>
-                    </tr>
-                {% endif %}
+                    <td class="unp-to-cell" style="vertical-align: top; width: 60%; font-size: 9.5pt; line-height: 1.35;">
+                        <div class="unp-to-label" style="font-weight: 800; font-size: 10pt; color: #0f172a;">To,</div>
+                        <div class="unp-cust-name" style="font-size: 11pt; font-weight: 900; color: #0f172a; margin: 2px 0;">
+                            {{ (snapshot.customerName or (customer.company_name if customer else 'TRUE NUTRITION')) | upper }}
+                        </div>
+                        {% if snapshot.addressLine1 %}
+                        <div class="unp-cust-addr" style="font-size: 9pt; color: #334155;">{{ snapshot.addressLine1 }}</div>
+                        {% elif customer and customer.billing_address_line1 %}
+                        <div class="unp-cust-addr" style="font-size: 9pt; color: #334155;">{{ customer.billing_address_line1 }}</div>
+                        {% endif %}
+                        
+                        {% if snapshot.addressLine2 %}
+                        <div class="unp-cust-addr" style="font-size: 9pt; color: #334155;">{{ snapshot.addressLine2 }}</div>
+                        {% elif customer and customer.billing_city %}
+                        <div class="unp-cust-addr" style="font-size: 9pt; color: #334155;">{{ customer.billing_city }}</div>
+                        {% endif %}
 
-                <!-- Total Row (Aligned & Highlighted) -->
-                <tr class="unp-total-row">
-                    <td colspan="2" class="text-right font-bold" style="padding-right: 12px; font-size: 10pt; color: #0f172a;">
-                        TOTAL PROJECT VALUE :
+                        {% if snapshot.contactPerson or (customer and customer.contact_person) %}
+                        <div class="unp-cust-phone" style="font-size: 9pt; color: #334155;">Attn: {{ snapshot.contactPerson or customer.contact_person }}</div>
+                        {% endif %}
+                        {% if snapshot.phone or (customer and customer.phone) %}
+                        <div class="unp-cust-phone" style="font-size: 9pt; color: #334155;">Ph: {{ snapshot.phone or customer.phone }}</div>
+                        {% endif %}
+                        <div class="unp-salutation" style="font-weight: 800; font-size: 9.5pt; margin-top: 6px; color: #0f172a;">
+                            {{ snapshot.salutation or 'DEAR SIR;' }}
+                        </div>
                     </td>
-                    <td class="text-right font-bold" style="color: #581c87; font-size: 11pt;">
-                        RS.{{ "{:,.0f}".format(quotation.final_amount or quotation.subtotal or 93000) }}
+                    <td class="unp-date-cell" style="vertical-align: top; width: 40%; text-align: right; font-size: 9.5pt; line-height: 1.5;">
+                        <div class="unp-meta-line" style="color: #0f172a;">
+                            <strong>DATE:</strong> {{ snapshot.quotationDate or (quotation.quotation_date.strftime('%d/%m/%Y') if quotation.quotation_date else '21/10/2025') }}
+                        </div>
+                        <div class="unp-meta-line" style="color: #0f172a;">
+                            <strong>QUOTATION NO:</strong> {{ snapshot.quotationNo or quotation.quotation_number or 'UNP/2026/001' }}
+                        </div>
                     </td>
                 </tr>
-            </tbody>
-        </table>
+            </table>
+
+            <!-- 4. Introductory Paragraphs -->
+            <div class="unp-intro-text" style="font-size: 9pt; line-height: 1.45; color: #1e293b; text-align: justify; margin-bottom: 6px;">
+                {{ snapshot.introText1 or "We are glad to inform you that we are in the Painting and Cleaning industry for the past 12 years and we do Interior and exterior painting, wall graphics, 3D paintings, starting from 900 to 100000 Sq. using traditional and latest technology Unifying Expertise." }}
+            </div>
+            <div class="unp-intro-text" style="font-size: 9pt; line-height: 1.45; color: #1e293b; text-align: justify; margin-bottom: 12px;">
+                {{ snapshot.introText2 or "After a through survey of your site we are herewith submitting our proposal for the painting of your above property." }}
+            </div>
+
+            <!-- 5. 3-Column Proposal Scope Table (Matching Preview Exactly) -->
+            <table class="unp-table" style="width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 10px; font-size: 9pt; border: 1px solid #cbd5e1;">
+                <thead>
+                    <tr style="background-color: #0f172a; color: #ffffff;">
+                        <th style="width: 10%; padding: 8px 10px; text-align: center; border: 1px solid #334155; font-size: 9pt; font-weight: 800;">S. No</th>
+                        <th style="width: 65%; padding: 8px 10px; text-align: left; border: 1px solid #334155; font-size: 9pt; font-weight: 800;">Description</th>
+                        <th style="width: 25%; padding: 8px 10px; text-align: right; border: 1px solid #334155; font-size: 9pt; font-weight: 800;">Amount in INR</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if snapshot and snapshot.rows and snapshot.rows|length > 0 %}
+                        {% for r in snapshot.rows %}
+                        <tr style="border-top: 1px solid #e2e8f0; {% if loop.index % 2 == 0 %}background-color: #f8fafc;{% endif %}">
+                            <td style="padding: 8px 10px; text-align: center; font-weight: 800; color: #475569; vertical-align: top;">{{ loop.index }}.</td>
+                            <td style="padding: 8px 10px; vertical-align: top;">
+                                <div style="font-weight: 900; font-size: 9.5pt; color: #0f172a; text-transform: uppercase;">
+                                    {{ r.name }}{% if r.service_type %}: {{ r.service_type }}{% endif %}
+                                </div>
+                                {% if r.description %}
+                                <div style="font-size: 8pt; color: #64748b; margin-top: 3px; line-height: 1.35;">{{ r.description }}</div>
+                                {% endif %}
+                                {% if r.area_sqft and r.area_sqft > 0 %}
+                                <div style="font-size: 8pt; color: #6d28d9; font-weight: 700; margin-top: 3px; font-family: monospace;">
+                                    Area: {{ "{:,.0f}".format(r.area_sqft) }} sq.ft @ Rs.{{ "{:,.2f}".format(r.rate_per_sqft or 0) }} / sq.ft
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td style="padding: 8px 10px; text-align: right; font-weight: 900; font-size: 9.5pt; color: #0f172a; vertical-align: top; white-space: nowrap;">
+                                Rs.{{ "{:,.2f}".format(r.amount or 0) }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% elif sections and sections|length > 0 %}
+                        {% for sec in sections %}
+                        <tr style="border-top: 1px solid #e2e8f0; {% if loop.index % 2 == 0 %}background-color: #f8fafc;{% endif %}">
+                            <td style="padding: 8px 10px; text-align: center; font-weight: 800; color: #475569; vertical-align: top;">{{ loop.index }}.</td>
+                            <td style="padding: 8px 10px; vertical-align: top;">
+                                <div style="font-weight: 900; font-size: 9.5pt; color: #0f172a; text-transform: uppercase;">
+                                    {{ sec.section_name or 'INTERIOR WALL PAINTING' }}{% if sec.service_name %}: {{ sec.service_name }}{% endif %}
+                                </div>
+                                {% if sec.notes %}
+                                <div style="font-size: 8pt; color: #64748b; margin-top: 3px; line-height: 1.35;">{{ sec.notes }}</div>
+                                {% endif %}
+                                {% if sec.billable_area %}
+                                <div style="font-size: 8pt; color: #6d28d9; font-weight: 700; margin-top: 3px; font-family: monospace;">
+                                    Area: {{ "{:,.0f}".format(sec.billable_area) }} sq.ft @ Rs.{{ "{:,.2f}".format(sec.applied_rate) }} / sq.ft
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td style="padding: 8px 10px; text-align: right; font-weight: 900; font-size: 9.5pt; color: #0f172a; vertical-align: top; white-space: nowrap;">
+                                Rs.{{ "{:,.2f}".format(sec.line_total if sec.line_total else 0) }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr style="border-top: 1px solid #e2e8f0;">
+                            <td style="padding: 8px 10px; text-align: center; font-weight: 800; color: #475569; vertical-align: top;">1.</td>
+                            <td style="padding: 8px 10px; vertical-align: top;">
+                                <div style="font-weight: 900; font-size: 9.5pt; color: #0f172a; text-transform: uppercase;">
+                                    INTERIOR WALL PAINTING: ASIAN PAINT TRACTOR EMULSION
+                                </div>
+                                <div style="font-size: 8pt; color: #64748b; margin-top: 3px;">
+                                    APPLY TWO CODE PREMIER EMULSION SHYNE INTERIOR WALLS CEILING WALL PUTTY AREA TWO CODE
+                                </div>
+                                <div style="font-size: 8pt; color: #6d28d9; font-weight: 700; margin-top: 3px; font-family: monospace;">
+                                    Area: 4,200 sq.ft @ Rs.22.14 / sq.ft
+                                </div>
+                            </td>
+                            <td style="padding: 8px 10px; text-align: right; font-weight: 900; font-size: 9.5pt; color: #0f172a; vertical-align: top; white-space: nowrap;">
+                                Rs.{{ "{:,.2f}".format(final_amount_val) }}
+                            </td>
+                        </tr>
+                    {% endif %}
+
+                    <!-- Sub Total -->
+                    <tr style="border-top: 2px solid #cbd5e1; font-weight: bold; background-color: #f8fafc;">
+                        <td colspan="2" style="padding: 6px 10px; text-align: right; font-weight: 800; color: #334155; font-size: 9pt;">
+                            SUB TOTAL:
+                        </td>
+                        <td style="padding: 6px 10px; text-align: right; font-weight: 900; color: #0f172a; font-size: 9.5pt;">
+                            Rs.{{ "{:,.2f}".format(subtotal_val) }}
+                        </td>
+                    </tr>
+
+                    <!-- GST (18%) -->
+                    {% if apply_tax_val %}
+                    <tr style="border-top: 1px solid #e2e8f0; color: #334155;">
+                        <td colspan="2" style="padding: 5px 10px; text-align: right; font-size: 8.5pt;">
+                            GST (18%):
+                        </td>
+                        <td style="padding: 5px 10px; text-align: right; font-weight: 800; font-size: 8.5pt; color: #0f172a;">
+                            Rs.{{ "{:,.2f}".format(tax_val) }}
+                        </td>
+                    </tr>
+                    {% endif %}
+
+                    <!-- Total Row (Aligned & Highlighted Purple) -->
+                    <tr style="border-top: 2px solid #581c87; background-color: #f3e8ff;">
+                        <td colspan="2" style="padding: 8px 10px; text-align: right; font-weight: 900; font-size: 10pt; color: #581c87;">
+                            TOTAL PROJECT VALUE :
+                        </td>
+                        <td style="padding: 8px 10px; text-align: right; font-weight: 900; color: #581c87; font-size: 11pt;">
+                            Rs.{{ "{:,.2f}".format(final_amount_val) }}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <div style="text-align: right; font-size: 8pt; color: #94a3b8; font-weight: 700; margin-top: 12px;">
+                Page 1 of 3
+            </div>
+        </div>
     </div>
 
-    <div class="page-break"></div>
+    <div class="page-break" style="page-break-before: always; break-before: page; height: 1px;"></div>
 
-    <!-- ================= PAGE 2 (NO HEADER BANNER) ================= -->
-    <div class="page unp-page" style="padding-top: 10px;">
-        <div class="unp-section-heading">List of Machineries and consumables</div>
-        <ul class="unp-bullet-list">
-            <li>Airless Sprayer with latest technology</li>
-            <li>Sanding Machine</li>
-            <li>Vacuum Cleaner</li>
-            <li>Putty blades</li>
-            <li>Sanding paper</li>
-            <li>Leveling tool</li>
-            <li>Ladders or Scissor Lift</li>
-            <li>Banian waste</li>
-            <li>Metal paste</li>
-            <li>Wall putty</li>
-            <li>Primer</li>
-            <li>Thinner</li>
-            <li>Brush and rollers</li>
-            <li>Masking papers</li>
-            <li>Safety equipment.</li>
-        </ul>
-
-        <div class="unp-call-box">
-            Looking forward for your favourable orders. Please call - 9500065813 / 9710148218.
+    <!-- ================= PAGE 2 ================= -->
+    <div class="page unp-page" style="page-break-before: always; break-before: page; padding: 12mm 14mm 14mm 14mm; box-sizing: border-box;">
+        <!-- Top Header Bar -->
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #581c87; padding-bottom: 6px; margin-bottom: 12px;">
+            <span style="font-weight: 900; font-size: 10.5pt; text-transform: uppercase; color: #581c87;">
+                {{ snapshot.sigCompany or company.company_name or 'Unique Painters' }}
+            </span>
+            <span style="font-size: 8.5pt; font-family: monospace; font-weight: 700; color: #475569;">
+                Quotation No: {{ snapshot.quotationNo or quotation.quotation_number or 'UNP/2026/001' }} • Page 2
+            </span>
         </div>
 
-        <div class="unp-section-heading" style="margin-top: 14px;">Terms & Conditions</div>
-        <ul class="unp-bullet-list">
-            <li>GST 18% Extra</li>
-            <li>50% Payment in Advance and the balance on completion of work.</li>
-            <li>Water and power supply to be provided by you.</li>
-            <li>Apart from the above mentioned jobs, if yours require additional services Please inform before the issuing work order.</li>
-            <li>Scaffolding charges will Extra</li>
-        </ul>
+        <!-- Machineries -->
+        <div style="font-size: 9.5pt; font-weight: 800; color: #0f172a; margin-bottom: 6px;">
+            List of Machineries and consumables:
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3px; margin-bottom: 12px;">
+            {% set mach_list = snapshot.machineries if (snapshot and snapshot.machineries) else [
+                'Airless Sprayer with latest technology', 'Sanding Machine', 'Vacuum Cleaner', 'Putty blades',
+                'Sanding paper', 'Leveling tool', 'Ladders or Scissor Lift', 'Banian waste',
+                'Metal paste', 'Wall putty', 'Primer', 'Thinner', 'Brush and rollers', 'Masking papers', 'Safety equipment.'
+            ] %}
+            {% for m in mach_list %}
+            <div style="font-size: 8.5pt; color: #334155;">• {{ m }}</div>
+            {% endfor %}
+        </div>
 
-        <div class="unp-satisfaction-line">
-            Your satisfaction is our Goal. Looking forward for your favourable orders.
+        <!-- Call Notice Box -->
+        <div style="background-color: #faf5ff; border: 1px solid #e9d5ff; border-radius: 8px; padding: 8px 12px; font-weight: 800; font-size: 8.5pt; color: #581c87; margin: 10px 0;">
+            {{ snapshot.callNotice or "Looking forward for your favourable orders. Please call - 9500065813 / 9710148218." }}
+        </div>
+
+        <!-- Terms & Conditions -->
+        <div style="font-size: 9.5pt; font-weight: 800; color: #0f172a; margin-top: 10px; margin-bottom: 6px;">
+            Terms & Conditions:
+        </div>
+        <div style="margin-bottom: 10px;">
+            {% set terms_list = snapshot.terms if (snapshot and snapshot.terms) else [
+                'GST 18% Extra', '50% Payment in Advance and the balance on completion of work.',
+                'Water and power supply to be provided by you.',
+                'Apart from the above mentioned jobs, if yours require additional services Please inform before the issuing work order.',
+                'Scaffolding charges will Extra'
+            ] %}
+            {% for t in terms_list %}
+            <div style="font-size: 8.5pt; color: #334155; margin-bottom: 3px;">• {{ t }}</div>
+            {% endfor %}
+        </div>
+
+        <!-- Satisfaction statement -->
+        <div style="font-size: 8.5pt; font-style: italic; color: #475569; margin: 10px 0;">
+            {{ snapshot.satisfactionGoal or "Your satisfaction is our Goal. Looking forward for your favourable orders." }}
         </div>
 
         <!-- Signature Block -->
-        <table class="unp-signature-table">
-            <tr>
-                <td style="width: 60%; vertical-align: top;">
-                    <div>Regards</div>
-                    <div class="unp-sig-company">{{ company.company_name or 'Unique Painters' }}</div>
-                    <div class="unp-sig-name">{{ quotation.signatory_name or company.signatory_name or 'Mr. Manikandan Balamurugan' }}</div>
-                    <div class="unp-sig-title">{{ quotation.signatory_designation or company.signatory_designation or 'Sales and Service Head' }}</div>
-                    <div style="font-size: 8pt; font-weight: 800; text-transform: uppercase; margin-top: 4px; color: #1e293b;">Authorised Signatory</div>
-                    <div class="unp-sig-phone">{{ company.phone1 or company.phone2 or '9710148218 / 7338882034' }}</div>
-                </td>
-                <td style="width: 40%; text-align: right; vertical-align: bottom;">
-                </td>
-            </tr>
-        </table>
+        <div style="border-top: 1px solid #e2e8f0; padding-top: 10px; margin-top: 10px; display: flex; justify-content: space-between; align-items: flex-end;">
+            <div style="font-size: 7.5pt; color: #64748b; font-style: italic; max-width: 260px;">
+                This is a computer generated quotation authenticated by {{ snapshot.sigCompany or company.company_name or 'Unique Painters' }}.
+            </div>
+            <div style="text-align: right;">
+                <div style="font-size: 8.5pt; color: #475569;">Regards</div>
+                <div style="font-size: 10pt; font-weight: 900; color: #581c87;">{{ snapshot.sigCompany or company.company_name or 'Unique Painters' }}</div>
+                <div style="font-size: 9pt; font-weight: 800; color: #0f172a;">{{ snapshot.sigName or quotation.signatory_name or company.signatory_name or 'Mr. Manikandan Balamurugan' }}</div>
+                <div style="font-size: 8pt; color: #475569;">{{ snapshot.sigTitle or quotation.signatory_designation or company.signatory_designation or 'Sales and Service Head' }}</div>
+                <div style="font-size: 8pt; color: #475569; font-family: monospace;">{{ snapshot.sigPhones or company.phone1 or '+91 7338882036 / 9710148218' }}</div>
+            </div>
+        </div>
+
+        <div style="text-align: right; font-size: 8pt; color: #94a3b8; font-weight: 700; margin-top: 12px;">
+            Page 2 of 3
+        </div>
     </div>
 
-    <div class="page-break"></div>
+    <div class="page-break" style="page-break-before: always; break-before: page; height: 1px;"></div>
 
-    <!-- ================= PAGE 3 (NO HEADER BANNER) ================= -->
-    <div class="page unp-page" style="padding-top: 10px;">
-        <div class="unp-tech-heading">UPCOMING OUR FUTURE TECHNOLOGY; 3D WALL PRINTING MACHINE:</div>
-        <div class="unp-tech-gallery">
-            {% if wall_printing_1_base64 %}
-            <div class="unp-tech-card">
-                <img src="data:image/jpeg;base64,{{ wall_printing_1_base64 }}" class="unp-tech-img" alt="3D Wall Printing Machine" />
-                <div class="unp-tech-label">High-Precision 3D Vertical Wall Printer</div>
-            </div>
-            {% endif %}
-            {% if wall_printing_2_base64 %}
-            <div class="unp-tech-card">
-                <img src="data:image/jpeg;base64,{{ wall_printing_2_base64 }}" class="unp-tech-img" alt="3D Wall Printing Sample" />
-                <div class="unp-tech-label">Direct-on-Wall Architectural Graphic Application</div>
-            </div>
-            {% endif %}
+    <!-- ================= PAGE 3 ================= -->
+    <div class="page unp-page" style="page-break-before: always; break-before: page; padding: 12mm 14mm 14mm 14mm; box-sizing: border-box;">
+        <!-- Top Header Bar -->
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #581c87; padding-bottom: 6px; margin-bottom: 14px;">
+            <span style="font-weight: 900; font-size: 10.5pt; text-transform: uppercase; color: #581c87;">
+                Upcoming Technology Showcase
+            </span>
+            <span style="font-size: 8.5pt; font-family: monospace; font-weight: 700; color: #475569;">
+                Unique Painters • Page 3
+            </span>
         </div>
 
-        <div class="unp-tech-heading" style="margin-top: 22px;">ROBOTIC PLASTERING AND PAINTING MACHINE ;</div>
-        <div class="unp-tech-gallery">
-            {% if robotic_1_base64 %}
-            <div class="unp-tech-card">
-                <img src="data:image/jpeg;base64,{{ robotic_1_base64 }}" class="unp-tech-img" alt="Robotic Plastering Machine" />
-                <div class="unp-tech-label">Robotic Surface Leveling & Plastering Unit</div>
+        <!-- 3D Wall Printing -->
+        <div style="margin-bottom: 16px;">
+            <div style="font-weight: 900; font-size: 9pt; text-transform: uppercase; color: #581c87; border-bottom: 1px solid #f3e8ff; padding-bottom: 4px; margin-bottom: 8px;">
+                UPCOMING OUR FUTURE TECHNOLOGY; 3D WALL PRINTING MACHINE:
             </div>
-            {% endif %}
-            {% if robotic_2_base64 %}
-            <div class="unp-tech-card">
-                <img src="data:image/jpeg;base64,{{ robotic_2_base64 }}" class="unp-tech-img" alt="Robotic Spraying System" />
-                <div class="unp-tech-label">Automated Mechanized Spray Coating System</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px; text-align: center; background-color: #f8fafc;">
+                    {% if wall_printing_1_base64 %}
+                    <img src="data:image/jpeg;base64,{{ wall_printing_1_base64 }}" style="max-height: 120px; max-width: 100%; object-fit: contain; margin: 0 auto; display: block; border-radius: 6px;" alt="3D Wall Printing Machine" />
+                    {% endif %}
+                    <div style="font-size: 8pt; font-weight: 800; color: #1e293b; margin-top: 6px;">High-Precision 3D Vertical Wall Printer</div>
+                </div>
+                <div style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px; text-align: center; background-color: #f8fafc;">
+                    {% if wall_printing_2_base64 %}
+                    <img src="data:image/jpeg;base64,{{ wall_printing_2_base64 }}" style="max-height: 120px; max-width: 100%; object-fit: contain; margin: 0 auto; display: block; border-radius: 6px;" alt="3D Wall Printing Sample" />
+                    {% endif %}
+                    <div style="font-size: 8pt; font-weight: 800; color: #1e293b; margin-top: 6px;">Direct-on-Wall Architectural Graphic</div>
+                </div>
             </div>
-            {% endif %}
         </div>
+
+        <!-- Robotic Plastering -->
+        <div style="margin-bottom: 16px;">
+            <div style="font-weight: 900; font-size: 9pt; text-transform: uppercase; color: #581c87; border-bottom: 1px solid #f3e8ff; padding-bottom: 4px; margin-bottom: 8px;">
+                ROBOTIC PLASTERING AND PAINTING MACHINE :
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px; text-align: center; background-color: #f8fafc;">
+                    {% if robotic_1_base64 %}
+                    <img src="data:image/jpeg;base64,{{ robotic_1_base64 }}" style="max-height: 120px; max-width: 100%; object-fit: contain; margin: 0 auto; display: block; border-radius: 6px;" alt="Robotic Plastering Machine" />
+                    {% endif %}
+                    <div style="font-size: 8pt; font-weight: 800; color: #1e293b; margin-top: 6px;">Robotic Surface Leveling & Plastering Unit</div>
+                </div>
+                <div style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px; text-align: center; background-color: #f8fafc;">
+                    {% if robotic_2_base64 %}
+                    <img src="data:image/jpeg;base64,{{ robotic_2_base64 }}" style="max-height: 120px; max-width: 100%; object-fit: contain; margin: 0 auto; display: block; border-radius: 6px;" alt="Robotic Spraying System" />
+                    {% endif %}
+                    <div style="font-size: 8pt; font-weight: 800; color: #1e293b; margin-top: 6px;">Automated Mechanized Spray Coating</div>
+                </div>
+            </div>
+        </div>
+
+        <div style="text-align: right; font-size: 8pt; color: #94a3b8; font-weight: 700; margin-top: 12px;">
+            Page 3 of 3
+        </div>
+    </div>
     </div>
 {% else %}
 

@@ -76,7 +76,30 @@ def render_quotation_html(
 
     prepared_by_name = quotation.prepared_by.full_name if quotation.prepared_by else "Admin"
 
+    snapshot = {}
+    raw_snap = getattr(quotation, 'snapshot_json', None)
+    if raw_snap:
+        if isinstance(raw_snap, dict):
+            snapshot = raw_snap
+        elif isinstance(raw_snap, str):
+            try:
+                snapshot = json.loads(raw_snap)
+            except Exception:
+                snapshot = {}
+
+    subtotal_val = float(snapshot.get('subtotal') or quotation.subtotal or 0)
+    tax_rate_val = float(snapshot.get('taxPercent') or quotation.tax_rate or (18 if snapshot.get('applyTax') else 0))
+    apply_tax_val = bool(snapshot.get('applyTax') if 'applyTax' in snapshot else (tax_rate_val > 0 or (quotation.total_tax and quotation.total_tax > 0)))
+    tax_val = float(snapshot.get('gstAmount') or quotation.total_tax or (subtotal_val * tax_rate_val / 100 if apply_tax_val else 0))
+    final_amount_val = float(snapshot.get('finalTotal') or quotation.final_amount or (subtotal_val + tax_val if apply_tax_val else subtotal_val))
+
     html_content = template.render(
+        snapshot=snapshot,
+        subtotal_val=subtotal_val,
+        tax_rate_val=tax_rate_val,
+        apply_tax_val=apply_tax_val,
+        tax_val=tax_val,
+        final_amount_val=final_amount_val,
         quotation=quotation,
         company=company,
         customer=customer,
