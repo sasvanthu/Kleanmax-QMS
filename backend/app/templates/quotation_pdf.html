@@ -141,6 +141,68 @@
                 padding: 0 !important;
             }
         }
+        {% elif company_code == 'kleanmax' %}
+        @media screen {
+            body {
+                background-color: #cbd5e1;
+                padding: 24px 16px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+            .km-page {
+                background: #ffffff;
+                width: 210mm;
+                max-width: 90%;
+                min-height: 297mm;
+                height: 297mm;
+                padding: 0 !important;
+                margin: 0 auto 28px auto;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+                border-radius: 4px;
+                box-sizing: border-box;
+                position: relative;
+                overflow: hidden;
+            }
+            .page-break {
+                display: none !important;
+                height: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+        }
+        @media print {
+            body {
+                background: #ffffff;
+                padding: 0;
+                margin: 0;
+            }
+            .km-page {
+                padding: 0 !important;
+                margin: 0 !important;
+                box-shadow: none !important;
+                border-radius: 0 !important;
+                width: 100% !important;
+                min-height: 297mm;
+                height: 297mm;
+                max-height: 297mm;
+                box-sizing: border-box;
+                position: relative;
+                overflow: hidden;
+                page-break-after: always;
+                break-after: page;
+            }
+            .km-page:last-child {
+                page-break-after: auto;
+                break-after: auto;
+            }
+            .page-break {
+                display: none !important;
+                height: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+        }
         {% endif %}
 
 /* Legacy banner block removed for flush edge-to-edge layout */
@@ -884,6 +946,213 @@
         <div style="text-align: right; font-size: 8pt; color: #94a3b8; font-weight: 700; margin-top: 12px;">
             Page 3 of 3
         </div>
+        </div>
+    </div>
+{% elif company_code == 'kleanmax' %}
+    <!-- ================= KLEANMAX PAGE 1: COVER PAGE ================= -->
+    <div class="page km-page" style="height: 297mm; position: relative; box-sizing: border-box; overflow: hidden; background: #ffffff;">
+        <!-- Top Section: Logo (left) and WWW.KLEANMAX.COM Box (right) -->
+        <table style="width: 100%; border-collapse: collapse; margin-top: 18mm; margin-bottom: 12mm;">
+            <tr>
+                <td style="vertical-align: middle; padding-left: 20mm;">
+                    {% if km_logo_base64 %}
+                    <img src="data:image/jpeg;base64,{{ km_logo_base64 }}" style="width: 240px; height: auto; display: block;" alt="Klean Max" />
+                    {% else %}
+                    <img src="/kleanmax/kleanmax_butterfly_logo.jpeg" style="width: 240px; height: auto; display: block;" alt="Klean Max" />
+                    {% endif %}
+                </td>
+                <td style="vertical-align: middle; text-align: right; padding-right: 0;">
+                    <div style="background-color: #92D050; padding: 14px 28px; display: inline-block; font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; font-weight: 800; font-size: 13.5pt; color: #000000; letter-spacing: 0.5px;">
+                        WWW.KLEANMAX.COM
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+        <!-- Main Title & Proposal Details -->
+        <div style="padding-left: 24mm; padding-right: 20mm; margin-top: 25mm;">
+            <div style="font-family: 'Times New Roman', Georgia, serif; font-size: 40pt; font-weight: 900; line-height: 1.15; color: #000000;">
+                Commercial
+            </div>
+            <div style="font-family: 'Times New Roman', Georgia, serif; font-size: 40pt; font-weight: 900; line-height: 1.15; color: #000000;">
+                Cleaning
+            </div>
+            <div style="font-family: 'Times New Roman', Georgia, serif; font-size: 40pt; font-weight: 900; line-height: 1.15; color: #fed10c; -webkit-text-stroke: 1.5px #000000; text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;">
+                Proposal
+            </div>
+
+            <div style="margin-top: 22px; font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; font-size: 16pt; font-weight: 800; color: #000000; line-height: 1.35;">
+                <div>Elevating cleanliness for</div>
+                <div>Business success</div>
+            </div>
+
+            <!-- Client TO: Section (User: 'in 1st page the to address should be edittable') -->
+            <div style="margin-top: 28px; font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; font-size: 14pt; font-weight: 800; color: #000000; line-height: 1.45;">
+                <div>TO: &nbsp;{{ (snapshot.customerName or (customer.company_name if customer else 'SRI CHANDAAN LOGISTICS')) | upper }}</div>
+                {% if snapshot.addressLine1 or (customer and customer.billing_address_line1) %}
+                <div style="font-size: 11pt; font-weight: 700; color: #1e293b; margin-top: 2px;">
+                    {{ snapshot.addressLine1 or customer.billing_address_line1 }}{% if snapshot.addressLine2 %}, {{ snapshot.addressLine2 }}{% elif customer and customer.billing_city %}, {{ customer.billing_city }}{% endif %}
+                </div>
+                {% endif %}
+                <div style="margin-top: 4px;">
+                    ATT: {{ (snapshot.attentionPerson or snapshot.contactPerson or (customer and customer.contact_person) or 'MR.RONAK BOTHRA ( 99419 09090)') | upper }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Lime-Green Banner (#92D050) Flush Across Bottom of Page 1 -->
+        <div style="position: absolute; bottom: 0; left: 0; right: 0; width: 100%; background-color: #92D050; padding: 26px 20px 22px 20px; box-sizing: border-box; text-align: center; font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif;">
+            <div style="font-size: 14.5pt; font-weight: 900; color: #000000; margin-bottom: 4px; letter-spacing: 0.5px;">KLEAN MAX</div>
+            <div style="font-size: 11pt; font-weight: 800; color: #000000; margin-bottom: 2px;">NO.06, JAYAM INDUSTRIAL ESTATE,</div>
+            <div style="font-size: 11pt; font-weight: 800; color: #000000; margin-bottom: 14px;">VANAGRAM, CHENNAI – 600095.</div>
+            <table style="width: 100%; max-width: 500px; margin: 0 auto; border-collapse: collapse;">
+                <tr>
+                    <td style="text-align: left; font-size: 11pt; font-weight: 800; color: #000000; width: 50%;">
+                        CONTACT – 97101 48218
+                    </td>
+                    <td style="text-align: right; font-size: 11pt; font-weight: 800; color: #000000; width: 50%;">
+                        INFO@KLEANMAX.COM
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- ================= KLEANMAX PAGE 2: ABOUT US & TEAM ================= -->
+    <div class="page km-page" style="height: 297mm; page-break-before: always; break-before: page; position: relative; box-sizing: border-box; overflow: hidden; padding: 0; margin: 0; background: #ffffff;">
+        {% if km_team_page_base64 %}
+        <img src="data:image/jpeg;base64,{{ km_team_page_base64 }}" style="width: 100%; height: 297mm; object-fit: fill; display: block; margin: 0; padding: 0;" alt="About Us & Team Support" />
+        {% else %}
+        <img src="/kleanmax/kleanmax_team_page.jpeg" style="width: 100%; height: 297mm; object-fit: fill; display: block; margin: 0; padding: 0;" alt="About Us & Team Support" />
+        {% endif %}
+    </div>
+
+    <!-- ================= KLEANMAX PAGE 3: SCOPE & PROJECT VALUE ================= -->
+    <div class="page km-page" style="min-height: 297mm; height: 297mm; page-break-before: always; break-before: page; position: relative; box-sizing: border-box; padding: 20mm 20mm 20mm 20mm; background: #ffffff;">
+        <!-- Header: DEEP CLEANING SERVICE : -->
+        <div style="border-bottom: 1.5px solid #000000; padding-bottom: 4px; margin-bottom: 14px;">
+            <span style="font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; font-size: 16pt; font-weight: 900; text-transform: uppercase; color: #000000; text-decoration: underline;">
+                {{ snapshot.scopeTitle or 'DEEP CLEANING SERVICE :' }}
+            </span>
+        </div>
+
+        <!-- Scope Content Filling Text Box Area -->
+        <div style="font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; font-size: 8.8pt; line-height: 1.45; color: #000000;">
+            {% if snapshot.scopeText %}
+                {% set lines = snapshot.scopeText.split('
+') %}
+                {% for line in lines %}
+                    {% set clean_line = line.strip() %}
+                    {% if clean_line %}
+                        {% if clean_line.startswith('•') or clean_line.startswith('-') or clean_line.startswith('*') or clean_line.startswith('') %}
+                            <div style="padding-left: 14px; margin-bottom: 3px; position: relative;">
+                                <span style="position: absolute; left: 0;">•</span>
+                                {{ clean_line.lstrip('•-* ') }}
+                            </div>
+                        {% elif clean_line.endswith(':') or (clean_line == clean_line|upper and clean_line|length > 4) %}
+                            <div style="font-weight: 900; font-size: 9.5pt; text-decoration: underline; margin-top: 10px; margin-bottom: 4px; text-transform: uppercase;">
+                                {{ clean_line }}
+                            </div>
+                        {% else %}
+                            <div style="margin-bottom: 4px;">{{ clean_line }}</div>
+                        {% endif %}
+                    {% else %}
+                        <div style="height: 4px;"></div>
+                    {% endif %}
+                {% endfor %}
+            {% else %}
+                <!-- Default Authentic Sri Chandaan Logistics Scope -->
+                <div style="margin-bottom: 10px;">
+                    <div style="font-weight: 900; font-size: 9.5pt; text-decoration: underline; margin-bottom: 4px;">FLOOR SCRUBBING:</div>
+                    <div style="padding-left: 14px; margin-bottom: 3px; position: relative;"><span style="position: absolute; left: 0;">•</span>Vacuum cleaner will be used for dusting the entire floor area.</div>
+                    <div style="padding-left: 14px; margin-bottom: 3px; position: relative;"><span style="position: absolute; left: 0;">•</span>A single-disc machine with TASKI chemicals will be used to scrub the entire floor and staircase.</div>
+                    <div style="padding-left: 14px; margin-bottom: 3px; position: relative;"><span style="position: absolute; left: 0;">•</span>Wet and dry vacuum cleaners will then be used to remove water and residue from the cleaned surfaces.</div>
+                </div>
+
+                <div style="margin-bottom: 10px;">
+                    <div style="font-weight: 900; font-size: 9.5pt; text-decoration: underline; margin-bottom: 4px;">WALL & PARTITION CLEANING</div>
+                    <div style="padding-left: 14px; margin-bottom: 3px; position: relative;"><span style="position: absolute; left: 0;">•</span>Stickers, adhesive residue, and visible marks will be completely removed.</div>
+                    <div style="padding-left: 14px; margin-bottom: 3px; position: relative;"><span style="position: absolute; left: 0;">•</span>Surfaces will be washed using TASKI R2 chemical.</div>
+                    <div style="padding-left: 14px; margin-bottom: 3px; position: relative;"><span style="position: absolute; left: 0;">•</span>TASKI R3 will then be applied, followed by wiping with a glass wiper for a clean, streak-free finish.</div>
+                    <div style="padding-left: 14px; margin-bottom: 3px; position: relative;"><span style="position: absolute; left: 0;">•</span>All partition glass surfaces will be thoroughly cleaned.</div>
+                </div>
+
+                <div style="margin-bottom: 10px;">
+                    <div style="font-weight: 900; font-size: 9.5pt; text-decoration: underline; margin-bottom: 4px;">CEILING DUSTING & SOFA/INTERIOR DUSTING</div>
+                    <div style="padding-left: 14px; margin-bottom: 3px; position: relative;"><span style="position: absolute; left: 0;">•</span>After vacuuming, all ceiling surfaces will be wiped with microfiber cloths to ensure thorough removal of remaining dust particles.</div>
+                    <div style="padding-left: 14px; margin-bottom: 3px; position: relative;"><span style="position: absolute; left: 0;">•</span>Cobwebs and accumulated dust will be removed using a heavy-duty vacuum cleaner with the required manpower.</div>
+                    <div style="padding-left: 14px; margin-bottom: 3px; position: relative;"><span style="position: absolute; left: 0;">•</span>Cleaning of chairs, tables, doors, windows, cupboards, and all other interior areas is included in the quoted price.</div>
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                    <div style="font-weight: 900; font-size: 9.5pt; text-decoration: underline; margin-bottom: 4px;">SHEET CLEANING :</div>
+                    <div style="padding-left: 14px; margin-bottom: 3px; position: relative;"><span style="position: absolute; left: 0;">•</span>DEPLOYMENT OF HEAVY-DUTY HIGH-PRESSURE JET WASHER MACHINES TO DEEPLY CLEAN EXTERIOR WALL SURFACES.</div>
+                    <div style="padding-left: 14px; margin-bottom: 3px; position: relative;"><span style="position: absolute; left: 0;">•</span>THIS PROCESS REMOVES STUBBORN GRIME, POLLUTION STAINS, MOLD, ALGAE, AND WEATHER-RELATED DEPOSITS.</div>
+                    <div style="padding-left: 14px; margin-bottom: 3px; position: relative;"><span style="position: absolute; left: 0;">•</span>CLEANING OF EXTERIOR GLASS USING TASKI R3 CHEMICAL, FOLLOWED BY THOROUGH WIPING WITH A GLASS WIPER TO ACHIEVE A CLEAN, STREAK-FREE FINISH.</div>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Total Project Value Block (Teal bar #205B73) -->
+        <div style="position: absolute; bottom: 22mm; left: 20mm; right: 20mm; font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif;">
+            <div style="font-size: 13pt; font-weight: 900; text-decoration: underline; color: #000000; margin-bottom: 6px;">
+                TOTAL PROJECT VALUE:
+            </div>
+            <div style="font-size: 11.5pt; font-weight: 800; color: #000000; margin-bottom: 3px;">
+                TOTAL CLEANABLE SQFT – APPROX {{ snapshot.cleanableSqft or '36,000 SQFT' }}.
+            </div>
+            <div style="font-size: 11.5pt; font-weight: 800; color: #000000; margin-bottom: 10px;">
+                TOTAL CLEANABLE VALUE SQFT – RS.{{ "%.2f"|format(snapshot.ratePerSqft|float) if snapshot.ratePerSqft else '12.00' }}
+            </div>
+            <div style="background-color: #205B73; color: #ffffff; padding: 10px 16px; font-size: 13.5pt; font-weight: 900; letter-spacing: 0.5px;">
+                TOTAL CLEANABLE VALUE – RS.{{ "{:,.2f}".format(final_amount_val) }}
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= KLEANMAX PAGE 4: BANK DETAILS, TERMS & THANK YOU ================= -->
+    <div class="page km-page" style="min-height: 297mm; height: 297mm; page-break-before: always; break-before: page; position: relative; box-sizing: border-box; padding: 22mm 22mm 22mm 22mm; background: #ffffff; font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif;">
+        <!-- Company's Bank Details -->
+        <div style="margin-bottom: 24px;">
+            <div style="font-size: 13.5pt; font-weight: 900; text-decoration: underline; color: #000000; margin-bottom: 10px;">
+                Company's Bank Details:
+            </div>
+            <div style="font-size: 10pt; color: #000000; line-height: 1.75; font-weight: 600;">
+                <div>• A/c Holder's Name: <strong>{{ snapshot.bankAccountName or 'KLEAN MAX BANK' }}</strong></div>
+                <div>• Name: <strong>{{ snapshot.bankName or 'KVB BANK' }} A/C – {{ snapshot.bankAccountNo or '1278135000007113' }}</strong></div>
+                <div>• A/c No: <strong>{{ snapshot.bankAccountNo or '1278135000007113' }}</strong></div>
+                <div>• Branch & IFS Code: <strong>{{ snapshot.bankBranch or 'ASHOK NAGAR' }} & {{ snapshot.bankIfsc or 'KVBL000127' }}</strong></div>
+            </div>
+        </div>
+
+        <!-- TERMS AND CONDITIONS -->
+        <div style="margin-bottom: 24px;">
+            <div style="font-size: 12.5pt; font-weight: 900; color: #000000; margin-bottom: 10px; text-transform: uppercase;">
+                TERMS AND CONDITIONS:
+            </div>
+            <ol style="margin: 0; padding-left: 20px; font-size: 9pt; font-weight: 700; color: #000000; line-height: 1.6;">
+                {% set km_terms = snapshot.terms if (snapshot and snapshot.terms and snapshot.terms|length > 0) else [
+                    'GST: PRICES ARE EXCLUSIVE OF GST (18%). GST WILL BE CHARGED EXTRA.',
+                    'RECLEANING POLICY: ONCE THE FLOOR IS HANDED OVER, ANY REQUEST FOR RECLEANING WILL BE SUBJECT TO ADDITIONAL CHARGES.',
+                    'UTILITIES: THE CLIENT MUST ARRANGE FOR A WATER AND ELECTRICITY SUPPLY DURING THE SERVICE.',
+                    'WORKING AREA CLEARANCE: THE CLIENT IS RESPONSIBLE FOR CLEARING THE WORKING AREA. CARE MUST BE TAKEN DURING SERVICE HOURS TO AVOID SPOILING THE CLEANED SURFACES.',
+                    'PAYMENT TERMS: A 50% ADVANCE PAYMENT IS REQUIRED. THE REMAINING BALANCE IS DUE UPON COMPLETION OF THE WORK. NO CREDIT TERMS ARE OFFERED.',
+                    'ADDITIONAL SERVICES: INFORM US IN ADVANCE IF ANY ADDITIONAL SERVICES ARE REQUIRED BEYOND THE SCOPE MENTIONED..'
+                ] %}
+                {% for t in km_terms %}
+                <li style="margin-bottom: 5px;">{{ t }}</li>
+                {% endfor %}
+            </ol>
+        </div>
+
+        <!-- Satisfaction statement -->
+        <div style="text-align: center; font-size: 10.5pt; font-weight: 900; color: #000000; line-height: 1.5; margin: 30px 0 40px 0;">
+            {{ snapshot.satisfactionGoal or 'YOUR SATISFACTION IS OUR GOAL. LOOKING FORWARD TO YOUR FAVORABLE ORDERS.' }}
+        </div>
+
+        <!-- T H A N K   Y O U... -->
+        <div style="text-align: center; font-size: 24pt; font-weight: 900; letter-spacing: 6px; color: #000000; margin-top: 25px;">
+            T H A N K &nbsp; Y O U...
         </div>
     </div>
 {% else %}

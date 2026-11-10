@@ -73,6 +73,8 @@ def render_quotation_html(
     wall_printing_2_b64 = get_file_base64("unique_painters/wall_printing_machine_2.jpeg")
     robotic_1_b64 = get_file_base64("unique_painters/robotic_plastering_1.jpeg")
     robotic_2_b64 = get_file_base64("unique_painters/robotic_plastering_2.jpeg")
+    km_logo_b64 = get_file_base64("kleanmax/kleanmax_butterfly_logo.jpeg")
+    km_team_page_b64 = get_file_base64("kleanmax/kleanmax_team_page.jpeg")
 
     prepared_by_name = quotation.prepared_by.full_name if quotation.prepared_by else "Admin"
 
@@ -118,6 +120,8 @@ def render_quotation_html(
         wall_printing_2_base64=wall_printing_2_b64,
         robotic_1_base64=robotic_1_b64,
         robotic_2_base64=robotic_2_b64,
+        km_logo_base64=km_logo_b64,
+        km_team_page_base64=km_team_page_b64,
         prepared_by_name=prepared_by_name
     )
     return html_content

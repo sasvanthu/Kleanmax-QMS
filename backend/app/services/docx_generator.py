@@ -795,6 +795,399 @@ def _generate_uniquepainters_docx(
     return buf.getvalue()
 
 
+
+
+def _generate_kleanmax_docx(
+    quotation,
+    company,
+    customer,
+    sections: list = None,
+    items: list = None
+) -> bytes:
+    """Generates the authentic 4-page Klean Max Commercial Cleaning Proposal Word Document."""
+    doc = docx.Document()
+    
+    # 0. A4 Dimensions & Margins
+    for sec in doc.sections:
+        sec.top_margin = Inches(0.4)
+        sec.bottom_margin = Inches(0.4)
+        sec.left_margin = Inches(0.6)
+        sec.right_margin = Inches(0.6)
+        sec.page_width = Inches(8.27)
+        sec.page_height = Inches(11.69)
+
+    # 1. Parse snapshot
+    snapshot = {}
+    raw_snap = getattr(quotation, "snapshot_json", None)
+    if raw_snap:
+        if isinstance(raw_snap, dict):
+            snapshot = raw_snap
+        elif isinstance(raw_snap, str):
+            try:
+                import json
+                snapshot = json.loads(raw_snap)
+            except Exception:
+                snapshot = {}
+
+    cust_name = (
+        snapshot.get("customerName")
+        or (getattr(customer, "company_name", None) if customer else None)
+        or "SRI CHANDAAN LOGISTICS"
+    ).upper()
+
+    attn_person = (
+        snapshot.get("attentionPerson")
+        or snapshot.get("contactPerson")
+        or (getattr(customer, "contact_person", None) if customer else None)
+        or "MR.RONAK BOTHRA ( 99419 09090)"
+    ).upper()
+
+    addr1 = snapshot.get("addressLine1") or (getattr(customer, "billing_address_line1", "") if customer else "")
+    addr2 = snapshot.get("addressLine2") or (getattr(customer, "billing_city", "") if customer else "")
+    addr_str = f"{addr1}, {addr2}".strip(", ") if (addr1 or addr2) else ""
+
+    cleanable_sqft = snapshot.get("cleanableSqft") or snapshot.get("cleanable_sqft") or "36,000 SQFT"
+    rate_sqft = snapshot.get("ratePerSqft") or 12.0
+    final_amt = float(snapshot.get("finalTotal") or getattr(quotation, "final_amount", None) or 432000.0)
+
+    # ===== PAGE 1: COVER PAGE =====
+    t_hdr = doc.add_table(rows=1, cols=2)
+    t_hdr.alignment = WD_TABLE_ALIGNMENT.CENTER
+    t_hdr.autofit = False
+    t_hdr.columns[0].width = Inches(4.2)
+    t_hdr.columns[1].width = Inches(2.87)
+
+    c0 = t_hdr.cell(0, 0)
+    c0.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+    p_logo = c0.paragraphs[0]
+    p_logo.paragraph_format.space_before = Pt(0)
+    p_logo.paragraph_format.space_after = Pt(0)
+    logo_path = STATIC_DIR / "kleanmax" / "kleanmax_butterfly_logo.jpeg"
+    if logo_path.exists():
+        r = p_logo.add_run()
+        r.add_picture(str(logo_path), width=Inches(2.5))
+
+    c1 = t_hdr.cell(0, 1)
+    c1.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+    _set_cell_background(c1, "92D050")
+    _set_cell_margins(c1, top=140, bottom=140, left=180, right=180)
+    p_web = c1.paragraphs[0]
+    p_web.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    r_web = p_web.add_run("WWW.KLEANMAX.COM")
+    r_web.bold = True
+    r_web.font.name = "Arial"
+    r_web.font.size = Pt(12)
+    r_web.font.color.rgb = RGBColor(0, 0, 0)
+
+    p_space = doc.add_paragraph()
+    p_space.paragraph_format.space_before = Pt(28)
+    p_space.paragraph_format.space_after = Pt(0)
+
+    p_t1 = doc.add_paragraph()
+    p_t1.paragraph_format.left_indent = Inches(0.5)
+    p_t1.paragraph_format.space_before = Pt(0)
+    p_t1.paragraph_format.space_after = Pt(0)
+    r = p_t1.add_run("Commercial")
+    r.bold = True
+    r.font.name = "Times New Roman"
+    r.font.size = Pt(36)
+    r.font.color.rgb = RGBColor(0, 0, 0)
+
+    p_t2 = doc.add_paragraph()
+    p_t2.paragraph_format.left_indent = Inches(0.5)
+    p_t2.paragraph_format.space_before = Pt(0)
+    p_t2.paragraph_format.space_after = Pt(0)
+    r = p_t2.add_run("Cleaning")
+    r.bold = True
+    r.font.name = "Times New Roman"
+    r.font.size = Pt(36)
+    r.font.color.rgb = RGBColor(0, 0, 0)
+
+    p_t3 = doc.add_paragraph()
+    p_t3.paragraph_format.left_indent = Inches(0.5)
+    p_t3.paragraph_format.space_before = Pt(0)
+    p_t3.paragraph_format.space_after = Pt(14)
+    r = p_t3.add_run("Proposal")
+    r.bold = True
+    r.font.name = "Times New Roman"
+    r.font.size = Pt(36)
+    r.font.color.rgb = RGBColor(254, 209, 12)
+
+    p_sub = doc.add_paragraph()
+    p_sub.paragraph_format.left_indent = Inches(0.5)
+    p_sub.paragraph_format.space_before = Pt(0)
+    p_sub.paragraph_format.space_after = Pt(20)
+    r = p_sub.add_run("Elevating cleanliness for\nBusiness success")
+    r.bold = True
+    r.font.name = "Arial"
+    r.font.size = Pt(14)
+    r.font.color.rgb = RGBColor(0, 0, 0)
+
+    p_to = doc.add_paragraph()
+    p_to.paragraph_format.left_indent = Inches(0.5)
+    p_to.paragraph_format.space_before = Pt(0)
+    p_to.paragraph_format.space_after = Pt(36)
+    to_text = f"TO:  {cust_name}"
+    if addr_str:
+        to_text += f"\n{addr_str}"
+    to_text += f"\nATT: {attn_person}"
+    r = p_to.add_run(to_text)
+    r.bold = True
+    r.font.name = "Arial"
+    r.font.size = Pt(13)
+    r.font.color.rgb = RGBColor(0, 0, 0)
+
+    t_bot = doc.add_table(rows=1, cols=1)
+    t_bot.alignment = WD_TABLE_ALIGNMENT.CENTER
+    t_bot.autofit = False
+    t_bot.columns[0].width = Inches(7.07)
+    c_b = t_bot.cell(0, 0)
+    _set_cell_background(c_b, "92D050")
+    _set_cell_margins(c_b, top=160, bottom=160, left=200, right=200)
+
+    p_b1 = c_b.paragraphs[0]
+    p_b1.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p_b1.paragraph_format.space_before = Pt(0)
+    p_b1.paragraph_format.space_after = Pt(2)
+    r = p_b1.add_run("KLEAN MAX\n")
+    r.bold = True
+    r.font.name = "Arial"
+    r.font.size = Pt(14)
+    r.font.color.rgb = RGBColor(0, 0, 0)
+    r = p_b1.add_run("NO.06, JAYAM INDUSTRIAL ESTATE,\nVANAGRAM, CHENNAI – 600095.\n\n")
+    r.bold = True
+    r.font.name = "Arial"
+    r.font.size = Pt(10.5)
+    r.font.color.rgb = RGBColor(0, 0, 0)
+    r = p_b1.add_run("CONTACT – 97101 48218                 INFO@KLEANMAX.COM")
+    r.bold = True
+    r.font.name = "Arial"
+    r.font.size = Pt(10.5)
+    r.font.color.rgb = RGBColor(0, 0, 0)
+
+    # ===== PAGE 2: ABOUT US & TEAM SUPPORT =====
+    doc.add_page_break()
+    p_p2 = doc.add_paragraph()
+    p_p2.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p_p2.paragraph_format.space_before = Pt(0)
+    p_p2.paragraph_format.space_after = Pt(0)
+    team_path = STATIC_DIR / "kleanmax" / "kleanmax_team_page.jpeg"
+    if team_path.exists():
+        r = p_p2.add_run()
+        r.add_picture(str(team_path), width=Inches(7.07))
+
+    # ===== PAGE 3: SCOPE & PROJECT VALUE =====
+    doc.add_page_break()
+    p_s_hdr = doc.add_paragraph()
+    p_s_hdr.paragraph_format.space_before = Pt(0)
+    p_s_hdr.paragraph_format.space_after = Pt(10)
+    r = p_s_hdr.add_run(snapshot.get("scopeTitle") or "DEEP CLEANING SERVICE :")
+    r.bold = True
+    r.font.name = "Arial"
+    r.font.size = Pt(16)
+    r.underline = True
+    r.font.color.rgb = RGBColor(0, 0, 0)
+
+    scope_text = snapshot.get("scopeText") or getattr(quotation, "notes", None)
+    if scope_text:
+        for line in scope_text.split("\n"):
+            clean_line = line.strip()
+            if not clean_line:
+                continue
+            if clean_line.startswith(("•", "-", "*", "")):
+                p_b = doc.add_paragraph()
+                p_b.paragraph_format.left_indent = Inches(0.2)
+                p_b.paragraph_format.space_before = Pt(0)
+                p_b.paragraph_format.space_after = Pt(2)
+                r = p_b.add_run(f"• {clean_line.lstrip('•-* ')}")
+                r.font.name = "Arial"
+                r.font.size = Pt(8.5)
+                r.font.color.rgb = RGBColor(0, 0, 0)
+            elif clean_line.endswith(":") or (clean_line.isupper() and len(clean_line) > 4):
+                p_sec = doc.add_paragraph()
+                p_sec.paragraph_format.space_before = Pt(8)
+                p_sec.paragraph_format.space_after = Pt(3)
+                r = p_sec.add_run(clean_line)
+                r.bold = True
+                r.font.name = "Arial"
+                r.font.size = Pt(10)
+                r.underline = True
+                r.font.color.rgb = RGBColor(0, 0, 0)
+            else:
+                p_b = doc.add_paragraph()
+                p_b.paragraph_format.space_before = Pt(0)
+                p_b.paragraph_format.space_after = Pt(2)
+                r = p_b.add_run(clean_line)
+                r.font.name = "Arial"
+                r.font.size = Pt(8.5)
+                r.font.color.rgb = RGBColor(0, 0, 0)
+    else:
+        default_sections = [
+            ("FLOOR SCRUBBING:", [
+                "Vacuum cleaner will be used for dusting the entire floor area.",
+                "A single-disc machine with TASKI chemicals will be used to scrub the entire floor and staircase.",
+                "Wet and dry vacuum cleaners will then be used to remove water and residue from the cleaned surfaces."
+            ]),
+            ("WALL & PARTITION CLEANING", [
+                "Stickers, adhesive residue, and visible marks will be completely removed.",
+                "Surfaces will be washed using TASKI R2 chemical.",
+                "TASKI R3 will then be applied, followed by wiping with a glass wiper for a clean, streak-free finish.",
+                "All partition glass surfaces will be thoroughly cleaned."
+            ]),
+            ("CEILING DUSTING & SOFA/INTERIOR DUSTING", [
+                "After vacuuming, all ceiling surfaces will be wiped with microfiber cloths to ensure thorough removal of remaining dust particles.",
+                "Cobwebs and accumulated dust will be removed using a heavy-duty vacuum cleaner with the required manpower.",
+                "Cleaning of chairs, tables, doors, windows, cupboards, and all other interior areas is included in the quoted price."
+            ]),
+            ("SHEET CLEANING :", [
+                "DEPLOYMENT OF HEAVY-DUTY HIGH-PRESSURE JET WASHER MACHINES TO DEEPLY CLEAN EXTERIOR WALL SURFACES.",
+                "THIS PROCESS REMOVES STUBBORN GRIME, POLLUTION STAINS, MOLD, ALGAE, AND WEATHER-RELATED DEPOSITS.",
+                "CLEANING OF EXTERIOR GLASS USING TASKI R3 CHEMICAL, FOLLOWED BY THOROUGH WIPING WITH A GLASS WIPER TO ACHIEVE A CLEAN, STREAK-FREE FINISH."
+            ])
+        ]
+        for title, bullets in default_sections:
+            p_sec = doc.add_paragraph()
+            p_sec.paragraph_format.space_before = Pt(8)
+            p_sec.paragraph_format.space_after = Pt(3)
+            r = p_sec.add_run(title)
+            r.bold = True
+            r.font.name = "Arial"
+            r.font.size = Pt(10)
+            r.underline = True
+            r.font.color.rgb = RGBColor(0, 0, 0)
+            for b in bullets:
+                p_b = doc.add_paragraph()
+                p_b.paragraph_format.left_indent = Inches(0.2)
+                p_b.paragraph_format.space_before = Pt(0)
+                p_b.paragraph_format.space_after = Pt(2)
+                r = p_b.add_run(f"• {b}")
+                r.font.name = "Arial"
+                r.font.size = Pt(8.5)
+                r.font.color.rgb = RGBColor(0, 0, 0)
+
+    # Project Value Block
+    p_pv_hdr = doc.add_paragraph()
+    p_pv_hdr.paragraph_format.space_before = Pt(16)
+    p_pv_hdr.paragraph_format.space_after = Pt(3)
+    r = p_pv_hdr.add_run("TOTAL PROJECT VALUE:")
+    r.bold = True
+    r.font.name = "Arial"
+    r.font.size = Pt(12)
+    r.underline = True
+    r.font.color.rgb = RGBColor(0, 0, 0)
+
+    p_pv1 = doc.add_paragraph()
+    p_pv1.paragraph_format.space_before = Pt(0)
+    p_pv1.paragraph_format.space_after = Pt(2)
+    r = p_pv1.add_run(f"TOTAL CLEANABLE SQFT – APPROX {cleanable_sqft}.\nTOTAL CLEANABLE VALUE SQFT – RS.{float(rate_sqft):.2f}")
+    r.bold = True
+    r.font.name = "Arial"
+    r.font.size = Pt(10.5)
+    r.font.color.rgb = RGBColor(0, 0, 0)
+
+    t_pv = doc.add_table(rows=1, cols=1)
+    t_pv.alignment = WD_TABLE_ALIGNMENT.CENTER
+    t_pv.autofit = False
+    t_pv.columns[0].width = Inches(7.07)
+    c_pv = t_pv.cell(0, 0)
+    _set_cell_background(c_pv, "205B73")
+    _set_cell_margins(c_pv, top=120, bottom=120, left=150, right=150)
+    p_c_pv = c_pv.paragraphs[0]
+    p_c_pv.paragraph_format.space_before = Pt(0)
+    p_c_pv.paragraph_format.space_after = Pt(0)
+    r = p_c_pv.add_run(f"TOTAL CLEANABLE VALUE – RS.{final_amt:,.2f}")
+    r.bold = True
+    r.font.name = "Arial"
+    r.font.size = Pt(13)
+    r.font.color.rgb = RGBColor(255, 255, 255)
+
+    # ===== PAGE 4: BANK DETAILS, TERMS & THANK YOU =====
+    doc.add_page_break()
+    p_bk_hdr = doc.add_paragraph()
+    p_bk_hdr.paragraph_format.space_before = Pt(0)
+    p_bk_hdr.paragraph_format.space_after = Pt(6)
+    r = p_bk_hdr.add_run("Company's Bank Details:")
+    r.bold = True
+    r.font.name = "Arial"
+    r.font.size = Pt(13.5)
+    r.underline = True
+    r.font.color.rgb = RGBColor(0, 0, 0)
+
+    b_holder = snapshot.get("bankAccountName") or "KLEAN MAX BANK"
+    b_name = snapshot.get("bankName") or "KVB BANK"
+    b_acc = snapshot.get("bankAccountNo") or "1278135000007113"
+    b_branch = snapshot.get("bankBranch") or "ASHOK NAGAR"
+    b_ifsc = snapshot.get("bankIfsc") or "KVBL000127"
+
+    bank_lines = [
+        f"• A/c Holder's Name: {b_holder}",
+        f"• Name: {b_name} A/C – {b_acc}",
+        f"• A/c No: {b_acc}",
+        f"• Branch & IFS Code: {b_branch} & {b_ifsc}"
+    ]
+    for bl in bank_lines:
+        p_bl = doc.add_paragraph()
+        p_bl.paragraph_format.space_before = Pt(0)
+        p_bl.paragraph_format.space_after = Pt(3)
+        r = p_bl.add_run(bl)
+        r.font.name = "Arial"
+        r.font.size = Pt(9.5)
+        r.font.color.rgb = RGBColor(0, 0, 0)
+
+    p_tm_hdr = doc.add_paragraph()
+    p_tm_hdr.paragraph_format.space_before = Pt(16)
+    p_tm_hdr.paragraph_format.space_after = Pt(6)
+    r = p_tm_hdr.add_run("TERMS AND CONDITIONS:")
+    r.bold = True
+    r.font.name = "Arial"
+    r.font.size = Pt(12)
+    r.font.color.rgb = RGBColor(0, 0, 0)
+
+    terms_list = snapshot.get("terms") or [
+        "1. GST: PRICES ARE EXCLUSIVE OF GST (18%). GST WILL BE CHARGED EXTRA.",
+        "2. RECLEANING POLICY: ONCE THE FLOOR IS HANDED OVER, ANY REQUEST FOR RECLEANING WILL BE SUBJECT TO ADDITIONAL CHARGES.",
+        "3. UTILITIES: THE CLIENT MUST ARRANGE FOR A WATER AND ELECTRICITY SUPPLY DURING THE SERVICE.",
+        "4. WORKING AREA CLEARANCE: THE CLIENT IS RESPONSIBLE FOR CLEARING THE WORKING AREA. CARE MUST BE TAKEN DURING SERVICE HOURS TO AVOID SPOILING THE CLEANED SURFACES.",
+        "5. PAYMENT TERMS: A 50% ADVANCE PAYMENT IS REQUIRED. THE REMAINING BALANCE IS DUE UPON COMPLETION OF THE WORK. NO CREDIT TERMS ARE OFFERED.",
+        "6. ADDITIONAL SERVICES: INFORM US IN ADVANCE IF ANY ADDITIONAL SERVICES ARE REQUIRED BEYOND THE SCOPE MENTIONED.."
+    ]
+    for tl in terms_list:
+        p_tl = doc.add_paragraph()
+        p_tl.paragraph_format.left_indent = Inches(0.15)
+        p_tl.paragraph_format.space_before = Pt(0)
+        p_tl.paragraph_format.space_after = Pt(3)
+        r = p_tl.add_run(tl)
+        r.bold = True
+        r.font.name = "Arial"
+        r.font.size = Pt(8.5)
+        r.font.color.rgb = RGBColor(0, 0, 0)
+
+    p_sat = doc.add_paragraph()
+    p_sat.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p_sat.paragraph_format.space_before = Pt(28)
+    p_sat.paragraph_format.space_after = Pt(36)
+    r = p_sat.add_run(snapshot.get("satisfactionGoal") or "YOUR SATISFACTION IS OUR GOAL. LOOKING FORWARD TO YOUR FAVORABLE ORDERS.")
+    r.bold = True
+    r.font.name = "Arial"
+    r.font.size = Pt(10.5)
+    r.font.color.rgb = RGBColor(0, 0, 0)
+
+    p_ty = doc.add_paragraph()
+    p_ty.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p_ty.paragraph_format.space_before = Pt(10)
+    p_ty.paragraph_format.space_after = Pt(0)
+    r = p_ty.add_run("T H A N K   Y O U...")
+    r.bold = True
+    r.font.name = "Arial"
+    r.font.size = Pt(22)
+    r.font.color.rgb = RGBColor(0, 0, 0)
+
+    buf = io.BytesIO()
+    doc.save(buf)
+    buf.seek(0)
+    return buf.getvalue()
+
+
 def generate_quotation_docx_bytes(
     quotation,
     company,
@@ -820,6 +1213,9 @@ def generate_quotation_docx_bytes(
 
     if company_code == 'uniquepainters':
         return _generate_uniquepainters_docx(quotation, company, customer, sections=sections_list, items=items_list)
+
+    if company_code == 'kleanmax':
+        return _generate_kleanmax_docx(quotation, company, customer, sections=sections_list, items=items_list)
 
     # Brand color mapping
     brand_hex_map = {
