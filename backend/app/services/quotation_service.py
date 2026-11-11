@@ -142,7 +142,9 @@ def create_quotation(
     calc_res = calculate_quotation_totals(calc_req)
 
     # Generate sequential number safely or use custom specified number
-    prefix = company.quotation_prefix if company and company.quotation_prefix else "KMP"
+    prefix = company.quotation_prefix if company and company.quotation_prefix else ("KM" if (data.company_code or 'kleanmaxpro') == "kleanmax" else "KMP")
+    if (data.company_code or 'kleanmaxpro') == "kleanmax" and (not prefix or prefix == "KLM"):
+        prefix = "KM"
     if getattr(data, 'quotation_number', None) and data.quotation_number.strip():
         quotation_number = data.quotation_number.strip()
         existing = db.query(Quotation).filter(

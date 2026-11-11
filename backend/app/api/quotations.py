@@ -55,7 +55,9 @@ def get_next_quotation_number_endpoint(
     current_user: Profile = Depends(get_current_user)
 ):
     company = db.query(CompanySetting).filter(CompanySetting.company_code == company_code).first()
-    prefix = company.quotation_prefix if company and company.quotation_prefix else "KMP"
+    prefix = company.quotation_prefix if company and company.quotation_prefix else ("KM" if company_code == "kleanmax" else "KMP")
+    if company_code == "kleanmax" and (not prefix or prefix == "KLM"):
+        prefix = "KM"
     prefix = prefix.strip().upper()
     
     # Calculate next sequence safely by scanning all existing quotation numbers

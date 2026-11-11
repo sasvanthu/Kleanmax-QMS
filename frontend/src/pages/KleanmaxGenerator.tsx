@@ -81,7 +81,7 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
   quotationId,
 }) => {
   // Document Metadata
-  const [quotationNumber, setQuotationNumber] = useState('KM/0309');
+  const [quotationNumber, setQuotationNumber] = useState('');
   const [quotationDate, setQuotationDate] = useState(formatToIndianDate());
   const [docTitle, setDocTitle] = useState('Commercial Cleaning Proposal');
   const [docSubtitle, setDocSubtitle] = useState('Elevating cleanliness for Business success');
@@ -164,6 +164,20 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
     fetchInitialData();
   }, [quotationId]);
 
+  const fetchNextQuotationNumber = async () => {
+    try {
+      const res = await api.quotations.getNextNumber('kleanmax', 'short');
+      if (res && res.next_number) {
+        setQuotationNumber(res.next_number);
+        return res.next_number;
+      }
+    } catch (e) {
+      console.warn('Could not fetch next quotation number:', e);
+    }
+    setQuotationNumber(prev => prev || 'KM/0310');
+    return 'KM/0310';
+  };
+
   const fetchInitialData = async () => {
     setLoading(true);
     try {
@@ -230,13 +244,7 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
           setLoadingEdit(false);
         }
       } else {
-        const nextNo = await api.quotations.getNextNumber('kleanmax').catch(() => 'KM/0309');
-        if (nextNo) {
-          const numStr = typeof nextNo === 'object' && (nextNo as any)?.next_number
-            ? (nextNo as any).next_number
-            : String(nextNo);
-          setQuotationNumber(numStr);
-        }
+        await fetchNextQuotationNumber();
       }
     } catch (err) {
       console.error('Error fetching initial data:', err);
@@ -519,9 +527,10 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
               Back to Quotes
             </button>
             <button
-              onClick={() => {
+              onClick={async () => {
                 setSavedQuotationId(null);
                 setIsEditMode(false);
+                await fetchNextQuotationNumber();
                 onNavigate('kleanmax_generator');
               }}
               className="px-3 py-1 bg-white border border-lime-300 hover:bg-lime-100 text-lime-900 text-xs font-extrabold rounded-lg shadow-2xs transition-all"
@@ -723,7 +732,16 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
                     value={quotationNumber}
                     onChange={e => setQuotationNumber(e.target.value)}
                     className="w-24 font-mono font-bold text-slate-800 bg-slate-100 border border-slate-200 rounded px-1.5 py-0.5 text-xs text-center"
+                    placeholder="KM/0310"
                   />
+                  <button
+                    type="button"
+                    onClick={fetchNextQuotationNumber}
+                    className="p-1 hover:bg-slate-200 rounded text-slate-600 transition-colors"
+                    title="Auto-increment / fetch latest sequence number"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                  </button>
                 </div>
                 <div className="flex items-center gap-1.5 text-xs text-slate-500">
                   <span className="font-bold">Date:</span>

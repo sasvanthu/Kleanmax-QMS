@@ -158,7 +158,7 @@ def migrate_database():
                 "bank_account_no": "1278135000007113",
                 "bank_ifsc": "KVBL0001278",
                 "bank_branch": "ASHOK NAGAR, CHENNAI",
-                "quotation_prefix": "KLM",
+                "quotation_prefix": "KM",
                 "default_validity_days": 30,
                 "brand_color": "#0284C7",
                 "tagline": "Cleaning Machine Service, Motherboard Repair & Spare Parts",

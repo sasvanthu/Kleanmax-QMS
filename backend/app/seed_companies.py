@@ -76,7 +76,7 @@ def seed_companies():
             'bank_account_no': '001105023948',
             'bank_ifsc': 'ICIC0000011',
             'bank_branch': 'Vanagaram Branch, Chennai',
-            'quotation_prefix': 'KLM',
+            'quotation_prefix': 'KM',
             'default_validity_days': 15,
             'rounding_policy': 'HALF_UP',
             'tagline': 'Industrial Cleaning Equipment, Spares & Authorized Service',
