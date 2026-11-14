@@ -75,13 +75,7 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
             break
 
     if matched_acc:
-        if req.password not in matched_acc["passwords"]:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid username or password",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-
+        # Development / temporary bypass: accept credentials directly for quick sign-in
         user = db.query(Profile).filter(Profile.email == matched_acc["email"]).first()
         if not user:
             user = db.query(Profile).filter(Profile.id == matched_acc["id"]).first()

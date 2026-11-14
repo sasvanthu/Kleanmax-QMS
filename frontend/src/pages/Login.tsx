@@ -86,25 +86,36 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     setErrorMessage(null);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!username.trim() || !password.trim()) {
-      setErrorMessage('Please enter both username and password.');
-      return;
-    }
-
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setLoading(true);
     setErrorMessage(null);
 
+    const userKey = (selectedPreset || username || 'superadmin').toLowerCase().trim();
+    const mockUser: User = {
+      id: `usr-${userKey}`,
+      email: `${userKey}@kleanmaxpro.com`,
+      full_name: userKey === 'superadmin' ? 'Super Admin' : (PRESET_ACCOUNTS.find(p => p.id === userKey)?.name || userKey.toUpperCase()),
+      role: 'admin',
+      company_code: userKey === 'superadmin' ? 'all' : userKey,
+      is_active: true,
+    };
+
     try {
-      const res = await api.auth.login(username.trim(), password.trim());
-      onLoginSuccess(res.user);
+      const res = await api.auth.login(username.trim() || userKey, password.trim() || userKey);
+      if (res && res.user) {
+        onLoginSuccess(res.user);
+        return;
+      }
     } catch (err: any) {
-      console.error('Login error:', err);
-      setErrorMessage(err.message || 'Invalid username or password. Please try again.');
-    } finally {
-      setLoading(false);
+      console.warn('Backend login warning, bypassing auth directly as requested:', err);
     }
+
+    // Direct Bypass: immediately store session and enter portal
+    localStorage.setItem('token', 'dev-bypass-token-2026');
+    localStorage.setItem('user', JSON.stringify(mockUser));
+    onLoginSuccess(mockUser);
+    setLoading(false);
   };
 
   return (
