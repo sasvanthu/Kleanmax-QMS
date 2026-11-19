@@ -365,7 +365,7 @@ export const QuotationCreate: React.FC<QuotationCreateProps> = ({
                   </div>
                 </div>
                 <div>
-                  <span className="bg-white text-slate-800 border border-slate-300 font-mono text-[10px] px-2 py-1 rounded">
+                  <span className="bg-white text-slate-800 border border-slate-300 font-sans font-bold text-[10px] px-2 py-1 rounded">
                     GSTIN: {selectedCustomer.gstin || 'Unregistered'}
                   </span>
                 </div>

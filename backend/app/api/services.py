@@ -102,6 +102,11 @@ def update_service(
     if not service:
         raise HTTPException(status_code=404, detail="Service not found")
 
+    if data.service_code and data.service_code != service.service_code:
+        colliding = db.query(Service).filter(Service.service_code == data.service_code, Service.id != id).first()
+        if colliding:
+            raise HTTPException(status_code=400, detail="Service code already in use by another product")
+
     for field, val in data.model_dump(exclude_unset=True).items():
         if hasattr(service, field):
             setattr(service, field, val)

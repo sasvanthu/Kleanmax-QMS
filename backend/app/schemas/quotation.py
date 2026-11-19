@@ -30,6 +30,7 @@ class QuotationSectionSchema(BaseModel):
     override_reason: Optional[str] = None
     discount_percent: Decimal = Field(Decimal("0.00"), ge=0, le=100)
     line_total: Decimal = Decimal("0.00")
+    image_url: Optional[str] = None
     notes: Optional[str] = None
 
 class QuotationItemSchema(BaseModel):
@@ -57,6 +58,7 @@ class QuotationItemSchema(BaseModel):
     sgst_amount: Decimal = Decimal("0.00")
     igst_amount: Decimal = Decimal("0.00")
     line_total: Decimal = Decimal("0.00")
+    image_url: Optional[str] = None
     notes: Optional[str] = None
 
 class QuotationCreate(BaseModel):

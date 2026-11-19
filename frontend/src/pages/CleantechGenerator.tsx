@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Customer, Service, CompanySetting, User } from '../services/types';
 import { api } from '../services/api';
+import { uploadImageToSupabase } from '../services/supabase';
 import {
   FileText, Download, Eye, Save, Sparkles, Plus, Trash2,
   RefreshCw, CheckCircle2, ArrowLeft, Search, Check,
-  ShieldCheck, Lock, X, Layers, Edit3, Building, Printer
+  ShieldCheck, Lock, X, Layers, Edit3, Building, Printer,
+  Upload, Image as ImageIcon
 } from 'lucide-react';
 
 export interface CleantechGeneratorProps {
@@ -18,6 +20,7 @@ export interface CleantechItem {
   id: string;
   is_header?: boolean;
   item_name: string;
+  image_url?: string;
   description?: string;
   qty: number;
   uom: string;
@@ -301,6 +304,21 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
   const [applyTax, setApplyTax] = useState<boolean>(true);
   const [taxPercent, setTaxPercent] = useState<number>(18);
 
+  // Table Layout Style: 'standard' (compact without images) or 'with_images' (Kleanmax Pro style with machine photos and specs)
+  const [tableLayout, setTableLayout] = useState<'standard' | 'with_images'>('standard');
+  const [equipmentModalOpen, setEquipmentModalOpen] = useState<boolean>(false);
+  const [modalSearch, setModalSearch] = useState<string>('');
+  const [uploadingItemId, setUploadingItemId] = useState<string | null>(null);
+  const [columnHeaders, setColumnHeaders] = useState({
+    slNo: 'SL NO',
+    photo: 'MACHINE PHOTO',
+    description: 'DESCRIPTION & TECHNICAL SPECIFICATIONS',
+    qty: 'QTY',
+    uom: 'UOM',
+    rate: 'RATE (₹)',
+    total: 'TOTAL (₹)',
+  });
+
   // 6. Product Search Bar State
   const [productSearchQuery, setProductSearchQuery] = useState<string>('');
   const [availableProducts, setAvailableProducts] = useState<Service[]>(DEFAULT_CLEANTECH_PRODUCTS as Service[]);
@@ -352,11 +370,12 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
 
   const loadInitialData = async () => {
     try {
-      // 1. Fetch Customers & Company Details
-      const [custs, comp, services] = await Promise.all([
+      // 1. Fetch Customers & Company Details and full catalogue
+      const [custs, comp, services, allServices] = await Promise.all([
         api.customers.list(),
         api.company.get('cleantech'),
         api.services.list({ company_code: 'cleantech' }),
+        api.services.list({ is_active: true }),
       ]);
 
       setCustomerList(custs);
@@ -377,9 +396,12 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
         if (comp.signatory_designation) setSignatoryDesignation(comp.signatory_designation);
       }
 
-      // Merge backend services with default products
+      // Merge backend services with default products & all machines
       const combinedMap = new Map<string, Service>();
       (DEFAULT_CLEANTECH_PRODUCTS as Service[]).forEach((p) => combinedMap.set(p.service_code, p));
+      if (Array.isArray(allServices) && allServices.length > 0) {
+        allServices.forEach((s) => combinedMap.set(s.service_code, s));
+      }
       if (Array.isArray(services) && services.length > 0) {
         services.forEach((s) => combinedMap.set(s.service_code, s));
       }
@@ -440,6 +462,8 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
               if (snap.signatoryDesignation) setSignatoryDesignation(snap.signatoryDesignation);
               if (snap.applyTax !== undefined) setApplyTax(snap.applyTax);
               if (snap.taxPercent !== undefined) setTaxPercent(snap.taxPercent);
+              if (snap.tableLayout) setTableLayout(snap.tableLayout);
+              if (snap.columnHeaders) setColumnHeaders(snap.columnHeaders);
             } else {
               // Direct restore from database columns
               if (q.signatory_name) setSignatoryName(q.signatory_name);
@@ -461,6 +485,7 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
                     id: it.id || `item_${idx}_${Date.now()}`,
                     is_header: isHeader,
                     item_name: it.item_name || '',
+                    image_url: it.image_url || undefined,
                     description: isHeader ? 'Section Header' : (it.description || ''),
                     qty: isHeader ? 0 : (Number(it.quantity) || 1),
                     uom: isHeader ? '' : (it.uom || 'NOS'),
@@ -545,12 +570,54 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
     }
   };
 
-  // Add product from search bar to table
+  // Helper to resolve product image or fallback
+  const getProductImage = (name: string, code?: string) => {
+    const upper = `${name} ${code || ''}`.toUpperCase();
+    if (upper.includes('RB-800') || upper.includes('800')) return '/products/rb800.png';
+    if (upper.includes('RB-650') || upper.includes('650')) return '/products/rb650.png';
+    if (upper.includes('BD') || upper.includes('SCRUBBER')) return '/products/bd5050.png';
+    return '/products/rb800.png';
+  };
+
+  // Upload row image to Supabase
+  const handleImageUpload = async (id: string, file: File) => {
+    setUploadingItemId(id);
+    try {
+      const publicUrl = await uploadImageToSupabase(file, 'cleantech');
+      handleUpdateItem(id, 'image_url', publicUrl);
+    } catch (err: any) {
+      alert(err.message || 'Failed to upload image');
+    } finally {
+      setUploadingItemId(null);
+    }
+  };
+
+  // Switch or populate existing row with selected catalogue product/machine
+  const handleSelectProductForRow = (id: string, prod: Service) => {
+    setItems((prev) =>
+      prev.map((item) => {
+        if (item.id !== id) return item;
+        const rate = Number(prod.standard_rate || item.rate || 0);
+        return {
+          ...item,
+          item_name: prod.service_name,
+          image_url: prod.image_url || getProductImage(prod.service_name, prod.service_code),
+          description: prod.description || item.description,
+          uom: prod.default_uom || item.uom,
+          rate: rate,
+          total: rate * (item.qty || 1),
+        };
+      })
+    );
+  };
+
+  // Add product from search bar or modal to table
   const handleAddProduct = (prod: Service) => {
     const newItem: CleantechItem = {
       id: `item_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
       is_header: false,
       item_name: prod.service_name,
+      image_url: prod.image_url || getProductImage(prod.service_name, prod.service_code),
       description: prod.description || '',
       qty: 1,
       uom: prod.default_uom || 'NOS',
@@ -569,12 +636,13 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
     const newItem: CleantechItem = {
       id: `item_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
       is_header: false,
-      item_name: 'CUSTOM SPARE / SERVICE PART',
-      description: 'Part details / specification',
+      item_name: 'NEW CLEANING MACHINE / SPARE PART',
+      image_url: '/products/rb800.png',
+      description: 'Technical specifications, power rating, brush size & tank capacity',
       qty: 1,
       uom: 'NOS',
-      rate: 1000.0,
-      total: 1000.0,
+      rate: 15000.0,
+      total: 15000.0,
     };
     setItems((prev) => [...prev, newItem]);
   };
@@ -701,10 +769,13 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
         tax_rate: applyTax ? taxPercent : 0,
         line_total: it.is_header ? 0 : Number(it.total),
         item_order: idx + 1,
+        image_url: it.image_url || null,
       }));
 
       // Snapshot JSON for full fidelity UI restore
       const snapshot = {
+        tableLayout,
+        columnHeaders,
         quotationTitle,
         selectedHeadingOption,
         customerName,
@@ -957,7 +1028,7 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
               EDITING MODE
             </span>
             <span className="text-xs font-bold text-teal-900">
-              Quotation: <strong className="font-mono text-teal-950">{quotationNo}</strong> &bull; Client: <strong>{customerName || 'Selected Customer'}</strong>
+              Quotation: <strong className="font-sans text-teal-950 font-black">{quotationNo}</strong> &bull; Client: <strong>{customerName || 'Selected Customer'}</strong>
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -1112,7 +1183,7 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
                   value={gstin}
                   onChange={(e) => setGstin(e.target.value.toUpperCase())}
                   placeholder="GSTIN No"
-                  className="w-full font-mono border border-slate-300 rounded-lg p-2 uppercase"
+                  className="w-full font-sans font-bold border border-slate-300 rounded-lg p-2 uppercase"
                 />
               </div>
             </div>
@@ -1128,7 +1199,7 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
                     type="text"
                     value={quotationNo}
                     onChange={(e) => setQuotationNo(e.target.value.toUpperCase())}
-                    className="w-full text-sm font-mono font-black text-slate-900 border border-slate-300 rounded-xl p-2 bg-white uppercase focus:ring-1 focus:ring-teal-500"
+                    className="w-full text-sm font-sans font-black text-slate-900 border border-slate-300 rounded-xl p-2 bg-white uppercase focus:ring-1 focus:ring-teal-500"
                   />
                   <button
                     type="button"
@@ -1182,7 +1253,7 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
                 <Check className="w-4 h-4 text-teal-600" />
                 Why Choose Clean Tech?
               </span>
-              <span className="text-[10px] text-slate-400 font-mono">10 Key Advantages from Authentic Proposal</span>
+              <span className="text-[10px] text-slate-400 font-sans">10 Key Advantages from Authentic Proposal</span>
             </div>
             <ul className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-700">
               {whyChooseUs.map((w, i) => (
@@ -1194,6 +1265,50 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
             </ul>
           </div>
 
+          {/* Table Layout Selector Bar & Action Controls */}
+          <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 bg-gradient-to-r from-teal-50 via-slate-50 to-teal-50 border border-teal-200 rounded-2xl shadow-xs">
+            <div className="flex items-center gap-2.5">
+              <label className="text-xs font-black uppercase text-teal-950 flex items-center gap-1.5">
+                <Layers className="w-4 h-4 text-teal-600" />
+                <span>Table Layout Style:</span>
+              </label>
+              <select
+                value={tableLayout}
+                onChange={(e) => setTableLayout(e.target.value as any)}
+                className="text-xs font-black bg-white text-teal-950 border-2 border-teal-400 rounded-xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-xs cursor-pointer"
+              >
+                <option value="standard">Standard (Compact Without Images)</option>
+                <option value="with_images">With Machine Photos & Specs (Kleanmax Pro Style)</option>
+              </select>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setEquipmentModalOpen(true)}
+                className="text-xs font-black text-white bg-teal-600 hover:bg-teal-700 px-3.5 py-1.5 rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>+ Add Item / Product</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleAddCustomItem}
+                className="text-xs font-bold text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 px-3 py-1.5 rounded-xl shadow-xs flex items-center gap-1 transition-all cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5 text-slate-500" />
+                <span>+ Custom Line</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleAddHeaderRow}
+                className="text-xs font-bold text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 px-3 py-1.5 rounded-xl shadow-xs flex items-center gap-1 transition-all cursor-pointer"
+              >
+                <Layers className="w-3.5 h-3.5 text-teal-600" />
+                <span>+ Header Row</span>
+              </button>
+            </div>
+          </div>
+
           {/* 5. Product Search Bar for Cleantech Spares & Services */}
           <div className="space-y-2 relative" ref={searchContainerRef}>
             <div className="flex items-center justify-between">
@@ -1201,31 +1316,13 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
                 <Search className="w-4 h-4 text-teal-600" />
                 <span>Search & Add Cleantech Spares / Machine Parts / Services:</span>
               </label>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handleAddHeaderRow}
-                  className="text-xs font-bold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-300 px-3 py-1 rounded-lg flex items-center gap-1"
-                >
-                  <Layers className="w-3.5 h-3.5" />
-                  <span>+ Section Header Row</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={handleAddCustomItem}
-                  className="text-xs font-bold text-teal-800 hover:text-teal-900 bg-teal-50 hover:bg-teal-100 border border-teal-200 px-3 py-1 rounded-lg flex items-center gap-1"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>+ Custom Spare Item</span>
-                </button>
-              </div>
             </div>
 
             <div className="relative">
               <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400 pointer-events-none" />
               <input
                 type="text"
-                placeholder="Search Cleantech parts (e.g. Hose, Filter Bag, Steel Pipe, Wet Tool, Dry Tool, Motor, Solar Wash, Facade)..."
+                placeholder="Search Cleantech products (e.g. RB-800, RB-650, Hose, Filter Bag, Steel Pipe, Wet Tool, Dry Tool, Motor)..."
                 value={productSearchQuery}
                 onFocus={() => setSearchDropdownOpen(true)}
                 onChange={(e) => {
@@ -1244,7 +1341,7 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
                 </div>
                 {searchResults.length === 0 ? (
                   <div className="p-4 text-center text-xs text-slate-400 font-bold">
-                    No matching spares found. Click "+ Custom Spare Item" to add custom line.
+                    No matching items found. Click "+ Custom Line" to add custom line.
                   </div>
                 ) : (
                   searchResults.map((p) => (
@@ -1253,11 +1350,19 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
                       onClick={() => handleAddProduct(p)}
                       className="p-3 hover:bg-teal-50 rounded-xl cursor-pointer transition-colors flex items-center justify-between border-b border-slate-50 last:border-none"
                     >
-                      <div>
-                        <div className="font-black text-xs text-slate-900">{p.service_name}</div>
-                        <div className="text-[11px] text-slate-500 font-mono mt-0.5">
-                          Code: {p.service_code} • UOM: {p.default_uom}
-                          {p.description && ` • ${p.description}`}
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={p.image_url || getProductImage(p.service_name, p.service_code)}
+                          alt={p.service_name}
+                          className="w-10 h-10 object-contain bg-white rounded-lg border border-slate-200 p-0.5 shrink-0"
+                          onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                        />
+                        <div>
+                          <div className="font-black text-xs text-slate-900">{p.service_name}</div>
+                          <div className="text-[11px] text-slate-500 font-sans mt-0.5">
+                            Code: {p.service_code} • UOM: {p.default_uom}
+                            {p.description && ` • ${p.description}`}
+                          </div>
                         </div>
                       </div>
                       <div className="text-right">
@@ -1275,13 +1380,18 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
             )}
           </div>
 
-          {/* 6. Products Line Items Table (Matching PDF: SL NO | DESCRIPTION | QTY | UOM | RATE | TOTAL) */}
+          {/* 6. Products Line Items Table (Conditional Layout: 'standard' or 'with_images') */}
           <div className="border border-slate-300 rounded-2xl overflow-hidden shadow-xs">
             <table className="w-full text-xs border-collapse">
               <thead>
                 <tr className="bg-slate-900 text-white font-black uppercase text-[11px] tracking-wider">
-                  <th className="py-3 px-3 text-center w-14">SL NO</th>
-                  <th className="py-3 px-3 text-left">DESCRIPTION</th>
+                  <th className="py-3 px-3 text-center w-14">{columnHeaders.slNo}</th>
+                  {tableLayout === 'with_images' && (
+                    <th className="py-3 px-3 text-center w-48 md:w-56">{columnHeaders.photo}</th>
+                  )}
+                  <th className="py-3 px-3 text-left">
+                    {tableLayout === 'with_images' ? columnHeaders.description : 'DESCRIPTION'}
+                  </th>
                   <th className="py-3 px-2 text-center w-24">QTY</th>
                   <th className="py-3 px-2 text-center w-20">UOM</th>
                   <th className="py-3 px-3 text-right w-36">RATE (₹)</th>
@@ -1292,8 +1402,8 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
               <tbody className="divide-y divide-slate-200 bg-white">
                 {items.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-8 text-center text-slate-400 font-bold">
-                      No items added yet. Use the search bar above to add spares or services.
+                    <td colSpan={tableLayout === 'with_images' ? 8 : 7} className="py-8 text-center text-slate-400 font-bold">
+                      No items added yet. Click "+ Add Item / Product" or use the search bar above.
                     </td>
                   </tr>
                 ) : (
@@ -1304,7 +1414,7 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
                           <td className="py-2.5 px-3 text-center font-black text-teal-900">
                             I
                           </td>
-                          <td colSpan={5} className="py-2.5 px-3">
+                          <td colSpan={tableLayout === 'with_images' ? 6 : 5} className="py-2.5 px-3">
                             <input
                               type="text"
                               value={item.item_name}
@@ -1317,7 +1427,7 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
                             <button
                               type="button"
                               onClick={() => handleRemoveItem(item.id)}
-                              className="p-1 hover:bg-rose-100 text-rose-500 rounded"
+                              className="p-1 hover:bg-rose-100 text-rose-500 rounded cursor-pointer"
                               title="Remove Header"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -1334,22 +1444,123 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
                           {items.slice(0, idx + 1).filter(x => !x.is_header).length}.
                         </td>
 
-                        {/* Description */}
-                        <td className="py-3 px-3 align-top space-y-1">
-                          <input
-                            type="text"
-                            value={item.item_name}
-                            onChange={(e) => handleUpdateItem(item.id, 'item_name', e.target.value.toUpperCase())}
-                            className="w-full font-black text-xs text-slate-900 border border-slate-300 rounded-lg p-1.5 focus:ring-1 focus:ring-teal-500 uppercase"
-                            placeholder="Part / Service Name"
-                          />
-                          <input
-                            type="text"
-                            value={item.description || ''}
-                            onChange={(e) => handleUpdateItem(item.id, 'description', e.target.value)}
-                            className="w-full text-[11px] text-slate-500 border border-slate-200 rounded px-1.5 py-0.5"
-                            placeholder="Specifications / notes"
-                          />
+                        {/* MACHINE PHOTO COLUMN (When tableLayout === 'with_images') */}
+                        {tableLayout === 'with_images' && (
+                          <td className="py-4 px-3 align-top text-center w-48 md:w-56 bg-slate-50/40">
+                            <div className="w-full h-36 md:h-44 bg-white border-2 border-slate-200 rounded-2xl p-2.5 flex items-center justify-center overflow-hidden shadow-xs hover:border-teal-400 transition-colors">
+                              <img
+                                src={item.image_url || getProductImage(item.item_name)}
+                                alt={item.item_name}
+                                className="w-full h-full object-contain"
+                                onError={(e) => {
+                                  (e.target as HTMLElement).style.display = 'none';
+                                }}
+                              />
+                            </div>
+                            <div className="mt-2 space-y-1">
+                              <label className="flex items-center justify-center gap-1 cursor-pointer bg-teal-50 hover:bg-teal-100 border border-teal-200 rounded-lg px-2 py-1.5 text-[10px] font-bold text-teal-800 transition-colors">
+                                {uploadingItemId === item.id ? (
+                                  <span className="animate-pulse">Uploading...</span>
+                                ) : (
+                                  <>
+                                    <Upload className="w-3 h-3" />
+                                    <span>Upload Image</span>
+                                  </>
+                                )}
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  disabled={uploadingItemId === item.id}
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) handleImageUpload(item.id, file);
+                                  }}
+                                />
+                              </label>
+                              {item.image_url && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpdateItem(item.id, 'image_url', '')}
+                                  className="flex items-center justify-center gap-1 cursor-pointer bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg px-2 py-1 text-[10px] font-bold text-rose-700 transition-colors w-full"
+                                  title="Remove Image"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                  <span>Remove Image</span>
+                                </button>
+                              )}
+                              <input
+                                type="text"
+                                value={item.image_url || ''}
+                                onChange={(e) => handleUpdateItem(item.id, 'image_url', e.target.value)}
+                                className="text-[10px] text-slate-500 border border-slate-200 rounded-lg px-2 py-1 w-full text-center bg-white"
+                                placeholder="Or paste image URL"
+                                title="Product Photo URL or Supabase Path"
+                              />
+                            </div>
+                          </td>
+                        )}
+
+                        {/* Description & Technical Specifications */}
+                        <td className="py-3 px-3 align-top space-y-2">
+                          {tableLayout === 'with_images' && (
+                            <div>
+                              <select
+                                aria-label="Select machine from catalogue"
+                                className="w-full text-[11px] font-bold text-slate-800 bg-teal-50/70 hover:bg-teal-100/60 border border-teal-300 rounded-xl px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-teal-500 cursor-pointer"
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  if (val) {
+                                    const prod = availableProducts.find(p => p.id === val);
+                                    if (prod) handleSelectProductForRow(item.id, prod);
+                                  }
+                                }}
+                                defaultValue=""
+                              >
+                                <option value="" disabled>-- Quick Select Product / Machine Option from Catalogue --</option>
+                                {availableProducts.map((p) => (
+                                  <option key={p.id} value={p.id}>
+                                    {p.service_name} ({p.service_code}) - ₹{Number(p.standard_rate || 0).toLocaleString('en-IN')}/{p.default_uom || 'NOS'}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
+
+                          <div>
+                            <input
+                              type="text"
+                              value={item.item_name}
+                              onChange={(e) => handleUpdateItem(item.id, 'item_name', e.target.value.toUpperCase())}
+                              className="w-full font-black text-xs md:text-sm text-slate-900 border border-slate-300 rounded-xl p-2 focus:ring-1 focus:ring-teal-500 uppercase tracking-wide bg-slate-50/40"
+                              placeholder="Product / Machine / Part Name"
+                            />
+                          </div>
+
+                          {tableLayout === 'with_images' ? (
+                            <div>
+                              <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">
+                                Technical Specifications & Details:
+                              </label>
+                              <textarea
+                                rows={6}
+                                value={item.description || ''}
+                                onChange={(e) => handleUpdateItem(item.id, 'description', e.target.value)}
+                                placeholder="Technical specifications, features, capacity, power, warranty..."
+                                className="w-full text-[11px] font-sans text-slate-800 bg-white border border-slate-300 rounded-xl p-2.5 leading-relaxed focus:ring-1 focus:ring-teal-500"
+                              />
+                            </div>
+                          ) : (
+                            <div>
+                              <input
+                                type="text"
+                                value={item.description || ''}
+                                onChange={(e) => handleUpdateItem(item.id, 'description', e.target.value)}
+                                className="w-full text-[11px] text-slate-600 border border-slate-200 rounded-lg px-2 py-1 font-sans"
+                                placeholder="Specifications / notes"
+                              />
+                            </div>
+                          )}
                         </td>
 
                         {/* Qty with + and - steppers */}
@@ -1410,7 +1621,7 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
                           <button
                             type="button"
                             onClick={() => handleRemoveItem(item.id)}
-                            className="p-1.5 hover:bg-rose-100 text-slate-400 hover:text-rose-600 rounded-lg transition-colors"
+                            className="p-1.5 hover:bg-rose-100 text-slate-400 hover:text-rose-600 rounded-lg transition-colors cursor-pointer"
                             title="Remove Row"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -1422,6 +1633,57 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
                 )}
               </tbody>
             </table>
+
+            {/* Table Footer Actions: Add Item, Reset Column Headers, Total Item Count */}
+            <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-slate-50 border-t border-slate-200">
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEquipmentModalOpen(true)}
+                  className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-black text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>+ Add Item / Product</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAddCustomItem}
+                  className="px-3 py-2 bg-white hover:bg-slate-100 text-slate-800 font-bold text-xs border border-slate-300 rounded-xl shadow-xs flex items-center gap-1 transition-all active:scale-95 cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5 text-slate-500" />
+                  <span>+ Custom Line</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAddHeaderRow}
+                  className="px-3 py-2 bg-white hover:bg-slate-100 text-slate-800 font-bold text-xs border border-slate-300 rounded-xl shadow-xs flex items-center gap-1 transition-all active:scale-95 cursor-pointer"
+                >
+                  <Layers className="w-3.5 h-3.5 text-teal-600" />
+                  <span>+ Header Row</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setColumnHeaders({
+                      slNo: 'SL NO',
+                      photo: 'MACHINE PHOTO',
+                      description: 'DESCRIPTION & TECHNICAL SPECIFICATIONS',
+                      qty: 'QTY',
+                      uom: 'UOM',
+                      rate: 'RATE (₹)',
+                      total: 'TOTAL (₹)',
+                    });
+                  }}
+                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-[11px] rounded-lg transition-colors cursor-pointer"
+                  title="Reset column headers to default"
+                >
+                  Reset Headers
+                </button>
+              </div>
+              <div className="text-xs text-slate-500 font-bold">
+                Total Line Items: <span className="text-slate-900 font-black">{items.filter(x => !x.is_header).length}</span>
+              </div>
+            </div>
           </div>
 
           {/* Financial Summary Box (SUB TOTAL, CGST 9%, SGST 9%, TOTAL) */}
@@ -1429,7 +1691,7 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
             <div className="bg-slate-50 rounded-2xl p-5 border border-slate-300 w-full sm:w-96 space-y-2.5">
               <div className="flex justify-between text-xs font-bold text-slate-600">
                 <span>SUB TOTAL:</span>
-                <span className="font-mono text-slate-900 font-black">
+                <span className="font-sans text-slate-900 font-black">
                   ₹ {subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </span>
               </div>
@@ -1438,13 +1700,13 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
                 <>
                   <div className="flex justify-between text-xs text-slate-600">
                     <span>CGST ({cgstRate}%):</span>
-                    <span className="font-mono text-slate-900">
+                    <span className="font-sans text-slate-900 font-bold">
                       ₹ {cgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </span>
                   </div>
                   <div className="flex justify-between text-xs text-slate-600">
                     <span>SGST ({sgstRate}%):</span>
-                    <span className="font-mono text-slate-900">
+                    <span className="font-sans text-slate-900 font-bold">
                       ₹ {sgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </span>
                   </div>
@@ -1455,7 +1717,7 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
 
               <div className="pt-2 border-t-2 border-slate-300 flex justify-between items-center bg-teal-500/20 p-2.5 rounded-xl">
                 <span className="text-sm font-black text-slate-950">TOTAL:</span>
-                <span className="text-base font-black text-teal-900 font-mono">
+                <span className="text-base font-black text-teal-900 font-sans">
                   ₹ {totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </span>
               </div>
@@ -1628,7 +1890,7 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
                     type="text"
                     value={bankAccountNo}
                     onChange={(e) => setBankAccountNo(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white font-mono"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white font-sans font-bold"
                   />
                 </div>
                 <div className="space-y-1">
@@ -1637,7 +1899,7 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
                     type="text"
                     value={bankIfsc}
                     onChange={(e) => setBankIfsc(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white font-mono"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white font-sans font-bold"
                   />
                 </div>
                 <div className="space-y-1">
@@ -1673,26 +1935,43 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
                 <div className="font-black text-sm text-white mb-2">Company's Bank Details</div>
                 <div>• A/c Holder's Name : <strong className="text-white">{bankAccountName}</strong></div>
                 <div>• Bank Name : <strong className="text-white">{bankName}</strong></div>
-                <div>• A/c No. : <strong className="text-white font-mono">{bankAccountNo}</strong></div>
-                <div>• Branch & IFS Code: <strong className="text-white font-mono">{bankBranch} & {bankIfsc}</strong></div>
+                <div>• A/c No. : <strong className="text-white font-sans">{bankAccountNo}</strong></div>
+                <div>• Branch & IFS Code: <strong className="text-white font-sans">{bankBranch} & {bankIfsc}</strong></div>
               </div>
             )}
 
-            {/* Signatory ON THE LEFT */}
-            <div className="pt-2 text-left space-y-1 border-t border-slate-800">
+            {/* Signatory ON THE LEFT (Directly In-Place Editable) */}
+            <div className="pt-3 text-left space-y-2 border-t border-slate-800 max-w-sm">
               <div className="text-xs font-bold text-slate-300">
                 For {companyName}
               </div>
-              <div className="text-base font-black text-white pt-2">
-                {signatoryName}
+              <div className="space-y-1.5">
+                <input
+                  type="text"
+                  value={signatoryName}
+                  onChange={(e) => setSignatoryName(e.target.value)}
+                  className="w-full text-sm font-black text-white bg-slate-800/80 hover:bg-slate-800 border border-slate-700 focus:border-teal-400 rounded-lg px-2.5 py-1 focus:outline-none"
+                  placeholder="Signatory Name (e.g. Mr. Manikandan Balamurugan)"
+                  title="Click to edit signatory name"
+                />
+                <input
+                  type="text"
+                  value={signatoryDesignation}
+                  onChange={(e) => setSignatoryDesignation(e.target.value)}
+                  className="w-full text-xs font-bold text-teal-400 bg-slate-800/80 hover:bg-slate-800 border border-slate-700 focus:border-teal-400 rounded-lg px-2.5 py-1 focus:outline-none"
+                  placeholder="Signatory Designation (e.g. Sales and Service Head)"
+                  title="Click to edit position / designation"
+                />
+                <input
+                  type="text"
+                  value={companyPhone}
+                  onChange={(e) => setCompanyPhone(e.target.value)}
+                  className="w-full text-xs font-sans text-slate-300 bg-slate-800/80 hover:bg-slate-800 border border-slate-700 focus:border-teal-400 rounded-lg px-2.5 py-1 focus:outline-none"
+                  placeholder="Signatory Phone (e.g. +91 7338882036)"
+                  title="Click to edit phone number"
+                />
               </div>
-              <div className="text-xs text-teal-400 font-bold">
-                {signatoryDesignation}
-              </div>
-              <div className="text-xs text-slate-300">
-                {companyPhone}
-              </div>
-              <div className="text-xs font-bold text-slate-200 uppercase tracking-wider pt-2">
+              <div className="text-xs font-bold text-slate-200 uppercase tracking-wider pt-1">
                 Authorised Signatory
               </div>
             </div>
@@ -1854,7 +2133,12 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
                     <thead>
                       <tr className="bg-slate-900 text-white font-bold">
                         <th className="p-2 text-center w-12">SL NO</th>
-                        <th className="p-2 text-left">DESCRIPTION</th>
+                        {tableLayout === 'with_images' && (
+                          <th className="p-2 text-center w-28">MACHINE PHOTO</th>
+                        )}
+                        <th className="p-2 text-left">
+                          {tableLayout === 'with_images' ? 'DESCRIPTION & TECHNICAL SPECIFICATIONS' : 'DESCRIPTION'}
+                        </th>
                         <th className="p-2 text-center w-16">QTY</th>
                         <th className="p-2 text-center w-16">UOM</th>
                         <th className="p-2 text-right w-24">RATE</th>
@@ -1867,42 +2151,50 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
                           return (
                             <tr key={it.id} className="bg-teal-100 font-bold border-t border-b border-teal-300">
                               <td className="p-1.5 text-center">I</td>
-                              <td colSpan={5} className="p-1.5 uppercase text-teal-950">{it.item_name}</td>
+                              <td colSpan={tableLayout === 'with_images' ? 6 : 5} className="p-1.5 uppercase text-teal-950 font-black">{it.item_name}</td>
                             </tr>
                           );
                         }
+                        const img = it.image_url || getProductImage(it.item_name);
                         return (
                           <tr key={it.id} className="border-t border-slate-200">
-                            <td className="p-2 text-center font-bold">{items.slice(0, idx + 1).filter(x => !x.is_header).length}.</td>
-                            <td className="p-2">
+                            <td className="p-2 text-center font-bold align-top">{items.slice(0, idx + 1).filter(x => !x.is_header).length}.</td>
+                            {tableLayout === 'with_images' && (
+                              <td className="p-2 text-center align-top w-28">
+                                <div className="w-24 h-20 mx-auto bg-white border border-slate-200 rounded-lg p-1 flex items-center justify-center overflow-hidden">
+                                  <img src={img} alt={it.item_name} className="w-full h-full object-contain" />
+                                </div>
+                              </td>
+                            )}
+                            <td className="p-2 align-top">
                               <div className="font-bold text-slate-900 uppercase">{it.item_name}</div>
-                              {it.description && <div className="text-[10px] text-slate-500">{it.description}</div>}
+                              {it.description && <div className="text-[10px] text-slate-600 whitespace-pre-line mt-1">{it.description}</div>}
                             </td>
-                            <td className="p-2 text-center font-bold">{it.qty}</td>
-                            <td className="p-2 text-center">{it.uom}</td>
-                            <td className="p-2 text-right">₹{Number(it.rate).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                            <td className="p-2 text-right font-bold">₹{Number(it.total).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                            <td className="p-2 text-center font-bold align-top">{it.qty}</td>
+                            <td className="p-2 text-center align-top">{it.uom}</td>
+                            <td className="p-2 text-right align-top">₹{Number(it.rate).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                            <td className="p-2 text-right font-bold align-top">₹{Number(it.total).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                           </tr>
                         );
                       })}
                       <tr className="border-t-2 border-slate-300 font-bold bg-slate-50">
-                        <td colSpan={5} className="p-2 text-right">SUB TOTAL:</td>
+                        <td colSpan={tableLayout === 'with_images' ? 6 : 5} className="p-2 text-right">SUB TOTAL:</td>
                         <td className="p-2 text-right">₹{subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                       </tr>
                       {applyTax && (
                         <>
                           <tr className="border-t border-slate-200 text-slate-700">
-                            <td colSpan={5} className="p-1.5 text-right">CGST (9%):</td>
+                            <td colSpan={tableLayout === 'with_images' ? 6 : 5} className="p-1.5 text-right">CGST (9%):</td>
                             <td className="p-1.5 text-right">₹{cgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                           </tr>
                           <tr className="border-t border-slate-200 text-slate-700">
-                            <td colSpan={5} className="p-1.5 text-right">SGST (9%):</td>
+                            <td colSpan={tableLayout === 'with_images' ? 6 : 5} className="p-1.5 text-right">SGST (9%):</td>
                             <td className="p-1.5 text-right">₹{sgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                           </tr>
                         </>
                       )}
                       <tr className="border-t-2 border-slate-900 font-black bg-teal-100 text-sm">
-                        <td colSpan={5} className="p-2 text-right">TOTAL:</td>
+                        <td colSpan={tableLayout === 'with_images' ? 6 : 5} className="p-2 text-right">TOTAL:</td>
                         <td className="p-2 text-right">₹{totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                       </tr>
                     </tbody>
@@ -1927,7 +2219,7 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
                     <span className="font-black text-sm text-slate-900 uppercase">
                       {companyName}
                     </span>
-                    <span className="text-xs font-mono font-bold text-slate-600">
+                    <span className="text-xs font-sans font-bold text-slate-600">
                       Quotation No: {quotationNo} • Page 2
                     </span>
                   </div>
@@ -1953,8 +2245,8 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
                     <div className="font-black text-slate-900 mb-1">Company's Bank Details</div>
                     <div>• A/c Holder's Name : <strong>{bankAccountName}</strong></div>
                     <div>• Bank Name : <strong>{bankName}</strong></div>
-                    <div>• A/c No. : <strong className="font-mono">{bankAccountNo}</strong></div>
-                    <div>• Branch & IFS Code: <strong className="font-mono">{bankBranch} & {bankIfsc}</strong></div>
+                    <div>• A/c No. : <strong className="font-sans">{bankAccountNo}</strong></div>
+                    <div>• Branch & IFS Code: <strong className="font-sans">{bankBranch} & {bankIfsc}</strong></div>
                   </div>
 
                   {/* Signatory ON LEFT (Mr. Manikandan Balamurugan above Sales and Service Head) */}
@@ -2020,6 +2312,150 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
                   Close
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Equipment / Product Selection Modal */}
+      {equipmentModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-3xl w-full max-h-[85vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="p-4 md:p-6 bg-slate-900 text-white flex items-center justify-between">
+              <div>
+                <h3 className="text-base md:text-lg font-black tracking-wide flex items-center gap-2">
+                  <Layers className="w-5 h-5 text-teal-400" />
+                  <span>Select Product / Machine / Spare from Catalogue</span>
+                </h3>
+                <p className="text-xs text-slate-300 mt-0.5">
+                  Choose an item to automatically populate photo, technical specifications, and price.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEquipmentModalOpen(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Search Bar & Custom Option */}
+            <div className="p-4 border-b border-slate-100 bg-slate-50 flex flex-wrap items-center justify-between gap-3">
+              <div className="relative flex-1 min-w-[240px]">
+                <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search products (RB-800, RB-650, Vacuum, Hose, Pipe, Tool, Motor)..."
+                  value={modalSearch}
+                  onChange={(e) => setModalSearch(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 text-xs font-bold bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-teal-400 focus:outline-none"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleAddCustomItem();
+                    setEquipmentModalOpen(false);
+                  }}
+                  className="px-3 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5 text-teal-400" />
+                  <span>+ Custom Line</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleAddHeaderRow();
+                    setEquipmentModalOpen(false);
+                  }}
+                  className="px-3 py-2 bg-teal-50 hover:bg-teal-100 text-teal-800 text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer border border-teal-200 transition-colors"
+                >
+                  <Layers className="w-3.5 h-3.5 text-teal-600" />
+                  <span>+ Header Row</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Products List */}
+            <div className="p-4 md:p-6 overflow-y-auto flex-1 space-y-3">
+              {availableProducts.filter(p => {
+                if (!modalSearch.trim()) return true;
+                const q = modalSearch.toLowerCase();
+                return (
+                  p.service_name.toLowerCase().includes(q) ||
+                  p.service_code.toLowerCase().includes(q) ||
+                  (p.category && p.category.toLowerCase().includes(q)) ||
+                  (p.description && p.description.toLowerCase().includes(q))
+                );
+              }).length === 0 ? (
+                <div className="text-center py-12 text-slate-400 font-bold text-xs">
+                  No items found matching "{modalSearch}". Click "+ Custom Line" to add a custom item.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {availableProducts
+                    .filter(p => {
+                      if (!modalSearch.trim()) return true;
+                      const q = modalSearch.toLowerCase();
+                      return (
+                        p.service_name.toLowerCase().includes(q) ||
+                        p.service_code.toLowerCase().includes(q) ||
+                        (p.category && p.category.toLowerCase().includes(q)) ||
+                        (p.description && p.description.toLowerCase().includes(q))
+                      );
+                    })
+                    .map((p) => {
+                      const img = p.image_url || getProductImage(p.service_name, p.service_code);
+                      return (
+                        <div
+                          key={p.id}
+                          className="p-3.5 rounded-2xl border border-slate-200 hover:border-teal-400 hover:shadow-md transition-all bg-white flex flex-col justify-between group"
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="w-14 h-14 bg-slate-50 border border-slate-200 rounded-xl p-1 flex items-center justify-center shrink-0 overflow-hidden">
+                              <img
+                                src={img}
+                                alt={p.service_name}
+                                className="w-full h-full object-contain"
+                                onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-black text-xs text-slate-900 group-hover:text-teal-700 transition-colors line-clamp-1">
+                                {p.service_name}
+                              </div>
+                              <div className="text-[10px] text-slate-500 font-bold mt-0.5">
+                                Code: {p.service_code} • {p.default_uom || 'NOS'}
+                              </div>
+                              <div className="text-xs font-black text-teal-700 mt-1">
+                                ₹{Number(p.standard_rate || 0).toLocaleString('en-IN')}/{p.default_uom || 'NOS'}
+                              </div>
+                            </div>
+                          </div>
+                          {p.description && (
+                            <p className="text-[10px] text-slate-500 line-clamp-2 mt-2 border-t border-slate-100 pt-1.5 font-sans">
+                              {p.description}
+                            </p>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleAddProduct(p);
+                              setEquipmentModalOpen(false);
+                            }}
+                            className="mt-3 w-full py-2 bg-teal-500 hover:bg-teal-600 text-white font-black text-xs rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition-transform active:scale-95 cursor-pointer"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>+ Add to Quotation</span>
+                          </button>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
             </div>
           </div>
         </div>

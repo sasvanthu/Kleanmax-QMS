@@ -193,9 +193,13 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
     }
   ]);
 
-  // Tax
-  const [applyTax, setApplyTax] = useState<boolean>(false);
-  const [taxPercent, setTaxPercent] = useState<number>(18);
+  // Tax with independent CGST, SGST, IGST support
+  const [applyCgst, setApplyCgst] = useState<boolean>(false);
+  const [cgstRate, setCgstRate] = useState<number>(9);
+  const [applySgst, setApplySgst] = useState<boolean>(false);
+  const [sgstRate, setSgstRate] = useState<number>(9);
+  const [applyIgst, setApplyIgst] = useState<boolean>(false);
+  const [igstRate, setIgstRate] = useState<number>(18);
 
   // 6. Machineries and consumables List (Editable)
   const [machineries, setMachineries] = useState<string[]>(DEFAULT_MACHINERIES);
@@ -322,12 +326,35 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
               if (snap.sigName) setSigName(snap.sigName);
               if (snap.sigTitle) setSigTitle(snap.sigTitle);
               if (snap.sigPhones) setSigPhones(snap.sigPhones);
-              if (snap.applyTax !== undefined) setApplyTax(snap.applyTax);
-              if (snap.taxPercent !== undefined) setTaxPercent(snap.taxPercent);
+              if (snap.applyCgst !== undefined || snap.applySgst !== undefined || snap.applyIgst !== undefined) {
+                setApplyCgst(Boolean(snap.applyCgst));
+                if (snap.cgstRate !== undefined) setCgstRate(Number(snap.cgstRate));
+                setApplySgst(Boolean(snap.applySgst));
+                if (snap.sgstRate !== undefined) setSgstRate(Number(snap.sgstRate));
+                setApplyIgst(Boolean(snap.applyIgst));
+                if (snap.igstRate !== undefined) setIgstRate(Number(snap.igstRate));
+              } else if (snap.applyTax !== undefined) {
+                const legacyRate = Number(snap.taxPercent || 18);
+                if (snap.applyTax) {
+                  setApplyCgst(true); setCgstRate(9);
+                  setApplySgst(true); setSgstRate(9);
+                  setApplyIgst(false);
+                }
+              }
             }
             if (q.signatory_name) setSigName(q.signatory_name);
             if (q.signatory_designation) setSigTitle(q.signatory_designation);
+            if (q.signatory_phone) setSigPhones(q.signatory_phone);
             if (!snap) {
+              const hasCgst = Number(q.cgst_amount || 0) > 0 || Number(q.cgst_rate || 0) > 0;
+              const hasSgst = Number(q.sgst_amount || 0) > 0 || Number(q.sgst_rate || 0) > 0;
+              const hasIgst = Number(q.igst_amount || 0) > 0 || Number(q.igst_rate || 0) > 0;
+              setApplyCgst(hasCgst);
+              if (q.cgst_rate) setCgstRate(Number(q.cgst_rate));
+              setApplySgst(hasSgst);
+              if (q.sgst_rate) setSgstRate(Number(q.sgst_rate));
+              setApplyIgst(hasIgst);
+              if (q.igst_rate) setIgstRate(Number(q.igst_rate));
               // Direct restore from database columns
               if (q.customer) {
                 setCustomerName(q.customer.company_name || '');
@@ -366,8 +393,9 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
                 if (lines.length > 0) setTerms(lines);
               }
               if (q.notes) setCallNotice(q.notes);
-              setApplyTax(Number(q.tax_rate || 0) > 0 || Number(q.total_tax || 0) > 0);
-              if (q.tax_rate) setTaxPercent(Number(q.tax_rate));
+              if (Number(q.cgst_rate || 0) > 0) setCgstRate(Number(q.cgst_rate));
+              if (Number(q.sgst_rate || 0) > 0) setSgstRate(Number(q.sgst_rate));
+              if (Number(q.igst_rate || 0) > 0) setIgstRate(Number(q.igst_rate));
             }
           }
         } catch (e) {
@@ -423,10 +451,18 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
     setQuotationTitle(opt);
   };
 
-  // Calculations
+  // Calculations with independent CGST, SGST, IGST support
   const subtotal = rows.reduce((acc, r) => acc + (Number(r.amount) || 0), 0);
-  const gstAmount = applyTax ? Math.round((subtotal * taxPercent) / 100) : 0;
-  const finalTotal = subtotal + gstAmount;
+  const activeCgstRate = Number(cgstRate) || 0;
+  const activeSgstRate = Number(sgstRate) || 0;
+  const activeIgstRate = Number(igstRate) || 0;
+  const cgstAmount = applyCgst ? Math.round((subtotal * activeCgstRate) / 100) : 0;
+  const sgstAmount = applySgst ? Math.round((subtotal * activeSgstRate) / 100) : 0;
+  const igstAmount = applyIgst ? Math.round((subtotal * activeIgstRate) / 100) : 0;
+  const totalTax = cgstAmount + sgstAmount + igstAmount;
+  const gstAmount = totalTax;
+  const finalTotal = subtotal + totalTax;
+  const combinedTaxRate = (applyCgst ? activeCgstRate : 0) + (applySgst ? activeSgstRate : 0) + (applyIgst ? activeIgstRate : 0);
 
   // Add Scope Row from Catalog
   const handleAddCatalogItem = (item: Partial<Service>) => {
@@ -571,7 +607,7 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
         unit_price: Number(r.amount) || 0,
         applied_rate: Number(r.amount) || 0,
         rate_source: 'catalogue',
-        tax_rate: applyTax ? taxPercent : 0,
+        tax_rate: combinedTaxRate,
         line_total: Number(r.amount) || 0,
         item_order: idx + 1,
       }));
@@ -590,6 +626,19 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
         introText2,
         rows,
         subtotal,
+        applyCgst,
+        cgstRate: activeCgstRate,
+        cgstAmount,
+        cgst: cgstAmount,
+        applySgst,
+        sgstRate: activeSgstRate,
+        sgstAmount,
+        sgst: sgstAmount,
+        applyIgst,
+        igstRate: activeIgstRate,
+        igstAmount,
+        igst: igstAmount,
+        totalTax,
         gstAmount,
         finalTotal,
         totalAmount: finalTotal,
@@ -601,8 +650,8 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
         sigName,
         sigTitle,
         sigPhones,
-        applyTax,
-        taxPercent,
+        applyTax: (applyCgst || applySgst || applyIgst),
+        taxPercent: combinedTaxRate,
         quotationDate,
         quotationNo,
       };
@@ -620,9 +669,15 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
         sections: [],
         subtotal: subtotal,
         taxable_amount: subtotal,
-        total_tax: gstAmount,
+        cgst_rate: activeCgstRate,
+        cgst_amount: cgstAmount,
+        sgst_rate: activeSgstRate,
+        sgst_amount: sgstAmount,
+        igst_rate: activeIgstRate,
+        igst_amount: igstAmount,
+        total_tax: totalTax,
         final_amount: finalTotal,
-        tax_rate: applyTax ? taxPercent : 0,
+        tax_rate: combinedTaxRate,
         discount_type: 'none',
         discount_value: 0,
         snapshot_json: snapshot,
@@ -807,7 +862,7 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
               EDITING MODE
             </span>
             <span className="text-xs font-bold text-purple-900">
-              Quotation: <strong className="font-mono text-purple-950">{quotationNo}</strong> &bull; Client: <strong>{customerName || 'Selected Customer'}</strong>
+              Quotation: <strong className="text-purple-950">{quotationNo}</strong> &bull; Client: <strong>{customerName || 'Selected Customer'}</strong>
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -963,7 +1018,7 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
                     value={gstin}
                     onChange={(e) => setGstin(e.target.value.toUpperCase())}
                     placeholder="GSTIN No"
-                    className="w-full font-mono border border-slate-300 rounded-lg p-2 uppercase"
+                    className="w-full font-sans font-bold border border-slate-300 rounded-lg p-2 uppercase"
                   />
                 </div>
               </div>
@@ -979,7 +1034,7 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
                       type="text"
                       value={quotationNo}
                       onChange={(e) => setQuotationNo(e.target.value.toUpperCase())}
-                      className="w-full text-sm font-mono font-black text-slate-900 border border-slate-300 rounded-xl p-2 bg-white uppercase focus:ring-1 focus:ring-purple-500"
+                      className="w-full text-sm font-sans font-black text-slate-900 border border-slate-300 rounded-xl p-2 bg-white uppercase focus:ring-1 focus:ring-purple-500"
                     />
                     <button
                       type="button"
@@ -1097,7 +1152,7 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
                         <div>
                           <div className="text-xs font-bold text-slate-900 flex items-center gap-2">
                             <span>{item.service_name}</span>
-                            <span className="text-[10px] font-mono bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded">
+                            <span className="text-[10px] font-sans font-bold bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded">
                               {item.service_code}
                             </span>
                           </div>
@@ -1224,21 +1279,97 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
                     </td>
                   </tr>
 
-                  {/* Tax Option Toggle */}
-                  <tr className="border-t border-slate-200 text-slate-700">
+                  {/* Independent CGST, SGST, IGST Controls */}
+                  <tr className="border-t border-slate-200 text-slate-700 bg-slate-50/50">
                     <td colSpan={2} className="p-2 text-right">
-                      <label className="inline-flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700">
-                        <input
-                          type="checkbox"
-                          checked={applyTax}
-                          onChange={(e) => setApplyTax(e.target.checked)}
-                          className="rounded text-purple-600 focus:ring-purple-500 w-4 h-4"
-                        />
-                        <span>Apply GST (18% Extra):</span>
-                      </label>
+                      <div className="inline-flex items-center gap-2">
+                        <label className="inline-flex items-center gap-1.5 cursor-pointer text-xs font-bold text-slate-700">
+                          <input
+                            type="checkbox"
+                            checked={applyCgst}
+                            onChange={(e) => setApplyCgst(e.target.checked)}
+                            className="rounded text-purple-600 focus:ring-purple-500 w-4 h-4 cursor-pointer"
+                          />
+                          <span>CGST</span>
+                        </label>
+                        <div className="inline-flex items-center gap-1">
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.5"
+                            value={cgstRate}
+                            onChange={(e) => setCgstRate(parseFloat(e.target.value) || 0)}
+                            className="w-12 text-center text-xs font-bold border border-slate-300 rounded px-1 py-0.5 bg-white"
+                          />
+                          <span className="text-[11px] font-bold text-slate-500">%:</span>
+                        </div>
+                      </div>
                     </td>
                     <td className="p-2 text-right font-bold text-slate-700">
-                      {applyTax ? `Rs.${gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '—'}
+                      {applyCgst ? `Rs.${cgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '—'}
+                    </td>
+                  </tr>
+
+                  <tr className="border-t border-slate-200 text-slate-700 bg-slate-50/50">
+                    <td colSpan={2} className="p-2 text-right">
+                      <div className="inline-flex items-center gap-2">
+                        <label className="inline-flex items-center gap-1.5 cursor-pointer text-xs font-bold text-slate-700">
+                          <input
+                            type="checkbox"
+                            checked={applySgst}
+                            onChange={(e) => setApplySgst(e.target.checked)}
+                            className="rounded text-purple-600 focus:ring-purple-500 w-4 h-4 cursor-pointer"
+                          />
+                          <span>SGST</span>
+                        </label>
+                        <div className="inline-flex items-center gap-1">
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.5"
+                            value={sgstRate}
+                            onChange={(e) => setSgstRate(parseFloat(e.target.value) || 0)}
+                            className="w-12 text-center text-xs font-bold border border-slate-300 rounded px-1 py-0.5 bg-white"
+                          />
+                          <span className="text-[11px] font-bold text-slate-500">%:</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-2 text-right font-bold text-slate-700">
+                      {applySgst ? `Rs.${sgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '—'}
+                    </td>
+                  </tr>
+
+                  <tr className="border-t border-slate-200 text-slate-700 bg-slate-50/50">
+                    <td colSpan={2} className="p-2 text-right">
+                      <div className="inline-flex items-center gap-2">
+                        <label className="inline-flex items-center gap-1.5 cursor-pointer text-xs font-bold text-slate-700">
+                          <input
+                            type="checkbox"
+                            checked={applyIgst}
+                            onChange={(e) => setApplyIgst(e.target.checked)}
+                            className="rounded text-purple-600 focus:ring-purple-500 w-4 h-4 cursor-pointer"
+                          />
+                          <span>IGST</span>
+                        </label>
+                        <div className="inline-flex items-center gap-1">
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.5"
+                            value={igstRate}
+                            onChange={(e) => setIgstRate(parseFloat(e.target.value) || 0)}
+                            className="w-12 text-center text-xs font-bold border border-slate-300 rounded px-1 py-0.5 bg-white"
+                          />
+                          <span className="text-[11px] font-bold text-slate-500">%:</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-2 text-right font-bold text-slate-700">
+                      {applyIgst ? `Rs.${igstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '—'}
                     </td>
                   </tr>
 
@@ -1277,7 +1408,7 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
               onChange={(e) => setSigCompany(e.target.value)}
               className="font-black text-sm text-purple-900 uppercase border-0 bg-transparent p-0 focus:ring-1 focus:ring-purple-500 rounded"
             />
-            <span className="text-xs font-mono font-bold text-slate-600">
+            <span className="text-xs font-sans font-bold text-slate-600">
               Quotation No: {quotationNo} • Page 2
             </span>
           </div>
@@ -1441,7 +1572,7 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
             <span className="font-black text-sm text-purple-900 uppercase">
               Upcoming Technology Showcase
             </span>
-            <span className="text-xs font-mono font-bold text-slate-600">
+            <span className="text-xs font-sans font-bold text-slate-600">
               Unique Painters • Page 3
             </span>
           </div>
@@ -1591,7 +1722,7 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
                           </div>
                           {r.description && <div className="text-[10px] text-slate-500 mt-0.5">{r.description}</div>}
                           {r.area_sqft > 0 && (
-                            <div className="text-[10px] text-slate-600 font-mono mt-0.5">
+                            <div className="text-[10px] text-slate-600 font-sans mt-0.5">
                               Area: {r.area_sqft.toLocaleString('en-IN')} sq.ft @ Rs.{Number(r.rate_per_sqft).toFixed(2)} / sq.ft
                             </div>
                           )}
@@ -1605,10 +1736,22 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
                       <td colSpan={2} className="p-2 text-right">SUB TOTAL:</td>
                       <td className="p-2 text-right">Rs.{subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                     </tr>
-                    {applyTax && (
+                    {applyCgst && (
                       <tr className="border-t border-slate-200 text-slate-700">
-                        <td colSpan={2} className="p-1.5 text-right">GST (18%):</td>
-                        <td className="p-1.5 text-right">Rs.{gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                        <td colSpan={2} className="p-1.5 text-right">CGST ({activeCgstRate}%):</td>
+                        <td className="p-1.5 text-right">Rs.{cgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                      </tr>
+                    )}
+                    {applySgst && (
+                      <tr className="border-t border-slate-200 text-slate-700">
+                        <td colSpan={2} className="p-1.5 text-right">SGST ({activeSgstRate}%):</td>
+                        <td className="p-1.5 text-right">Rs.{sgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                      </tr>
+                    )}
+                    {applyIgst && (
+                      <tr className="border-t border-slate-200 text-slate-700">
+                        <td colSpan={2} className="p-1.5 text-right">IGST ({activeIgstRate}%):</td>
+                        <td className="p-1.5 text-right">Rs.{igstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                       </tr>
                     )}
                     <tr className="border-t-2 border-purple-900 font-black bg-purple-100 text-sm">
@@ -1635,7 +1778,7 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
                   <span className="font-black text-sm text-purple-900 uppercase">
                     {sigCompany || 'Unique Painters'}
                   </span>
-                  <span className="text-xs font-mono font-bold text-slate-600">
+                  <span className="text-xs font-sans font-bold text-slate-600">
                     Quotation No: {quotationNo} • Page 2
                   </span>
                 </div>
@@ -1697,7 +1840,7 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
                   <span className="font-black text-sm text-purple-900 uppercase">
                     Upcoming Technology Showcase
                   </span>
-                  <span className="text-xs font-mono font-bold text-slate-600">
+                  <span className="text-xs font-sans font-bold text-slate-600">
                     Unique Painters • Page 3
                   </span>
                 </div>

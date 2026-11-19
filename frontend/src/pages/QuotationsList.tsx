@@ -409,7 +409,7 @@ export const QuotationsList: React.FC<QuotationsListProps> = ({
                           />
                         </td>
                       )}
-                      <td className="p-3.5 font-mono font-bold text-slate-900">
+                      <td className="p-3.5 font-sans font-bold text-slate-900">
                         {q.quotation_number}
                         {q.revision_number > 0 && (
                           <span className="ml-1 text-[10px] bg-slate-100 text-slate-600 px-1 py-0.5 rounded">

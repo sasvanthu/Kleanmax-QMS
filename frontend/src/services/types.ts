@@ -62,6 +62,7 @@ export interface Service {
   hsn_sac_code?: string;
   standard_rate: number;
   company_code?: string;
+  image_url?: string;
   tax_category: string;
   default_tax_rate: number;
   is_active: boolean;
@@ -90,6 +91,7 @@ export interface QuotationSection {
   override_reason?: string;
   discount_percent: number;
   line_total: number;
+  image_url?: string;
   notes?: string;
 }
 
@@ -114,6 +116,7 @@ export interface QuotationItem {
   taxable_value: number;
   tax_rate: number;
   line_total: number;
+  image_url?: string;
   notes?: string;
 }
 

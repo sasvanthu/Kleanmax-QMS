@@ -784,8 +784,48 @@
                         </td>
                     </tr>
 
-                    <!-- GST -->
-                    {% if apply_tax_val %}
+                    <!-- GST / Independent CGST, SGST, IGST -->
+                    {% set unp_show_cgst = (snapshot and snapshot.applyCgst) or (snapshot and snapshot.cgstAmount and snapshot.cgstAmount > 0) or (quotation.cgst_amount and quotation.cgst_amount > 0) %}
+                    {% set unp_show_sgst = (snapshot and snapshot.applySgst) or (snapshot and snapshot.sgstAmount and snapshot.sgstAmount > 0) or (quotation.sgst_amount and quotation.sgst_amount > 0) %}
+                    {% set unp_show_igst = (snapshot and snapshot.applyIgst) or (snapshot and snapshot.igstAmount and snapshot.igstAmount > 0) or (quotation.igst_amount and quotation.igst_amount > 0) %}
+                    {% set unp_cgst_amt = (snapshot.cgstAmount if snapshot and snapshot.cgstAmount is defined else (quotation.cgst_amount or 0))|float %}
+                    {% set unp_sgst_amt = (snapshot.sgstAmount if snapshot and snapshot.sgstAmount is defined else (quotation.sgst_amount or 0))|float %}
+                    {% set unp_igst_amt = (snapshot.igstAmount if snapshot and snapshot.igstAmount is defined else (quotation.igst_amount or 0))|float %}
+                    {% set unp_cgst_rate = (snapshot.cgstRate if snapshot and snapshot.cgstRate is defined else (quotation.cgst_rate or 9)) %}
+                    {% set unp_sgst_rate = (snapshot.sgstRate if snapshot and snapshot.sgstRate is defined else (quotation.sgst_rate or 9)) %}
+                    {% set unp_igst_rate = (snapshot.igstRate if snapshot and snapshot.igstRate is defined else (quotation.igst_rate or 18)) %}
+
+                    {% if unp_show_cgst %}
+                    <tr style="border-top: 1px solid #e2e8f0; color: #334155;">
+                        <td colspan="2" style="padding: 5px 10px; text-align: right; font-size: 8.5pt;">
+                            CGST ({{ unp_cgst_rate }}%):
+                        </td>
+                        <td style="padding: 5px 10px; text-align: right; font-weight: 800; font-size: 8.5pt; color: #0f172a;">
+                            Rs.{{ "{:,.2f}".format(unp_cgst_amt) }}
+                        </td>
+                    </tr>
+                    {% endif %}
+                    {% if unp_show_sgst %}
+                    <tr style="border-top: 1px solid #e2e8f0; color: #334155;">
+                        <td colspan="2" style="padding: 5px 10px; text-align: right; font-size: 8.5pt;">
+                            SGST ({{ unp_sgst_rate }}%):
+                        </td>
+                        <td style="padding: 5px 10px; text-align: right; font-weight: 800; font-size: 8.5pt; color: #0f172a;">
+                            Rs.{{ "{:,.2f}".format(unp_sgst_amt) }}
+                        </td>
+                    </tr>
+                    {% endif %}
+                    {% if unp_show_igst %}
+                    <tr style="border-top: 1px solid #e2e8f0; color: #334155;">
+                        <td colspan="2" style="padding: 5px 10px; text-align: right; font-size: 8.5pt;">
+                            IGST ({{ unp_igst_rate }}%):
+                        </td>
+                        <td style="padding: 5px 10px; text-align: right; font-weight: 800; font-size: 8.5pt; color: #0f172a;">
+                            Rs.{{ "{:,.2f}".format(unp_igst_amt) }}
+                        </td>
+                    </tr>
+                    {% endif %}
+                    {% if not (unp_show_cgst or unp_show_sgst or unp_show_igst) and apply_tax_val %}
                     <tr style="border-top: 1px solid #e2e8f0; color: #334155;">
                         <td colspan="2" style="padding: 5px 10px; text-align: right; font-size: 8.5pt;">
                             GST ({{ "{:g}".format(tax_rate_val) }}%):

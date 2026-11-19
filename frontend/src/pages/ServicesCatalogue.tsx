@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Service, User } from '../services/types';
 import { api } from '../services/api';
-import { Layers, Plus, Search, Tag, Sparkles, Edit2, Check, X, Trash2, Building2, Wrench, FileText } from 'lucide-react';
+import { uploadImageToSupabase } from '../services/supabase';
+import { Layers, Plus, Search, Tag, Sparkles, Edit2, Check, X, Trash2, Building2, Wrench, FileText, Upload, Image as ImageIcon } from 'lucide-react';
 
 interface ServicesCatalogueProps {
   currentUser: User | null;
@@ -40,6 +41,8 @@ export const ServicesCatalogue: React.FC<ServicesCatalogueProps> = ({ currentUse
   const [standardRate, setStandardRate] = useState<number>(32000.00);
   const [taxRate, setTaxRate] = useState<number>(18.00);
   const [internalNotes, setInternalNotes] = useState('');
+  const [imageUrl, setImageUrl] = useState<string>('');
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -93,6 +96,7 @@ export const ServicesCatalogue: React.FC<ServicesCatalogueProps> = ({ currentUse
     setStandardRate(25000.00);
     setTaxRate(18.00);
     setInternalNotes('');
+    setImageUrl('');
     setError('');
     setModalOpen(true);
   };
@@ -110,8 +114,21 @@ export const ServicesCatalogue: React.FC<ServicesCatalogueProps> = ({ currentUse
     setStandardRate(Number(s.standard_rate || 0));
     setTaxRate(Number(s.default_tax_rate || 18));
     setInternalNotes(s.internal_notes || '');
+    setImageUrl(s.image_url || '');
     setError('');
     setModalOpen(true);
+  };
+
+  const handleImageUpload = async (file: File) => {
+    setUploadingImage(true);
+    try {
+      const publicUrl = await uploadImageToSupabase(file, formCompanyCode || 'products');
+      setImageUrl(publicUrl);
+    } catch (err: any) {
+      alert(err.message || 'Failed to upload image');
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   const handleSaveService = async (e: React.FormEvent) => {
@@ -121,6 +138,7 @@ export const ServicesCatalogue: React.FC<ServicesCatalogueProps> = ({ currentUse
     try {
       if (editingService) {
         await api.services.update(editingService.id, {
+          service_code: serviceCode.trim().toUpperCase(),
           service_name: serviceName.trim(),
           category,
           quotation_type: quotationType,
@@ -131,6 +149,7 @@ export const ServicesCatalogue: React.FC<ServicesCatalogueProps> = ({ currentUse
           default_tax_rate: Number(taxRate),
           company_code: formCompanyCode,
           internal_notes: internalNotes.trim() || undefined,
+          image_url: imageUrl || '',
         });
       } else {
         await api.services.create({
@@ -145,6 +164,7 @@ export const ServicesCatalogue: React.FC<ServicesCatalogueProps> = ({ currentUse
           default_tax_rate: Number(taxRate),
           company_code: formCompanyCode,
           internal_notes: internalNotes.trim() || undefined,
+          image_url: imageUrl || undefined,
           is_active: true,
         });
       }
@@ -311,8 +331,15 @@ export const ServicesCatalogue: React.FC<ServicesCatalogueProps> = ({ currentUse
                   </span>
                 </div>
 
-                <div className="font-black text-base text-slate-900 leading-snug group-hover:text-amber-600 transition-colors">
-                  {s.service_name}
+                <div className="flex items-start gap-3 my-2">
+                  {s.image_url && (
+                    <div className="w-16 h-16 bg-white border border-slate-200 rounded-xl p-1 shrink-0 overflow-hidden flex items-center justify-center shadow-2xs">
+                      <img src={s.image_url} alt={s.service_name} className="w-full h-full object-contain" />
+                    </div>
+                  )}
+                  <div className="font-black text-base text-slate-900 leading-snug group-hover:text-amber-600 transition-colors flex-1">
+                    {s.service_name}
+                  </div>
                 </div>
 
                 {s.description && (
@@ -419,7 +446,6 @@ export const ServicesCatalogue: React.FC<ServicesCatalogueProps> = ({ currentUse
                     type="text"
                     required
                     value={serviceCode}
-                    disabled={!!editingService}
                     onChange={(e) => setServiceCode(e.target.value.toUpperCase())}
                     className="w-full text-xs font-mono font-bold border border-slate-300 rounded-lg p-2.5 bg-slate-50 uppercase focus:ring-1 focus:ring-amber-500"
                     placeholder="e.g. KMP-RENT-RB800"
@@ -439,6 +465,77 @@ export const ServicesCatalogue: React.FC<ServicesCatalogueProps> = ({ currentUse
                   className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2.5 focus:ring-1 focus:ring-amber-500"
                   placeholder="e.g. RIDE ON SCRUBBER MACHINE RB-800"
                 />
+              </div>
+
+              {/* Product / Machine Photo Upload & Removal */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2">
+                <label className="block text-[11px] font-bold text-slate-700 uppercase">
+                  Product / Machine Photo
+                </label>
+                <div className="flex items-center gap-4">
+                  {imageUrl ? (
+                    <div className="relative group w-20 h-20 bg-white border border-slate-300 rounded-xl overflow-hidden p-1 flex items-center justify-center shrink-0 shadow-xs">
+                      <img
+                        src={imageUrl}
+                        alt="Product preview"
+                        className="w-full h-full object-contain"
+                        onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setImageUrl('')}
+                        className="absolute top-1 right-1 bg-rose-600 hover:bg-rose-700 text-white p-1 rounded-full shadow-xs transition-transform active:scale-90"
+                        title="Remove Image"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="w-20 h-20 bg-slate-100 border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center text-slate-400 shrink-0">
+                      <ImageIcon className="w-5 h-5 stroke-1 mb-1" />
+                      <span className="text-[10px] font-semibold">No Image</span>
+                    </div>
+                  )}
+
+                  <div className="space-y-1.5 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <label className="flex items-center gap-1.5 cursor-pointer bg-white hover:bg-slate-100 border border-slate-300 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-700 shadow-2xs transition-colors">
+                        <Upload className="w-3.5 h-3.5 text-amber-600" />
+                        <span>{uploadingImage ? 'Uploading...' : (imageUrl ? 'Change Image' : 'Upload Image')}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          disabled={uploadingImage}
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (f) handleImageUpload(f);
+                          }}
+                        />
+                      </label>
+                      {imageUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setImageUrl('')}
+                          className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Remove Image</span>
+                        </button>
+                      )}
+                    </div>
+                    <input
+                      type="text"
+                      value={imageUrl}
+                      onChange={(e) => setImageUrl(e.target.value)}
+                      placeholder="Or paste public Image URL (https://...)"
+                      className="w-full text-[11px] border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white font-mono text-slate-600"
+                    />
+                    <p className="text-[10px] text-slate-400">
+                      Upload machine photos to display in quotations and catalogues. Click "Remove Image" anytime.
+                    </p>
+                  </div>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

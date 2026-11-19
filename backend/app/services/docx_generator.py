@@ -433,27 +433,44 @@ def _generate_uniquepainters_docx(
     r.font.name = "Arial"
     r.font.color.rgb = RGBColor(15, 23, 42)
 
-    # GST (18%) Row
-    if apply_tax:
-        gst_row = tbl.add_row().cells
+    # GST / Independent CGST, SGST, IGST Rows
+    show_cgst = bool(snapshot.get("applyCgst") or (snapshot.get("cgstAmount") and float(snapshot.get("cgstAmount")) > 0) or (getattr(quotation, "cgst_amount", 0) and float(getattr(quotation, "cgst_amount", 0)) > 0))
+    show_sgst = bool(snapshot.get("applySgst") or (snapshot.get("sgstAmount") and float(snapshot.get("sgstAmount")) > 0) or (getattr(quotation, "sgst_amount", 0) and float(getattr(quotation, "sgst_amount", 0)) > 0))
+    show_igst = bool(snapshot.get("applyIgst") or (snapshot.get("igstAmount") and float(snapshot.get("igstAmount")) > 0) or (getattr(quotation, "igst_amount", 0) and float(getattr(quotation, "igst_amount", 0)) > 0))
+    cgst_rate_val = snapshot.get("cgstRate") or getattr(quotation, "cgst_rate", 9) or 9
+    sgst_rate_val = snapshot.get("sgstRate") or getattr(quotation, "sgst_rate", 9) or 9
+    igst_rate_val = snapshot.get("igstRate") or getattr(quotation, "igst_rate", 18) or 18
+    cgst_amt = safe_decimal(snapshot.get("cgstAmount") or snapshot.get("cgst") or getattr(quotation, "cgst_amount", 0), "0")
+    sgst_amt = safe_decimal(snapshot.get("sgstAmount") or snapshot.get("sgst") or getattr(quotation, "sgst_amount", 0), "0")
+    igst_amt = safe_decimal(snapshot.get("igstAmount") or snapshot.get("igst") or getattr(quotation, "igst_amount", 0), "0")
+
+    def _add_unp_tax_row(label, val):
+        t_row = tbl.add_row().cells
         for c_i in range(3):
-            gst_row[c_i].width = col_widths[c_i]
-            _set_cell_margins(gst_row[c_i], top=60, bottom=60, left=120, right=120)
+            t_row[c_i].width = col_widths[c_i]
+            _set_cell_margins(t_row[c_i], top=60, bottom=60, left=120, right=120)
+        p1 = t_row[1].paragraphs[0]
+        p1.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        r1 = p1.add_run(label)
+        r1.font.size = Pt(8.5)
+        r1.font.name = "Arial"
+        r1.font.color.rgb = RGBColor(51, 65, 85)
+        p2 = t_row[2].paragraphs[0]
+        p2.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        r2 = p2.add_run(f"Rs.{val:,.2f}")
+        r2.bold = True
+        r2.font.size = Pt(8.5)
+        r2.font.name = "Arial"
+        r2.font.color.rgb = RGBColor(15, 23, 42)
 
-        p_g1 = gst_row[1].paragraphs[0]
-        p_g1.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-        r = p_g1.add_run("GST (18%):")
-        r.font.size = Pt(8.5)
-        r.font.name = "Arial"
-        r.font.color.rgb = RGBColor(51, 65, 85)
-
-        p_g2 = gst_row[2].paragraphs[0]
-        p_g2.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-        r = p_g2.add_run(f"Rs.{gst_amt:,.2f}")
-        r.bold = True
-        r.font.size = Pt(8.5)
-        r.font.name = "Arial"
-        r.font.color.rgb = RGBColor(15, 23, 42)
+    if show_cgst:
+        _add_unp_tax_row(f"CGST ({cgst_rate_val}%):", cgst_amt)
+    if show_sgst:
+        _add_unp_tax_row(f"SGST ({sgst_rate_val}%):", sgst_amt)
+    if show_igst:
+        _add_unp_tax_row(f"IGST ({igst_rate_val}%):", igst_amt)
+    if not (show_cgst or show_sgst or show_igst) and apply_tax:
+        _add_unp_tax_row(f"GST ({tax_percent}%):", gst_amt)
 
     # TOTAL PROJECT VALUE Row
     tot_row = tbl.add_row().cells

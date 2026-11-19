@@ -125,7 +125,7 @@ export const QuotationDetail: React.FC<QuotationDetailProps> = ({
           </button>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-mono text-xl font-black text-slate-900">
+              <span className="font-sans text-xl font-black text-slate-900">
                 {quotation.quotation_number}
               </span>
               <span className={`text-[11px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
@@ -309,7 +309,7 @@ export const QuotationDetail: React.FC<QuotationDetailProps> = ({
                 <div className="text-slate-800">
                   {quotation.customer?.billing_address_line1}, {quotation.customer?.billing_city}, {quotation.customer?.billing_state} - {quotation.customer?.billing_pincode}
                 </div>
-                <div className="mt-1 font-mono text-[11px] text-slate-700">
+                <div className="mt-1 font-sans text-[11px] text-slate-700">
                   GSTIN: <strong>{quotation.customer?.gstin || 'Unregistered'}</strong>
                 </div>
               </div>

@@ -115,6 +115,7 @@ class Service(Base):
     tax_category = Column(String(50), nullable=False, default="taxable")  # taxable, exempt, nil_rated
     default_tax_rate = Column(Numeric(5, 2), nullable=False, default=Decimal("18.00"))
     company_code = Column(String(50), nullable=True, default="kleanmaxpro", index=True)
+    image_url = Column(Text, nullable=True)
     is_active = Column(Boolean, nullable=False, default=True)
     internal_notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
@@ -234,6 +235,7 @@ class QuotationSection(Base):
     override_at = Column(DateTime, nullable=True)
     discount_percent = Column(Numeric(5, 2), nullable=False, default=Decimal("0.00"))
     line_total = Column(Numeric(14, 2), nullable=False, default=Decimal("0.00"))
+    image_url = Column(Text, nullable=True)
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
@@ -271,6 +273,7 @@ class QuotationItem(Base):
     sgst_amount = Column(Numeric(14, 2), nullable=False, default=Decimal("0.00"))
     igst_amount = Column(Numeric(14, 2), nullable=False, default=Decimal("0.00"))
     line_total = Column(Numeric(14, 2), nullable=False, default=Decimal("0.00"))
+    image_url = Column(Text, nullable=True)
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 

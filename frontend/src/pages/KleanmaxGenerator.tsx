@@ -546,7 +546,7 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
               EDITING MODE
             </span>
             <span className="text-xs font-bold text-lime-950">
-              Quotation: <strong className="font-mono text-lime-950">{quotationNumber}</strong> &bull; Client: <strong>{customerName || 'Selected Client'}</strong>
+              Quotation: <strong className="font-sans text-lime-950 font-black">{quotationNumber}</strong> &bull; Client: <strong>{customerName || 'Selected Client'}</strong>
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -761,7 +761,7 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
                     type="text"
                     value={quotationNumber}
                     onChange={e => setQuotationNumber(e.target.value)}
-                    className="w-24 font-mono font-bold text-slate-800 bg-slate-100 border border-slate-200 rounded px-1.5 py-0.5 text-xs text-center"
+                    className="w-24 font-sans font-bold text-slate-800 bg-slate-100 border border-slate-200 rounded px-1.5 py-0.5 text-xs text-center"
                     placeholder="KM/0310"
                   />
                   <button
@@ -779,7 +779,7 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
                     type="text"
                     value={quotationDate}
                     onChange={e => setQuotationDate(e.target.value)}
-                    className="w-24 font-mono font-bold text-slate-800 bg-slate-100 border border-slate-200 rounded px-1.5 py-0.5 text-xs text-center"
+                    className="w-24 font-sans font-bold text-slate-800 bg-slate-100 border border-slate-200 rounded px-1.5 py-0.5 text-xs text-center"
                   />
                 </div>
               </div>
@@ -835,7 +835,7 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
                 <AlignLeft className="w-3.5 h-3.5 text-lime-600" />
                 <span>Scope of Work Content Box (Editable text expands naturally):</span>
               </span>
-              <span className="font-mono text-[11px] text-slate-400">
+              <span className="font-sans text-[11px] text-slate-400">
                 {scopeText.length} characters &bull; {scopeText.split('\n').length} lines
               </span>
             </div>
@@ -844,7 +844,7 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
               value={scopeText}
               onChange={e => setScopeText(e.target.value)}
               placeholder="Type cleaning scope, sections, machinery guidelines and specifications here..."
-              className="w-full resize-none font-mono text-xs md:text-sm text-black leading-relaxed p-4 rounded-xl border border-slate-300 focus:border-lime-500 focus:ring-1 focus:ring-lime-500 focus:outline-none bg-slate-50/50"
+              className="w-full resize-none font-sans text-xs md:text-sm text-black leading-relaxed p-4 rounded-xl border border-slate-300 focus:border-lime-500 focus:ring-1 focus:ring-lime-500 focus:outline-none bg-slate-50/50"
               style={{ minHeight: '380px' }}
             />
           </div>
@@ -895,7 +895,7 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
                   type="number"
                   value={projectValue}
                   onChange={e => setProjectValue(parseFloat(e.target.value) || 0)}
-                  className="w-28 bg-white/20 border border-white/40 text-white font-mono font-bold text-xs px-2 py-1 rounded text-right focus:outline-none focus:bg-white focus:text-slate-900"
+                  className="w-28 bg-white/20 border border-white/40 text-white font-sans font-bold text-xs px-2 py-1 rounded text-right focus:outline-none focus:bg-white focus:text-slate-900"
                 />
               </div>
             </div>
@@ -938,7 +938,7 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
                   type="text"
                   value={bankAccountNo}
                   onChange={e => setBankAccountNo(e.target.value)}
-                  className="flex-1 font-mono font-bold text-black bg-white border border-slate-200 rounded px-2 py-1 focus:outline-none focus:border-lime-600"
+                  className="flex-1 font-sans font-bold text-black bg-white border border-slate-200 rounded px-2 py-1 focus:outline-none focus:border-lime-600"
                 />
               </div>
               <div className="flex items-center gap-2">
@@ -956,7 +956,7 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
                     value={bankIfsc}
                     onChange={e => setBankIfsc(e.target.value)}
                     placeholder="KVBL000127"
-                    className="w-1/2 font-mono font-bold text-black bg-white border border-slate-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-lime-600"
+                    className="w-1/2 font-sans font-bold text-black bg-white border border-slate-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-lime-600"
                   />
                 </div>
               </div>
@@ -1128,7 +1128,7 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
                 <div className="font-black text-xl text-black underline uppercase border-b border-black pb-1">
                   {scopeTitle}
                 </div>
-                <div className="font-mono text-xs text-black whitespace-pre-line leading-relaxed">
+                <div className="font-sans text-xs text-black whitespace-pre-line leading-relaxed">
                   {scopeText}
                 </div>
                 <div className="pt-6 border-t border-slate-200 space-y-2">

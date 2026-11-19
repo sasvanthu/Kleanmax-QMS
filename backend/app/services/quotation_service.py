@@ -300,6 +300,7 @@ def create_quotation(
             taxable_value=item_calc.taxable_value,
             tax_rate=item_calc.tax_rate,
             line_total=item_calc.line_total,
+            image_url=item_input.image_url,
             notes=item_input.notes,
         )
         db.add(item_row)
@@ -586,6 +587,7 @@ def update_quotation(
                 taxable_value=item_calc.taxable_value,
                 tax_rate=item_calc.tax_rate,
                 line_total=item_calc.line_total,
+                image_url=item_input.image_url,
                 notes=item_input.notes,
             )
             db.add(item_row)

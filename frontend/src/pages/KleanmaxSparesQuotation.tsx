@@ -328,7 +328,7 @@ export const KleanmaxSparesQuotation: React.FC<KleanmaxSparesQuotationProps> = (
                 type="text"
                 value={quotationNo}
                 onChange={(e) => setQuotationNo(e.target.value)}
-                className="w-44 font-mono font-bold text-xs p-1.5 rounded border border-slate-200 bg-slate-50 focus:bg-white text-right focus:outline-none"
+                className="w-44 font-sans font-bold text-xs p-1.5 rounded border border-slate-200 bg-slate-50 focus:bg-white text-right focus:outline-none"
               />
             </div>
             <div className="flex items-center md:justify-end gap-2">
