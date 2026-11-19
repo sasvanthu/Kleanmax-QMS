@@ -4,7 +4,7 @@ import { api } from '../services/api';
 import {
   FileText, Download, Eye, Save, Sparkles, Plus, Trash2,
   RefreshCw, CheckCircle2, ArrowLeft, Search, Check,
-  ShieldCheck, Lock, X, Layers, Edit3, Building
+  ShieldCheck, Lock, X, Layers, Edit3, Building, Printer
 } from 'lucide-react';
 
 export interface CleantechGeneratorProps {
@@ -715,6 +715,14 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
         quotationNo,
         quotationDate,
         items,
+        subtotal,
+        cgst: cgstAmount,
+        sgst: sgstAmount,
+        cgstAmount,
+        sgstAmount,
+        totalTax: cgstAmount + sgstAmount,
+        totalAmount,
+        finalTotal: totalAmount,
         whyChooseUs,
         terms,
         applyTax,
@@ -744,6 +752,14 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
         terms_and_conditions: terms.join('\n'),
         items: payloadItems,
         sections: [],
+        subtotal: subtotal,
+        taxable_amount: subtotal,
+        cgst_rate: cgstRate,
+        cgst_amount: cgstAmount,
+        sgst_rate: sgstRate,
+        sgst_amount: sgstAmount,
+        total_tax: cgstAmount + sgstAmount,
+        final_amount: totalAmount,
         tax_rate: applyTax ? taxPercent : 0,
         discount_type: 'none',
         discount_value: 0,
@@ -813,6 +829,19 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
 
   const handleOpenA4Preview = () => {
     setInPagePreviewOpen(true);
+  };
+
+  const handlePrint = async () => {
+    let quoteId = savedQuoteId;
+    if (!quoteId) {
+      quoteId = await handleSaveToDatabase();
+    }
+    if (quoteId) {
+      const printWindow = window.open(api.quotations.getHtmlUrl(quoteId), '_blank');
+      if (printWindow) {
+        printWindow.onload = () => printWindow.print();
+      }
+    }
   };
 
   return (
@@ -889,6 +918,17 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
           >
             <Eye className="w-4 h-4 text-slate-600" />
             <span>Preview A4</span>
+          </button>
+
+          {/* Print */}
+          <button
+            type="button"
+            onClick={handlePrint}
+            disabled={saving}
+            className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl flex items-center gap-1.5 transition-colors"
+          >
+            <Printer className="w-4 h-4 text-slate-600" />
+            <span>Print</span>
           </button>
 
           {/* Save to DB */}
@@ -1738,6 +1778,15 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
                 </button>
                 <button
                   type="button"
+                  onClick={handlePrint}
+                  className="px-3.5 py-1.5 bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-sm transition-colors"
+                  title="Print document"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>Print</span>
+                </button>
+                <button
+                  type="button"
                   onClick={handleDownloadPdf}
                   className="px-3.5 py-1.5 bg-teal-500 hover:bg-teal-600 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-sm transition-colors"
                   title="Download official PDF"
@@ -1940,6 +1989,15 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
                 >
                   <FileText className="w-3.5 h-3.5" />
                   <span>Download Word (.docx)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handlePrint}
+                  className="px-3.5 py-1.5 bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-sm transition-colors"
+                  title="Print document"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>Print</span>
                 </button>
                 <button
                   type="button"

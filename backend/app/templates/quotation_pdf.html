@@ -769,7 +769,7 @@
                                 </div>
                             </td>
                             <td style="padding: 8px 10px; text-align: right; font-weight: 900; font-size: 9.5pt; color: #0f172a; vertical-align: top; white-space: nowrap;">
-                                Rs.{{ "{:,.2f}".format(final_amount_val) }}
+                                Rs.{{ "{:,.2f}".format(subtotal_val) }}
                             </td>
                         </tr>
                     {% endif %}
@@ -784,11 +784,11 @@
                         </td>
                     </tr>
 
-                    <!-- GST (18%) -->
+                    <!-- GST -->
                     {% if apply_tax_val %}
                     <tr style="border-top: 1px solid #e2e8f0; color: #334155;">
                         <td colspan="2" style="padding: 5px 10px; text-align: right; font-size: 8.5pt;">
-                            GST (18%):
+                            GST ({{ "{:g}".format(tax_rate_val) }}%):
                         </td>
                         <td style="padding: 5px 10px; text-align: right; font-weight: 800; font-size: 8.5pt; color: #0f172a;">
                             Rs.{{ "{:,.2f}".format(tax_val) }}
@@ -1342,27 +1342,33 @@
             {% endfor %}
 
             {# Financial Totals #}
-            {% if quotation.cgst_amount and quotation.cgst_amount > 0 %}
+            {% set render_subtotal = snapshot.subtotal if (snapshot and snapshot.subtotal is defined) else (quotation.subtotal or 0) %}
+            {% set render_cgst = snapshot.cgst if (snapshot and snapshot.cgst is defined) else (snapshot.cgstAmount if (snapshot and snapshot.cgstAmount is defined) else (quotation.cgst_amount or 0)) %}
+            {% set render_sgst = snapshot.sgst if (snapshot and snapshot.sgst is defined) else (snapshot.sgstAmount if (snapshot and snapshot.sgstAmount is defined) else (quotation.sgst_amount or 0)) %}
+            {% set render_total = snapshot.totalAmount if (snapshot and snapshot.totalAmount is defined) else (snapshot.finalTotal if (snapshot and snapshot.finalTotal is defined) else (quotation.final_amount or 0)) %}
+            {% set show_tax = apply_tax_val or (render_cgst > 0) or (quotation.cgst_amount and quotation.cgst_amount > 0) %}
+
+            {% if show_tax %}
             <tr class="total-row">
                 <td colspan="5" class="text-right">SUB TOTAL</td>
-                <td class="text-right">₹ {{ "%.2f"|format(quotation.subtotal or 0) }}</td>
+                <td class="text-right">₹ {{ "%.2f"|format(render_subtotal) }}</td>
             </tr>
             <tr>
-                <td colspan="5" class="text-right" style="font-weight: 600;">CGST ({{ quotation.cgst_rate }}%)</td>
-                <td class="text-right">₹ {{ "%.2f"|format(quotation.cgst_amount or 0) }}</td>
+                <td colspan="5" class="text-right" style="font-weight: 600;">CGST ({{ (snapshot.taxPercent / 2) if (snapshot and snapshot.taxPercent) else (quotation.cgst_rate or 9) }}%)</td>
+                <td class="text-right">₹ {{ "%.2f"|format(render_cgst) }}</td>
             </tr>
             <tr>
-                <td colspan="5" class="text-right" style="font-weight: 600;">SGST ({{ quotation.sgst_rate }}%)</td>
-                <td class="text-right">₹ {{ "%.2f"|format(quotation.sgst_amount or 0) }}</td>
+                <td colspan="5" class="text-right" style="font-weight: 600;">SGST ({{ (snapshot.taxPercent / 2) if (snapshot and snapshot.taxPercent) else (quotation.sgst_rate or 9) }}%)</td>
+                <td class="text-right">₹ {{ "%.2f"|format(render_sgst) }}</td>
             </tr>
             <tr class="total-row" style="background-color: #fef08a;">
                 <td colspan="5" class="text-right" style="font-size: 10pt;">TOTAL</td>
-                <td class="text-right" style="font-size: 10pt; color: #0f172a;">₹ {{ "%.2f"|format(quotation.final_amount or 0) }}</td>
+                <td class="text-right" style="font-size: 10pt; color: #0f172a;">₹ {{ "%.2f"|format(render_total) }}</td>
             </tr>
             {% else %}
             <tr class="total-row">
                 <td colspan="5" class="text-right" style="font-size: 9.5pt;">TOTAL</td>
-                <td class="text-right" style="font-size: 9.5pt; color: #0f172a;">₹ {{ "%.2f"|format(quotation.final_amount or 0) }}</td>
+                <td class="text-right" style="font-size: 9.5pt; color: #0f172a;">₹ {{ "%.2f"|format(render_total) }}</td>
             </tr>
             {% endif %}
         </tbody>
@@ -1394,24 +1400,29 @@
             </tr>
             {% endfor %}
 
+            {% if show_tax %}
             <tr class="total-row">
                 <td colspan="5" class="text-right">SUB TOTAL</td>
-                <td class="text-right">₹ {{ "%.2f"|format(quotation.subtotal or 0) }}</td>
-            </tr>
-            {% if quotation.cgst_amount and quotation.cgst_amount > 0 %}
-            <tr>
-                <td colspan="5" class="text-right" style="font-weight: 600;">CGST ({{ quotation.cgst_rate }}%)</td>
-                <td class="text-right">₹ {{ "%.2f"|format(quotation.cgst_amount or 0) }}</td>
+                <td class="text-right">₹ {{ "%.2f"|format(render_subtotal) }}</td>
             </tr>
             <tr>
-                <td colspan="5" class="text-right" style="font-weight: 600;">SGST ({{ quotation.sgst_rate }}%)</td>
-                <td class="text-right">₹ {{ "%.2f"|format(quotation.sgst_amount or 0) }}</td>
+                <td colspan="5" class="text-right" style="font-weight: 600;">CGST ({{ (snapshot.taxPercent / 2) if (snapshot and snapshot.taxPercent) else (quotation.cgst_rate or 9) }}%)</td>
+                <td class="text-right">₹ {{ "%.2f"|format(render_cgst) }}</td>
             </tr>
-            {% endif %}
+            <tr>
+                <td colspan="5" class="text-right" style="font-weight: 600;">SGST ({{ (snapshot.taxPercent / 2) if (snapshot and snapshot.taxPercent) else (quotation.sgst_rate or 9) }}%)</td>
+                <td class="text-right">₹ {{ "%.2f"|format(render_sgst) }}</td>
+            </tr>
             <tr class="total-row" style="background-color: #fef08a;">
                 <td colspan="5" class="text-right" style="font-size: 10pt;">TOTAL</td>
-                <td class="text-right" style="font-size: 10pt; color: #0f172a;">₹ {{ "%.2f"|format(quotation.final_amount or 0) }}</td>
+                <td class="text-right" style="font-size: 10pt; color: #0f172a;">₹ {{ "%.2f"|format(render_total) }}</td>
             </tr>
+            {% else %}
+            <tr class="total-row">
+                <td colspan="5" class="text-right" style="font-size: 9.5pt;">TOTAL</td>
+                <td class="text-right" style="font-size: 9.5pt; color: #0f172a;">₹ {{ "%.2f"|format(render_total) }}</td>
+            </tr>
+            {% endif %}
         </tbody>
     </table>
     {% endif %}

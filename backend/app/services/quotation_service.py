@@ -15,7 +15,7 @@ from backend.app.schemas.quotation import (
 )
 from backend.app.services.calculator import (
     calculate_quotation_totals, SectionCalculationInput, ItemCalculationInput,
-    QuotationCalculationRequest
+    QuotationCalculationRequest, number_to_indian_currency_words
 )
 from backend.app.services.numbering import generate_next_quotation_number
 from backend.app.core.security import check_override_permission
@@ -178,6 +178,16 @@ def create_quotation(
     else:
         quotation_number = generate_next_quotation_number(db, data.quotation_date, prefix=prefix)
 
+    saved_subtotal = data.subtotal if (getattr(data, 'subtotal', None) is not None and data.subtotal > 0) else calc_res.subtotal
+    saved_taxable = data.taxable_amount if (getattr(data, 'taxable_amount', None) is not None and data.taxable_amount > 0) else calc_res.taxable_amount
+    saved_cgst_rate = data.cgst_rate if getattr(data, 'cgst_rate', None) is not None else calc_res.cgst_rate
+    saved_cgst_amt = data.cgst_amount if getattr(data, 'cgst_amount', None) is not None else calc_res.cgst_amount
+    saved_sgst_rate = data.sgst_rate if getattr(data, 'sgst_rate', None) is not None else calc_res.sgst_rate
+    saved_sgst_amt = data.sgst_amount if getattr(data, 'sgst_amount', None) is not None else calc_res.sgst_amount
+    saved_total_tax = data.total_tax if getattr(data, 'total_tax', None) is not None else calc_res.total_tax
+    saved_final = data.final_amount if (getattr(data, 'final_amount', None) is not None and data.final_amount > 0) else calc_res.final_amount
+    saved_words = number_to_indian_currency_words(saved_final) if (getattr(data, 'final_amount', None) is not None and data.final_amount > 0) else calc_res.amount_in_words
+
     quotation = Quotation(
         company_code=data.company_code or (company.company_code if company else "kleanmaxpro"),
         quotation_number=quotation_number,
@@ -194,25 +204,25 @@ def create_quotation(
         warranty_terms=data.warranty_terms or (company.default_warranty_terms if company else None),
         terms_and_conditions=data.terms_and_conditions or (company.terms_and_conditions if company else None),
         notes=data.notes,
-        subtotal=calc_res.subtotal,
+        subtotal=saved_subtotal,
         discount_type=data.discount_type,
         discount_value=data.discount_value,
         total_discount=calc_res.total_discount,
         freight_charges=calc_res.freight_charges,
         packing_charges=calc_res.packing_charges,
         other_charges=calc_res.other_charges,
-        taxable_amount=calc_res.taxable_amount,
+        taxable_amount=saved_taxable,
         is_interstate=calc_res.is_interstate,
-        cgst_rate=calc_res.cgst_rate,
-        cgst_amount=calc_res.cgst_amount,
-        sgst_rate=calc_res.sgst_rate,
-        sgst_amount=calc_res.sgst_amount,
+        cgst_rate=saved_cgst_rate,
+        cgst_amount=saved_cgst_amt,
+        sgst_rate=saved_sgst_rate,
+        sgst_amount=saved_sgst_amt,
         igst_rate=calc_res.igst_rate,
         igst_amount=calc_res.igst_amount,
-        total_tax=calc_res.total_tax,
+        total_tax=saved_total_tax,
         rounding_adjustment=calc_res.rounding_adjustment,
-        final_amount=calc_res.final_amount,
-        amount_in_words=calc_res.amount_in_words,
+        final_amount=saved_final,
+        amount_in_words=saved_words,
         snapshot_json=getattr(data, 'snapshot_json', None),
         image_url=getattr(data, 'image_url', None),
         signatory_name=getattr(data, 'signatory_name', None) or (company.signatory_name if company and hasattr(company, 'signatory_name') else 'Mr. Manikandan Balamurugan'),
@@ -480,25 +490,35 @@ def update_quotation(
 
     calc_res = calculate_quotation_totals(calc_req)
 
-    quotation.subtotal = calc_res.subtotal
+    saved_subtotal = data.subtotal if (getattr(data, 'subtotal', None) is not None and data.subtotal > 0) else calc_res.subtotal
+    saved_taxable = data.taxable_amount if (getattr(data, 'taxable_amount', None) is not None and data.taxable_amount > 0) else calc_res.taxable_amount
+    saved_cgst_rate = data.cgst_rate if getattr(data, 'cgst_rate', None) is not None else calc_res.cgst_rate
+    saved_cgst_amt = data.cgst_amount if getattr(data, 'cgst_amount', None) is not None else calc_res.cgst_amount
+    saved_sgst_rate = data.sgst_rate if getattr(data, 'sgst_rate', None) is not None else calc_res.sgst_rate
+    saved_sgst_amt = data.sgst_amount if getattr(data, 'sgst_amount', None) is not None else calc_res.sgst_amount
+    saved_total_tax = data.total_tax if getattr(data, 'total_tax', None) is not None else calc_res.total_tax
+    saved_final = data.final_amount if (getattr(data, 'final_amount', None) is not None and data.final_amount > 0) else calc_res.final_amount
+    saved_words = number_to_indian_currency_words(saved_final) if (getattr(data, 'final_amount', None) is not None and data.final_amount > 0) else calc_res.amount_in_words
+
+    quotation.subtotal = saved_subtotal
     quotation.discount_type = calc_res.discount_type
     quotation.discount_value = calc_res.discount_value
     quotation.total_discount = calc_res.total_discount
     quotation.freight_charges = calc_res.freight_charges
     quotation.packing_charges = calc_res.packing_charges
     quotation.other_charges = calc_res.other_charges
-    quotation.taxable_amount = calc_res.taxable_amount
+    quotation.taxable_amount = saved_taxable
     quotation.is_interstate = calc_res.is_interstate
-    quotation.cgst_rate = calc_res.cgst_rate
-    quotation.cgst_amount = calc_res.cgst_amount
-    quotation.sgst_rate = calc_res.sgst_rate
-    quotation.sgst_amount = calc_res.sgst_amount
+    quotation.cgst_rate = saved_cgst_rate
+    quotation.cgst_amount = saved_cgst_amt
+    quotation.sgst_rate = saved_sgst_rate
+    quotation.sgst_amount = saved_sgst_amt
     quotation.igst_rate = calc_res.igst_rate
     quotation.igst_amount = calc_res.igst_amount
-    quotation.total_tax = calc_res.total_tax
+    quotation.total_tax = saved_total_tax
     quotation.rounding_adjustment = calc_res.rounding_adjustment
-    quotation.final_amount = calc_res.final_amount
-    quotation.amount_in_words = calc_res.amount_in_words
+    quotation.final_amount = saved_final
+    quotation.amount_in_words = saved_words
     if hasattr(data, 'image_url') and data.image_url is not None:
         quotation.image_url = data.image_url
     if hasattr(data, 'snapshot_json') and data.snapshot_json is not None:

@@ -678,6 +678,16 @@ Recovery / Dirty Water Tank: 100 L`,
         quotation_title: quotationTitle,
         about_us: aboutUs,
         notes_text: notes,
+        subtotal,
+        cgst: cgstAmount,
+        sgst: sgstAmount,
+        cgstAmount,
+        sgstAmount,
+        totalTax: cgstAmount + sgstAmount,
+        totalAmount,
+        finalTotal: totalAmount,
+        applyTax,
+        taxPercent,
       };
       // Use first item with an uploaded (supabase) image_url as quotation-level image
       const firstUploadedImage = items.find(it => it.image_url && it.image_url.startsWith('http'))?.image_url || null;
@@ -696,6 +706,14 @@ Recovery / Dirty Water Tank: 100 L`,
         signatory_designation: signatoryDesignation,
         items: payloadItems,
         sections: [],
+        subtotal: subtotal,
+        taxable_amount: subtotal,
+        cgst_rate: cgstRate,
+        cgst_amount: cgstAmount,
+        sgst_rate: sgstRate,
+        sgst_amount: sgstAmount,
+        total_tax: cgstAmount + sgstAmount,
+        final_amount: totalAmount,
         tax_rate: applyTax ? taxPercent : 0,
         discount_type: 'none',
         discount_value: 0,
@@ -759,6 +777,19 @@ Recovery / Dirty Water Tank: 100 L`,
     } catch (err: any) {
       console.error('Download PDF error:', err);
       alert(err.message || 'Failed to download PDF');
+    }
+  };
+
+  const handlePrint = async () => {
+    let quoteId = savedQuoteId;
+    if (!quoteId) {
+      quoteId = await handleSaveToDatabase();
+    }
+    if (quoteId) {
+      const printWindow = window.open(api.quotations.getHtmlUrl(quoteId), '_blank');
+      if (printWindow) {
+        printWindow.onload = () => printWindow.print();
+      }
     }
   };
 
@@ -844,6 +875,17 @@ Recovery / Dirty Water Tank: 100 L`,
           >
             <Eye className="w-4 h-4 text-slate-600" />
             <span>Preview A4</span>
+          </button>
+
+          {/* Print */}
+          <button
+            type="button"
+            onClick={handlePrint}
+            disabled={saving}
+            className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl flex items-center gap-1.5 transition-colors"
+          >
+            <Printer className="w-4 h-4 text-slate-600" />
+            <span>Print</span>
           </button>
 
           {/* Save to DB */}
@@ -1669,18 +1711,25 @@ Recovery / Dirty Water Tank: 100 L`,
               </div>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={handleDownloadPdf}
-                  className="px-3 py-1.5 bg-[#FED10C] hover:bg-[#E5BC07] text-slate-950 font-bold text-xs rounded-lg flex items-center gap-1 shadow-sm"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Download PDF</span>
-                </button>
-                <button
                   onClick={handleDownloadDocx}
                   className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg flex items-center gap-1 shadow-sm"
                 >
                   <FileText className="w-3.5 h-3.5" />
                   <span>Word</span>
+                </button>
+                <button
+                  onClick={handlePrint}
+                  className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs rounded-lg flex items-center gap-1 shadow-sm"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>Print</span>
+                </button>
+                <button
+                  onClick={handleDownloadPdf}
+                  className="px-3 py-1.5 bg-[#FED10C] hover:bg-[#E5BC07] text-slate-950 font-bold text-xs rounded-lg flex items-center gap-1 shadow-sm"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download PDF</span>
                 </button>
                 <button onClick={() => setInPagePreviewOpen(false)} className="text-slate-400 hover:text-white p-1">
                   <X className="w-5 h-5" />

@@ -89,11 +89,24 @@ def render_quotation_html(
             except Exception:
                 snapshot = {}
 
-    subtotal_val = float(snapshot.get('subtotal') or quotation.subtotal or 0)
+    # Prioritize values from snapshot rows if present to ensure 100% exact parity with editor display
+    if snapshot.get('rows') and isinstance(snapshot['rows'], list) and len(snapshot['rows']) > 0:
+        row_sum = sum(float(r.get('amount') or 0) for r in snapshot['rows'])
+        subtotal_val = float(snapshot.get('subtotal') or (row_sum if row_sum > 0 else (quotation.subtotal or 0)))
+    elif snapshot.get('items') and isinstance(snapshot['items'], list) and len(snapshot['items']) > 0:
+        item_sum = sum(float(it.get('total') or it.get('amount') or (float(it.get('qty', 0)) * float(it.get('rate', 0))) or 0) for it in snapshot['items'] if not it.get('is_header'))
+        subtotal_val = float(snapshot.get('subtotal') or (item_sum if item_sum > 0 else (quotation.subtotal or 0)))
+    else:
+        subtotal_val = float(snapshot.get('subtotal') or quotation.subtotal or 0)
+
     tax_rate_val = float(snapshot.get('taxPercent') or getattr(quotation, 'tax_rate', None) or (18 if snapshot.get('applyTax') else 0))
     apply_tax_val = bool(snapshot.get('applyTax') if 'applyTax' in snapshot else (tax_rate_val > 0 or (quotation.total_tax and quotation.total_tax > 0)))
-    tax_val = float(snapshot.get('gstAmount') or quotation.total_tax or (subtotal_val * tax_rate_val / 100 if apply_tax_val else 0))
-    final_amount_val = float(snapshot.get('finalTotal') or quotation.final_amount or (subtotal_val + tax_val if apply_tax_val else subtotal_val))
+    if apply_tax_val:
+        tax_val = float(snapshot.get('gstAmount') or snapshot.get('totalTax') or quotation.total_tax or (subtotal_val * tax_rate_val / 100))
+        final_amount_val = float(snapshot.get('finalTotal') or snapshot.get('totalAmount') or quotation.final_amount or (subtotal_val + tax_val))
+    else:
+        tax_val = 0.0
+        final_amount_val = float(snapshot.get('finalTotal') or snapshot.get('totalAmount') or subtotal_val)
 
     html_content = template.render(
         snapshot=snapshot,

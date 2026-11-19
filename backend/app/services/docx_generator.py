@@ -331,13 +331,24 @@ def _generate_uniquepainters_docx(
         svc = "ASIAN PAINT TRACTOR EMULSION"
         notes = "APPLY TWO CODE PREMIER EMULSION SHYNE INTERIOR WALLS CEILING WALL PUTTY AREA TWO CODE"
         dim_str = "Area: 4,200 sq.ft @ Rs.22.14 / sq.ft"
-        data_rows.append((1, title, svc, notes, dim_str, safe_decimal(getattr(quotation, "final_amount", 93000), "93000")))
+        data_rows.append((1, title, svc, notes, dim_str, safe_decimal(93000, "93000")))
 
-    # Calculate subtotal, tax, and total
-    subtotal = safe_decimal(snapshot.get("subtotal") or quotation.subtotal or sum(r[5] for r in data_rows), "0")
+    # Calculate subtotal, tax, and total matching displayed line items exactly
+    if snapshot.get("subtotal"):
+        subtotal = safe_decimal(snapshot["subtotal"], "0")
+    elif data_rows:
+        subtotal = safe_decimal(sum(r[5] for r in data_rows), "0")
+    else:
+        subtotal = safe_decimal(quotation.subtotal or 0, "0")
+
     apply_tax = bool(snapshot.get("applyTax") if "applyTax" in snapshot else (getattr(quotation, "tax_rate", 0) > 0 or (quotation.total_tax and quotation.total_tax > 0)))
-    gst_amt = safe_decimal(snapshot.get("gstAmount") or quotation.total_tax or (subtotal * Decimal("0.18") if apply_tax else 0), "0")
-    final_amount = safe_decimal(snapshot.get("finalTotal") or quotation.final_amount or (subtotal + gst_amt if apply_tax else subtotal), "0")
+    tax_percent = float(snapshot.get("taxPercent") or getattr(quotation, "tax_rate", 18) or 18)
+    if apply_tax:
+        gst_amt = safe_decimal(snapshot.get("gstAmount") or (subtotal * Decimal(str(tax_percent / 100))), "0")
+        final_amount = safe_decimal(snapshot.get("finalTotal") or (subtotal + gst_amt), "0")
+    else:
+        gst_amt = Decimal("0.00")
+        final_amount = safe_decimal(snapshot.get("finalTotal") or subtotal, "0")
 
     # Populate Data Rows
     for idx, title, svc, notes, dim_str, amt in data_rows:
@@ -1519,12 +1530,12 @@ def generate_quotation_docx_bytes(
         r_tot.font.size = Pt(8.5)
 
     # 6. Financial Summary Rows
-    subtotal = safe_decimal(getattr(quotation, 'subtotal', 0), '0')
-    cgst_rate = safe_decimal(getattr(quotation, 'cgst_rate', 9), '9')
-    cgst_amount = safe_decimal(getattr(quotation, 'cgst_amount', 0), '0')
-    sgst_rate = safe_decimal(getattr(quotation, 'sgst_rate', 9), '9')
-    sgst_amount = safe_decimal(getattr(quotation, 'sgst_amount', 0), '0')
-    final_amount = safe_decimal(getattr(quotation, 'final_amount', subtotal + cgst_amount + sgst_amount), str(subtotal + cgst_amount + sgst_amount))
+    subtotal = safe_decimal(snapshot.get('subtotal') or getattr(quotation, 'subtotal', 0), '0')
+    cgst_rate = safe_decimal((snapshot.get('taxPercent', 18) / 2) if snapshot.get('taxPercent') else getattr(quotation, 'cgst_rate', 9), '9')
+    cgst_amount = safe_decimal(snapshot.get('cgst') or snapshot.get('cgstAmount') or getattr(quotation, 'cgst_amount', 0), '0')
+    sgst_rate = safe_decimal((snapshot.get('taxPercent', 18) / 2) if snapshot.get('taxPercent') else getattr(quotation, 'sgst_rate', 9), '9')
+    sgst_amount = safe_decimal(snapshot.get('sgst') or snapshot.get('sgstAmount') or getattr(quotation, 'sgst_amount', 0), '0')
+    final_amount = safe_decimal(snapshot.get('totalAmount') or snapshot.get('finalTotal') or getattr(quotation, 'final_amount', subtotal + cgst_amount + sgst_amount), str(subtotal + cgst_amount + sgst_amount))
 
     # Add Totals Rows
     def add_total_line(label, value_str, bold=False, highlight=False):

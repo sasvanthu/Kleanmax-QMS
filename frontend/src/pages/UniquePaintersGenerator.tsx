@@ -583,6 +583,10 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
         introText1,
         introText2,
         rows,
+        subtotal,
+        gstAmount,
+        finalTotal,
+        totalAmount: finalTotal,
         machineries,
         terms,
         callNotice,
@@ -607,7 +611,11 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
         notes: callNotice,
         terms_and_conditions: terms.join('\n'),
         items: payloadItems,
-        sections: payloadSections,
+        sections: [],
+        subtotal: subtotal,
+        taxable_amount: subtotal,
+        total_tax: gstAmount,
+        final_amount: finalTotal,
         tax_rate: applyTax ? taxPercent : 0,
         discount_type: 'none',
         discount_value: 0,
@@ -1493,6 +1501,15 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
                 </button>
                 <button
                   type="button"
+                  onClick={handlePrint}
+                  className="px-3.5 py-1.5 bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-sm transition-colors"
+                  title="Print document"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>Print</span>
+                </button>
+                <button
+                  type="button"
                   onClick={handleDownloadPdf}
                   className="px-3.5 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-sm transition-colors"
                   title="Download official PDF"
@@ -1729,6 +1746,14 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
                 >
                   <FileText className="w-3.5 h-3.5" />
                   <span>Download Word (.docx)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handlePrint}
+                  className="px-3.5 py-1.5 bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-sm cursor-pointer"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>Print</span>
                 </button>
                 <button
                   type="button"
