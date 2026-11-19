@@ -27,6 +27,7 @@ export interface CleantechItem {
 
 const HEADING_OPTIONS = [
   'SERVICE QUOTATION',
+  'DAY RENTAL QUOTATION',
   'SPARES AND SERVICE QUOTATION',
   'SOLAR PANEL CLEANING PROPOSAL',
   'FACADE CLEANING QUOTATION',
@@ -365,7 +366,8 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
         if (comp.company_name) setCompanyName(comp.company_name);
         if (comp.address_line1) setCompanyAddress([comp.address_line1, comp.address_line2, comp.city, comp.state, comp.pincode].filter(Boolean).join(', '));
         if (comp.gstin) setCompanyGstin(comp.gstin);
-        if (comp.phone1) setCompanyPhone(comp.phone1);
+        if (comp.signatory_phone) setCompanyPhone(comp.signatory_phone);
+        else if (comp.phone1) setCompanyPhone(comp.phone1);
         if (comp.bank_account_name) setBankAccountName(comp.bank_account_name);
         if (comp.bank_name) setBankName(comp.bank_name);
         if (comp.bank_account_no) setBankAccountNo(comp.bank_account_no);
@@ -738,6 +740,8 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
         bankIfsc,
         signatoryName,
         signatoryDesignation,
+        signatoryPhone: companyPhone,
+        sigPhone: companyPhone,
       };
 
       // Quotation creation payload
@@ -771,6 +775,7 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
         attention_person: contactPerson,
         signatory_name: signatoryName,
         signatory_designation: signatoryDesignation,
+        signatory_phone: companyPhone,
       };
 
       let res;

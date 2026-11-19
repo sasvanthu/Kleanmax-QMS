@@ -30,6 +30,7 @@ interface KleanmaxProAreaQuotationProps {
 
 const HEADING_OPTIONS = [
   'MONTHLY RENTAL QUOTATION',
+  'DAY RENTAL QUOTATION',
   'SALES QUOTATION',
   'SERVICE QUOTATION',
 ];
@@ -253,7 +254,19 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
   const [bankIfsc, setBankIfsc] = useState<string>('ICIC0000275');
   const [signatoryName, setSignatoryName] = useState<string>('Mr. Manikandan Balamurugan');
   const [signatoryDesignation, setSignatoryDesignation] = useState<string>('Sales and Service Head');
+  const [signatoryPhone, setSignatoryPhone] = useState<string>('+91 73388 82036');
   const [editCompanyDetails, setEditCompanyDetails] = useState<boolean>(false);
+
+  // 4b. Table Column Headings (Directly Editable)
+  const [columnHeaders, setColumnHeaders] = useState({
+    slNo: 'SL NO',
+    photo: 'MACHINE PHOTO',
+    description: 'DESCRIPTION & TECHNICAL SPECIFICATIONS',
+    days: 'DAYS / QTY',
+    uom: 'UOM',
+    rate: 'PER MONTHLY RENT (₹)',
+    amount: 'AMOUNT (₹)',
+  });
 
   // 5. Products & Items Table (With Machine Images)
   const [items, setItems] = useState<QuotationProductItem[]>([
@@ -301,9 +314,13 @@ Recovery / Dirty Water Tank: 100 L`,
     },
   ]);
 
-  // Tax rates
-  const [applyTax, setApplyTax] = useState<boolean>(true);
-  const [taxPercent, setTaxPercent] = useState<number>(18);
+  // 5b. Independent GST States & Editable Rates (CGST / SGST / IGST)
+  const [applyCgst, setApplyCgst] = useState<boolean>(true);
+  const [cgstRate, setCgstRate] = useState<number>(9);
+  const [applySgst, setApplySgst] = useState<boolean>(true);
+  const [sgstRate, setSgstRate] = useState<number>(9);
+  const [applyIgst, setApplyIgst] = useState<boolean>(false);
+  const [igstRate, setIgstRate] = useState<number>(18);
 
   // 6. Product Search Bar State (Pre-populated with Kleanmax Pro products)
   const [productSearchQuery, setProductSearchQuery] = useState<string>('');
@@ -352,6 +369,10 @@ Recovery / Dirty Water Tank: 100 L`,
 
       setCustomerList(custs);
       setCompany(comp);
+      if (comp?.signatory_phone) setSignatoryPhone(comp.signatory_phone);
+      else if (comp?.phone1) setSignatoryPhone(comp.phone1);
+      if (comp?.signatory_name) setSignatoryName(comp.signatory_name);
+      if (comp?.signatory_designation) setSignatoryDesignation(comp.signatory_designation);
 
       // Merge backend services with default machines, keeping RB-800 & RB-650 prioritized at top
       const combinedMap = new Map<string, Service>();
@@ -390,7 +411,19 @@ Recovery / Dirty Water Tank: 100 L`,
                 setQuotationTitle(snap.quotation_title);
                 setSelectedHeadingOption(snap.quotation_title);
               }
+              if (snap.columnHeaders) {
+                setColumnHeaders(prev => ({ ...prev, ...snap.columnHeaders }));
+              }
+              if (snap.signatoryPhone || snap.sigPhone) {
+                setSignatoryPhone(snap.signatoryPhone || snap.sigPhone);
+              }
+              if (snap.signatoryName) setSignatoryName(snap.signatoryName);
+              if (snap.signatoryDesignation) setSignatoryDesignation(snap.signatoryDesignation);
             }
+
+            if (q.signatory_phone) setSignatoryPhone(q.signatory_phone);
+            if (q.signatory_name) setSignatoryName(q.signatory_name);
+            if (q.signatory_designation) setSignatoryDesignation(q.signatory_designation);
 
             if (q.customer) {
               setCustomerName(q.customer.company_name || '');
@@ -403,30 +436,50 @@ Recovery / Dirty Water Tank: 100 L`,
               setSelectedCustomerId(q.customer.id);
             }
 
-            if (Array.isArray(q.items) && q.items.length > 0) {
-              const snapItemMap = new Map<string, any>();
-              if (snap && Array.isArray(snap.items)) {
-                snap.items.forEach((si: any) => snapItemMap.set(si.item_name || si.id, si));
-              }
-
-              const parsedItems: QuotationProductItem[] = q.items.map((it: any, idx: number) => {
-                const sItem = snapItemMap.get(it.item_name) || snapItemMap.get(it.id);
-                return {
-                  id: it.id || `item_${idx}_${Date.now()}`,
-                  item_name: it.item_name || '',
-                  image_url: sItem?.image_url || q.image_url || undefined,
-                  description: it.description || '',
-                  days: Number(it.quantity) || 1,
-                  uom: it.uom || 'MONTHLY',
-                  rate: Number(it.unit_price || it.applied_rate || 0),
-                  amount: Number(it.line_total || 0),
-                };
-              });
+            if (snap && Array.isArray(snap.items) && snap.items.length > 0) {
+              const loadedItems: QuotationProductItem[] = snap.items.map((si: any, idx: number) => ({
+                id: si.id || `item_${idx}_${Date.now()}`,
+                item_name: si.item_name || '',
+                image_url: si.image_url || getProductImage(si.item_name),
+                description: si.description || '',
+                days: Number(si.days ?? si.quantity ?? 1),
+                uom: si.uom || 'MONTH',
+                rate: Number(si.rate ?? si.unit_price ?? 0),
+                amount: Number(si.amount ?? si.line_total ?? 0),
+              }));
+              setItems(loadedItems);
+            } else if (Array.isArray(q.items) && q.items.length > 0) {
+              const parsedItems: QuotationProductItem[] = q.items.map((it: any, idx: number) => ({
+                id: it.id || `item_${idx}_${Date.now()}`,
+                item_name: it.item_name || '',
+                image_url: it.image_url || q.image_url || getProductImage(it.item_name),
+                description: it.description || '',
+                days: Number(it.quantity) || 1,
+                uom: it.uom || 'MONTH',
+                rate: Number(it.unit_price || it.applied_rate || 0),
+                amount: Number(it.line_total || 0),
+              }));
               setItems(parsedItems);
             }
 
-            setApplyTax(Number(q.tax_rate || 0) > 0 || Number(q.total_tax || 0) > 0);
-            if (q.tax_rate) setTaxPercent(Number(q.tax_rate));
+            if (snap && (snap.applyCgst !== undefined || snap.applySgst !== undefined || snap.applyIgst !== undefined)) {
+              setApplyCgst(Boolean(snap.applyCgst));
+              if (snap.cgstRate !== undefined) setCgstRate(Number(snap.cgstRate));
+              setApplySgst(Boolean(snap.applySgst));
+              if (snap.sgstRate !== undefined) setSgstRate(Number(snap.sgstRate));
+              setApplyIgst(Boolean(snap.applyIgst));
+              if (snap.igstRate !== undefined) setIgstRate(Number(snap.igstRate));
+            } else {
+              const hasCgst = Number(q.cgst_amount || 0) > 0 || Number(q.cgst_rate || 0) > 0;
+              const hasSgst = Number(q.sgst_amount || 0) > 0 || Number(q.sgst_rate || 0) > 0;
+              const hasIgst = Number(q.igst_amount || 0) > 0 || Number(q.igst_rate || 0) > 0;
+              setApplyCgst(hasCgst || (!hasIgst && (Number(q.total_tax || 0) > 0)));
+              setCgstRate(Number(q.cgst_rate || 9));
+              setApplySgst(hasSgst || (!hasIgst && (Number(q.total_tax || 0) > 0)));
+              setSgstRate(Number(q.sgst_rate || 9));
+              setApplyIgst(hasIgst);
+              setIgstRate(Number(q.igst_rate || 18));
+            }
           }
         } catch (e) {
           console.error('Failed to load existing Kleanmax Pro quote:', e);
@@ -569,11 +622,14 @@ Recovery / Dirty Water Tank: 100 L`,
 
   // Financial Calculations
   const subtotal = items.reduce((sum, item) => sum + Number(item.amount || 0), 0);
-  const cgstRate = applyTax ? taxPercent / 2 : 0;
-  const sgstRate = applyTax ? taxPercent / 2 : 0;
-  const cgstAmount = (subtotal * cgstRate) / 100;
-  const sgstAmount = (subtotal * sgstRate) / 100;
-  const totalAmount = subtotal + cgstAmount + sgstAmount;
+  const activeCgstRate = applyCgst ? Number(cgstRate || 0) : 0;
+  const activeSgstRate = applySgst ? Number(sgstRate || 0) : 0;
+  const activeIgstRate = applyIgst ? Number(igstRate || 0) : 0;
+  const cgstAmount = (subtotal * activeCgstRate) / 100;
+  const sgstAmount = (subtotal * activeSgstRate) / 100;
+  const igstAmount = (subtotal * activeIgstRate) / 100;
+  const totalTax = cgstAmount + sgstAmount + igstAmount;
+  const totalAmount = subtotal + totalTax;
 
   // Convert numbers to Indian Rupees Words
   const numberToWords = (num: number): string => {
@@ -657,6 +713,7 @@ Recovery / Dirty Water Tank: 100 L`,
       }
 
       // Convert products to Quotation Items
+      const combinedTaxRate = (applyCgst ? activeCgstRate : 0) + (applySgst ? activeSgstRate : 0) + (applyIgst ? activeIgstRate : 0);
       const payloadItems = items.map((it, idx) => ({
         item_name: it.item_name,
         description: it.description,
@@ -665,30 +722,52 @@ Recovery / Dirty Water Tank: 100 L`,
         unit_price: Number(it.rate),
         applied_rate: Number(it.rate),
         rate_source: 'catalogue',
-        tax_rate: applyTax ? taxPercent : 0,
-        cgst_amount: applyTax ? (Number(it.amount) * (taxPercent / 2)) / 100 : 0,
-        sgst_amount: applyTax ? (Number(it.amount) * (taxPercent / 2)) / 100 : 0,
+        tax_rate: combinedTaxRate,
+        cgst_amount: applyCgst ? (Number(it.amount) * activeCgstRate) / 100 : 0,
+        sgst_amount: applySgst ? (Number(it.amount) * activeSgstRate) / 100 : 0,
+        igst_amount: applyIgst ? (Number(it.amount) * activeIgstRate) / 100 : 0,
         line_total: Number(it.amount),
         item_order: idx + 1,
-        // Store image_url in description notes if set, so it rounds-trips via snapshot
       }));
-      // Build snapshot with image URLs per item
+
+      // Build snapshot with full items and headers
       const snapshotData = {
-        items: items.map(it => ({ id: it.id, item_name: it.item_name, image_url: it.image_url || null })),
+        items: items.map(it => ({
+          id: it.id,
+          item_name: it.item_name,
+          image_url: it.image_url || null,
+          description: it.description,
+          days: it.days,
+          uom: it.uom,
+          rate: it.rate,
+          amount: it.amount,
+        })),
+        columnHeaders,
         quotation_title: quotationTitle,
         about_us: aboutUs,
         notes_text: notes,
         subtotal,
-        cgst: cgstAmount,
-        sgst: sgstAmount,
+        applyCgst,
+        cgstRate: activeCgstRate,
         cgstAmount,
+        cgst: cgstAmount,
+        applySgst,
+        sgstRate: activeSgstRate,
         sgstAmount,
-        totalTax: cgstAmount + sgstAmount,
+        sgst: sgstAmount,
+        applyIgst,
+        igstRate: activeIgstRate,
+        igstAmount,
+        igst: igstAmount,
+        totalTax,
         totalAmount,
         finalTotal: totalAmount,
-        applyTax,
-        taxPercent,
+        signatoryName,
+        signatoryDesignation,
+        signatoryPhone,
+        sigPhone: signatoryPhone,
       };
+
       // Use first item with an uploaded (supabase) image_url as quotation-level image
       const firstUploadedImage = items.find(it => it.image_url && it.image_url.startsWith('http'))?.image_url || null;
 
@@ -704,17 +783,20 @@ Recovery / Dirty Water Tank: 100 L`,
         terms_and_conditions: terms.join('\n'),
         signatory_name: signatoryName,
         signatory_designation: signatoryDesignation,
+        signatory_phone: signatoryPhone,
         items: payloadItems,
         sections: [],
         subtotal: subtotal,
         taxable_amount: subtotal,
-        cgst_rate: cgstRate,
+        cgst_rate: activeCgstRate,
         cgst_amount: cgstAmount,
-        sgst_rate: sgstRate,
+        sgst_rate: activeSgstRate,
         sgst_amount: sgstAmount,
-        total_tax: cgstAmount + sgstAmount,
+        igst_rate: activeIgstRate,
+        igst_amount: igstAmount,
+        total_tax: totalTax,
         final_amount: totalAmount,
-        tax_rate: applyTax ? taxPercent : 0,
+        tax_rate: combinedTaxRate,
         discount_type: 'none',
         discount_value: 0,
         image_url: firstUploadedImage,
@@ -909,7 +991,7 @@ Recovery / Dirty Water Tank: 100 L`,
               EDITING MODE
             </span>
             <span className="text-xs font-bold text-amber-900">
-              Quotation: <strong className="font-mono text-amber-950">{quotationNo}</strong> &bull; Client: <strong>{customerName || 'Selected Client'}</strong>
+              Quotation: <strong className="font-bold text-amber-950">{quotationNo}</strong> &bull; Client: <strong>{customerName || 'Selected Client'}</strong>
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -1065,7 +1147,7 @@ Recovery / Dirty Water Tank: 100 L`,
                   value={gstin}
                   onChange={(e) => setGstin(e.target.value.toUpperCase())}
                   placeholder="GSTIN No"
-                  className="w-full font-mono border border-slate-300 rounded-lg p-2 uppercase"
+                  className="w-full font-bold border border-slate-300 rounded-lg p-2 uppercase"
                 />
               </div>
             </div>
@@ -1081,7 +1163,7 @@ Recovery / Dirty Water Tank: 100 L`,
                     type="text"
                     value={quotationNo}
                     onChange={(e) => setQuotationNo(e.target.value.toUpperCase())}
-                    className="w-full text-sm font-mono font-black text-slate-900 border border-slate-300 rounded-xl p-2 bg-white uppercase focus:ring-1 focus:ring-amber-500"
+                    className="w-full text-sm font-black text-slate-900 border border-slate-300 rounded-xl p-2 bg-white uppercase focus:ring-1 focus:ring-amber-500"
                   />
                   <button
                     type="button"
@@ -1134,7 +1216,7 @@ Recovery / Dirty Water Tank: 100 L`,
               <span className="text-xs font-black uppercase text-slate-900">
                 About Us:
               </span>
-              <span className="text-[10px] text-slate-400 font-mono">Official Company Profile</span>
+              <span className="text-[10px] text-slate-400 font-medium">Official Company Profile</span>
             </div>
             <textarea
               rows={4}
@@ -1151,14 +1233,16 @@ Recovery / Dirty Water Tank: 100 L`,
                 <Search className="w-4 h-4 text-amber-500" />
                 <span>Search & Add Equipment / Machine:</span>
               </label>
-              <button
-                type="button"
-                onClick={handleAddCustomItem}
-                className="text-xs font-bold text-amber-700 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-3 py-1 rounded-lg flex items-center gap-1"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>+ Custom Blank Item</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleAddCustomItem}
+                  className="text-xs font-black text-slate-950 bg-[#FED10C] hover:bg-[#E5BC07] border border-amber-400 px-3.5 py-1.5 rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>+ Add Item</span>
+                </button>
+              </div>
             </div>
 
             <div className="relative">
@@ -1201,7 +1285,7 @@ Recovery / Dirty Water Tank: 100 L`,
                         />
                         <div>
                           <div className="font-black text-xs text-slate-900">{p.service_name}</div>
-                          <div className="text-[11px] text-slate-500 font-mono mt-0.5">
+                          <div className="text-[11px] text-slate-500 font-medium mt-0.5">
                             Code: {p.service_code} • UOM: {p.default_uom}
                           </div>
                         </div>
@@ -1226,14 +1310,70 @@ Recovery / Dirty Water Tank: 100 L`,
             <table className="w-full text-xs border-collapse">
               <thead>
                 <tr className="bg-slate-900 text-white font-black uppercase text-[11px] tracking-wider">
-                  <th className="py-3 px-3 text-center w-12">SL NO</th>
-                  <th className="py-3 px-3 text-center w-48 md:w-56">MACHINE PHOTO</th>
-                  <th className="py-3 px-3 text-left">DESCRIPTION & TECHNICAL SPECIFICATIONS</th>
-                  <th className="py-3 px-2 text-center w-24">DAYS / QTY</th>
-                  <th className="py-3 px-2 text-center w-20">UOM</th>
-                  <th className="py-3 px-3 text-right w-36">PER MONTHLY RENT (₹)</th>
-                  <th className="py-3 px-3 text-right w-36">AMOUNT (₹)</th>
-                  <th className="py-3 px-2 text-center w-12"></th>
+                  <th className="py-2.5 px-2 text-center w-12">
+                    <input
+                      type="text"
+                      value={columnHeaders.slNo}
+                      onChange={(e) => setColumnHeaders(prev => ({ ...prev, slNo: e.target.value }))}
+                      className="bg-transparent text-white font-black text-center w-full uppercase focus:outline-none focus:bg-slate-800 rounded px-1 cursor-text"
+                      title="Click to edit column heading"
+                    />
+                  </th>
+                  <th className="py-2.5 px-2 text-center w-48 md:w-56">
+                    <input
+                      type="text"
+                      value={columnHeaders.photo}
+                      onChange={(e) => setColumnHeaders(prev => ({ ...prev, photo: e.target.value }))}
+                      className="bg-transparent text-white font-black text-center w-full uppercase focus:outline-none focus:bg-slate-800 rounded px-1 cursor-text"
+                      title="Click to edit column heading"
+                    />
+                  </th>
+                  <th className="py-2.5 px-2 text-left">
+                    <input
+                      type="text"
+                      value={columnHeaders.description}
+                      onChange={(e) => setColumnHeaders(prev => ({ ...prev, description: e.target.value }))}
+                      className="bg-transparent text-white font-black text-left w-full uppercase focus:outline-none focus:bg-slate-800 rounded px-1 cursor-text"
+                      title="Click to edit column heading"
+                    />
+                  </th>
+                  <th className="py-2.5 px-2 text-center w-24">
+                    <input
+                      type="text"
+                      value={columnHeaders.days}
+                      onChange={(e) => setColumnHeaders(prev => ({ ...prev, days: e.target.value }))}
+                      className="bg-transparent text-white font-black text-center w-full uppercase focus:outline-none focus:bg-slate-800 rounded px-1 cursor-text"
+                      title="Click to edit column heading"
+                    />
+                  </th>
+                  <th className="py-2.5 px-2 text-center w-20">
+                    <input
+                      type="text"
+                      value={columnHeaders.uom}
+                      onChange={(e) => setColumnHeaders(prev => ({ ...prev, uom: e.target.value }))}
+                      className="bg-transparent text-white font-black text-center w-full uppercase focus:outline-none focus:bg-slate-800 rounded px-1 cursor-text"
+                      title="Click to edit column heading"
+                    />
+                  </th>
+                  <th className="py-2.5 px-2 text-right w-36">
+                    <input
+                      type="text"
+                      value={columnHeaders.rate}
+                      onChange={(e) => setColumnHeaders(prev => ({ ...prev, rate: e.target.value }))}
+                      className="bg-transparent text-white font-black text-right w-full uppercase focus:outline-none focus:bg-slate-800 rounded px-1 cursor-text"
+                      title="Click to edit column heading"
+                    />
+                  </th>
+                  <th className="py-2.5 px-2 text-right w-36">
+                    <input
+                      type="text"
+                      value={columnHeaders.amount}
+                      onChange={(e) => setColumnHeaders(prev => ({ ...prev, amount: e.target.value }))}
+                      className="bg-transparent text-white font-black text-right w-full uppercase focus:outline-none focus:bg-slate-800 rounded px-1 cursor-text"
+                      title="Click to edit column heading"
+                    />
+                  </th>
+                  <th className="py-2.5 px-2 text-center w-12"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 bg-white">
@@ -1317,7 +1457,7 @@ Recovery / Dirty Water Tank: 100 L`,
                             value={item.description}
                             onChange={(e) => handleUpdateItem(item.id, 'description', e.target.value)}
                             placeholder="Technical Specs (Brush width, suction width, coverage area, battery, tank, etc.)"
-                            className="w-full text-[11px] font-mono text-slate-800 bg-white border border-slate-300 rounded-xl p-2.5 leading-relaxed focus:ring-1 focus:ring-amber-500"
+                            className="w-full text-[11px] font-sans text-slate-800 bg-white border border-slate-300 rounded-xl p-2.5 leading-relaxed focus:ring-1 focus:ring-amber-500"
                           />
                         </div>
                       </td>
@@ -1391,40 +1531,87 @@ Recovery / Dirty Water Tank: 100 L`,
                 )}
               </tbody>
             </table>
+
+            {/* Table Footer Actions: Add Item, Reset Column Headers, Total Machine Count */}
+            <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-slate-50 border-t border-slate-200">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleAddCustomItem}
+                  className="px-4 py-2 bg-[#FED10C] hover:bg-[#E5BC07] text-slate-950 font-black text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>+ Add Item</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setColumnHeaders({
+                      slNo: 'SL NO',
+                      photo: 'MACHINE PHOTO',
+                      description: 'DESCRIPTION & TECHNICAL SPECIFICATIONS',
+                      days: 'DAYS / QTY',
+                      uom: 'UOM',
+                      rate: 'PER MONTHLY RENT (₹)',
+                      amount: 'AMOUNT (₹)',
+                    });
+                  }}
+                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-[11px] rounded-lg transition-colors cursor-pointer"
+                  title="Reset column headers to default"
+                >
+                  Reset Column Headers
+                </button>
+              </div>
+              <div className="text-xs text-slate-500 font-bold">
+                Total Machines / Items: <span className="text-slate-900 font-black">{items.length}</span>
+              </div>
+            </div>
           </div>
 
-          {/* Financial Summary Box */}
+          {/* Financial Summary Box with Independent GST Controls */}
           <div className="flex justify-end">
             <div className="bg-slate-50 rounded-2xl p-5 border border-slate-300 w-full sm:w-96 space-y-2.5">
               <div className="flex justify-between text-xs font-bold text-slate-600">
                 <span>SUB TOTAL:</span>
-                <span className="font-mono text-slate-900 font-black">
+                <span className="text-slate-900 font-black">
                   ₹ {subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </span>
               </div>
 
-              {applyTax ? (
-                <>
-                  <div className="flex justify-between text-xs text-slate-600">
-                    <span>CGST ({cgstRate}%):</span>
-                    <span className="font-mono text-slate-900">
-                      ₹ {cgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-xs text-slate-600">
-                    <span>SGST ({sgstRate}%):</span>
-                    <span className="font-mono text-slate-900">
-                      ₹ {sgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                    </span>
-                  </div>
-                </>
-              ) : (
-                <div className="text-[11px] text-amber-700 italic">Tax excluded / Extra</div>
+              {applyCgst && (
+                <div className="flex justify-between text-xs text-slate-600">
+                  <span>CGST ({cgstRate}%):</span>
+                  <span className="text-slate-900 font-bold">
+                    ₹ {cgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+              )}
+
+              {applySgst && (
+                <div className="flex justify-between text-xs text-slate-600">
+                  <span>SGST ({sgstRate}%):</span>
+                  <span className="text-slate-900 font-bold">
+                    ₹ {sgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+              )}
+
+              {applyIgst && (
+                <div className="flex justify-between text-xs text-slate-600">
+                  <span>IGST ({igstRate}%):</span>
+                  <span className="text-slate-900 font-bold">
+                    ₹ {igstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+              )}
+
+              {!applyCgst && !applySgst && !applyIgst && (
+                <div className="text-[11px] text-amber-700 italic">Taxes excluded / Nil</div>
               )}
 
               <div className="pt-2 border-t-2 border-slate-300 flex justify-between items-center bg-[#FED10C]/25 p-2.5 rounded-xl">
                 <span className="text-sm font-black text-slate-950">TOTAL:</span>
-                <span className="text-base font-black text-slate-950 font-mono">
+                <span className="text-base font-black text-slate-950">
                   ₹ {totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </span>
               </div>
@@ -1433,16 +1620,83 @@ Recovery / Dirty Water Tank: 100 L`,
                 Amount in Words: <strong>{numberToWords(totalAmount)}</strong>
               </div>
 
-              <div className="pt-1 flex items-center justify-between text-xs">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={applyTax}
-                    onChange={(e) => setApplyTax(e.target.checked)}
-                    className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400"
-                  />
-                  <span className="font-bold text-slate-700">Include GST (18%) in Calculation</span>
-                </label>
+              {/* Independent GST Checkboxes & Editable Percentages */}
+              <div className="pt-3 border-t border-slate-200 space-y-2">
+                <div className="text-[11px] font-black uppercase text-slate-700 tracking-wider">
+                  Tax Settings (CGST / SGST / IGST):
+                </div>
+
+                {/* CGST */}
+                <div className="flex items-center justify-between gap-2 p-1.5 bg-white rounded-lg border border-slate-200">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={applyCgst}
+                      onChange={(e) => setApplyCgst(e.target.checked)}
+                      className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400 cursor-pointer"
+                    />
+                    <span>CGST</span>
+                  </label>
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      step="0.5"
+                      disabled={!applyCgst}
+                      value={cgstRate}
+                      onChange={(e) => setCgstRate(parseFloat(e.target.value) || 0)}
+                      className="w-14 text-center text-xs font-bold border border-slate-300 rounded p-1 disabled:bg-slate-100"
+                    />
+                    <span className="text-xs text-slate-500 font-bold">%</span>
+                  </div>
+                </div>
+
+                {/* SGST */}
+                <div className="flex items-center justify-between gap-2 p-1.5 bg-white rounded-lg border border-slate-200">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={applySgst}
+                      onChange={(e) => setApplySgst(e.target.checked)}
+                      className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400 cursor-pointer"
+                    />
+                    <span>SGST</span>
+                  </label>
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      step="0.5"
+                      disabled={!applySgst}
+                      value={sgstRate}
+                      onChange={(e) => setSgstRate(parseFloat(e.target.value) || 0)}
+                      className="w-14 text-center text-xs font-bold border border-slate-300 rounded p-1 disabled:bg-slate-100"
+                    />
+                    <span className="text-xs text-slate-500 font-bold">%</span>
+                  </div>
+                </div>
+
+                {/* IGST */}
+                <div className="flex items-center justify-between gap-2 p-1.5 bg-white rounded-lg border border-slate-200">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={applyIgst}
+                      onChange={(e) => setApplyIgst(e.target.checked)}
+                      className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400 cursor-pointer"
+                    />
+                    <span>IGST</span>
+                  </label>
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      step="0.5"
+                      disabled={!applyIgst}
+                      value={igstRate}
+                      onChange={(e) => setIgstRate(parseFloat(e.target.value) || 0)}
+                      className="w-14 text-center text-xs font-bold border border-slate-300 rounded p-1 disabled:bg-slate-100"
+                    />
+                    <span className="text-xs text-slate-500 font-bold">%</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1461,7 +1715,7 @@ Recovery / Dirty Water Tank: 100 L`,
               rows={4}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full text-xs font-mono font-bold text-slate-800 bg-slate-50 border border-slate-300 rounded-xl p-3 leading-relaxed focus:ring-1 focus:ring-amber-500 uppercase"
+              className="w-full text-xs font-bold text-slate-800 bg-slate-50 border border-slate-300 rounded-xl p-3 leading-relaxed focus:ring-1 focus:ring-amber-500 uppercase"
             />
           </div>
 
@@ -1607,7 +1861,7 @@ Recovery / Dirty Water Tank: 100 L`,
                     type="text"
                     value={bankAccountNo}
                     onChange={(e) => setBankAccountNo(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white font-mono"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white font-bold"
                   />
                 </div>
                 <div className="space-y-1">
@@ -1616,7 +1870,7 @@ Recovery / Dirty Water Tank: 100 L`,
                     type="text"
                     value={bankIfsc}
                     onChange={(e) => setBankIfsc(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white font-mono"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white font-bold"
                   />
                 </div>
                 <div className="space-y-1">
@@ -1637,12 +1891,21 @@ Recovery / Dirty Water Tank: 100 L`,
                     className="w-full bg-slate-800 border border-amber-500 rounded-lg p-2 text-white font-bold"
                   />
                 </div>
-                <div className="space-y-1 sm:col-span-2">
+                <div className="space-y-1">
                   <label className="text-amber-400 font-bold">Designation</label>
                   <input
                     type="text"
                     value={signatoryDesignation}
                     onChange={(e) => setSignatoryDesignation(e.target.value)}
+                    className="w-full bg-slate-800 border border-amber-500 rounded-lg p-2 text-white font-medium"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-amber-400 font-bold">Signatory Phone Number</label>
+                  <input
+                    type="text"
+                    value={signatoryPhone}
+                    onChange={(e) => setSignatoryPhone(e.target.value)}
                     className="w-full bg-slate-800 border border-amber-500 rounded-lg p-2 text-white font-medium"
                   />
                 </div>
@@ -1652,8 +1915,8 @@ Recovery / Dirty Water Tank: 100 L`,
                 <div className="font-black text-sm text-white mb-2">Company's Bank Details</div>
                 <div>• A/c Holder's Name : <strong className="text-white">{bankAccountName}</strong></div>
                 <div>• Bank Name : <strong className="text-white">{bankName}</strong></div>
-                <div>• A/c No. : <strong className="text-white font-mono">{bankAccountNo}</strong></div>
-                <div>• Branch & IFS Code: <strong className="text-white font-mono">{bankBranch} & {bankIfsc}</strong></div>
+                <div>• A/c No. : <strong className="text-white">{bankAccountNo}</strong></div>
+                <div>• Branch & IFS Code: <strong className="text-white">{bankBranch} & {bankIfsc}</strong></div>
               </div>
             )}
 
@@ -1674,7 +1937,7 @@ Recovery / Dirty Water Tank: 100 L`,
                 {signatoryDesignation}
               </div>
               <div className="text-xs text-slate-300">
-                {company?.phone || company?.phone1 || '+ 91 7338882036'}
+                {signatoryPhone}
               </div>
               <div className="text-xs font-bold text-slate-200 uppercase tracking-wider pt-2">
                 Authorised Signatory
@@ -1769,13 +2032,13 @@ Recovery / Dirty Water Tank: 100 L`,
                 <table className="w-full text-xs border border-slate-300 border-collapse">
                   <thead>
                     <tr className="bg-slate-900 text-white font-bold">
-                      <th className="p-2 text-center w-12">SL NO</th>
-                      <th className="p-2 text-center w-36">MACHINE PHOTO</th>
-                      <th className="p-2 text-left">DESCRIPTION & SPECIFICATIONS</th>
-                      <th className="p-2 text-center w-16">Days</th>
-                      <th className="p-2 text-center w-16">UOM</th>
-                      <th className="p-2 text-right w-28">PER MONTHLY RENT</th>
-                      <th className="p-2 text-right w-28">AMOUNT</th>
+                      <th className="p-2 text-center w-12">{columnHeaders.slNo}</th>
+                      <th className="p-2 text-center w-36">{columnHeaders.photo}</th>
+                      <th className="p-2 text-left">{columnHeaders.description}</th>
+                      <th className="p-2 text-center w-16">{columnHeaders.days}</th>
+                      <th className="p-2 text-center w-16">{columnHeaders.uom}</th>
+                      <th className="p-2 text-right w-28">{columnHeaders.rate}</th>
+                      <th className="p-2 text-right w-28">{columnHeaders.amount}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1791,7 +2054,7 @@ Recovery / Dirty Water Tank: 100 L`,
                         </td>
                         <td className="p-2 align-top">
                           <div className="font-bold text-slate-900 text-sm uppercase">{it.item_name}</div>
-                          <pre className="text-[10px] font-mono text-slate-700 whitespace-pre-wrap mt-1 leading-snug">{it.description}</pre>
+                          <div className="text-[10px] text-slate-700 whitespace-pre-wrap mt-1 leading-snug">{it.description}</div>
                         </td>
                         <td className="p-2 text-center font-bold align-top">{it.days}</td>
                         <td className="p-2 text-center align-top">{it.uom}</td>
@@ -1803,17 +2066,23 @@ Recovery / Dirty Water Tank: 100 L`,
                       <td colSpan={6} className="p-2 text-right">SUB TOTAL:</td>
                       <td className="p-2 text-right">₹{subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                     </tr>
-                    {applyTax && (
-                      <>
-                        <tr className="border-t border-slate-200 text-slate-700">
-                          <td colSpan={6} className="p-1.5 text-right">CGST (9%):</td>
-                          <td className="p-1.5 text-right">₹{cgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                        </tr>
-                        <tr className="border-t border-slate-200 text-slate-700">
-                          <td colSpan={6} className="p-1.5 text-right">SGST (9%):</td>
-                          <td className="p-1.5 text-right">₹{sgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                        </tr>
-                      </>
+                    {applyCgst && (
+                      <tr className="border-t border-slate-200 text-slate-700">
+                        <td colSpan={6} className="p-1.5 text-right font-medium">CGST ({cgstRate}%):</td>
+                        <td className="p-1.5 text-right font-bold">₹{cgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                      </tr>
+                    )}
+                    {applySgst && (
+                      <tr className="border-t border-slate-200 text-slate-700">
+                        <td colSpan={6} className="p-1.5 text-right font-medium">SGST ({sgstRate}%):</td>
+                        <td className="p-1.5 text-right font-bold">₹{sgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                      </tr>
+                    )}
+                    {applyIgst && (
+                      <tr className="border-t border-slate-200 text-slate-700">
+                        <td colSpan={6} className="p-1.5 text-right font-medium">IGST ({igstRate}%):</td>
+                        <td className="p-1.5 text-right font-bold">₹{igstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                      </tr>
                     )}
                     <tr className="border-t-2 border-slate-900 font-black bg-amber-100 text-sm">
                       <td colSpan={6} className="p-2 text-right">TOTAL:</td>
@@ -1822,7 +2091,7 @@ Recovery / Dirty Water Tank: 100 L`,
                   </tbody>
                 </table>
 
-                <div className="text-xs font-mono font-bold whitespace-pre-wrap">{notes}</div>
+                <div className="text-xs font-bold whitespace-pre-wrap">{notes}</div>
 
                 <div className="text-xs space-y-1">
                   <div className="font-bold">Advantages of Renting from Kleanmax Pro:</div>
@@ -1848,10 +2117,10 @@ Recovery / Dirty Water Tank: 100 L`,
 
                 {/* Signatory on LEFT (Mr. Manikandan Balamurugan above Sales and Service Head) */}
                 <div className="text-left text-xs pt-2">
-                  <div className="font-bold">For Klean max pro</div>
+                  <div className="font-bold">For {company?.company_name || 'Klean max pro'}</div>
                   <div className="font-black text-sm pt-2 text-slate-950">{signatoryName}</div>
                   <div className="text-amber-700 font-bold text-xs">{signatoryDesignation}</div>
-                  <div className="text-slate-600">+ 91 7338882036</div>
+                  <div className="text-slate-600">{signatoryPhone}</div>
                   <div className="font-bold pt-1">Authorised Signatory</div>
                 </div>
 

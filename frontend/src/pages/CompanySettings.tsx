@@ -533,7 +533,7 @@ export const CompanySettings: React.FC<CompanySettingsProps> = ({
                 />
               </div>
 
-              <div className="md:col-span-2">
+              <div>
                 <label className="block text-xs font-bold text-emerald-800 uppercase mb-1">
                   Signatory Designation
                 </label>
@@ -544,6 +544,20 @@ export const CompanySettings: React.FC<CompanySettingsProps> = ({
                   onChange={(e) => setActiveCompany({ ...activeCompany, signatory_designation: e.target.value })}
                   className="w-full text-xs font-semibold border border-emerald-400 bg-emerald-50/40 rounded-lg p-2.5 disabled:bg-slate-50"
                   placeholder="Sales and Service Head"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-emerald-800 uppercase mb-1">
+                  Signatory Phone Number
+                </label>
+                <input
+                  type="text"
+                  disabled={!isAdmin}
+                  value={activeCompany.signatory_phone || ''}
+                  onChange={(e) => setActiveCompany({ ...activeCompany, signatory_phone: e.target.value })}
+                  className="w-full text-xs font-semibold border border-emerald-400 bg-emerald-50/40 rounded-lg p-2.5 disabled:bg-slate-50"
+                  placeholder="+91 73388 82036"
                 />
               </div>
             </div>

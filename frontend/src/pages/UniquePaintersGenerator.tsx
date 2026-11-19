@@ -27,6 +27,7 @@ interface UniquePaintersGeneratorProps {
 
 const HEADING_OPTIONS = [
   'SURFACE COATING & PAINTING PROPOSAL',
+  'DAY RENTAL QUOTATION',
   'INTERIOR & EXTERIOR PAINTING QUOTATION',
   'EPOXY FLOORING & INDUSTRIAL COATING QUOTATION',
 ];
@@ -258,10 +259,15 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
         if (comp.signatory_name) setSigName(comp.signatory_name);
         else if (comp.bank_account_name) setSigName(comp.bank_account_name);
         if (comp.signatory_designation) setSigTitle(comp.signatory_designation);
-        const phones = [comp.phone1, comp.phone2].filter(Boolean).join(' / ');
-        if (phones) {
-          setSigPhones(phones);
-          setCallNotice(`Looking forward for your favourable orders. Please call - ${phones}.`);
+        if (comp.signatory_phone) {
+          setSigPhones(comp.signatory_phone);
+          setCallNotice(`Looking forward for your favourable orders. Please call - ${comp.signatory_phone}.`);
+        } else {
+          const phones = [comp.phone1, comp.phone2].filter(Boolean).join(' / ');
+          if (phones) {
+            setSigPhones(phones);
+            setCallNotice(`Looking forward for your favourable orders. Please call - ${phones}.`);
+          }
         }
         if (comp.terms_and_conditions) {
           setTerms(comp.terms_and_conditions.split('\n').filter(Boolean));
@@ -627,6 +633,7 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
         attention_person: contactPerson,
         signatory_name: sigName,
         signatory_designation: sigTitle,
+        signatory_phone: sigPhones,
       };
 
       let res;
@@ -1411,7 +1418,7 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
                   type="text"
                   value={sigPhones}
                   onChange={(e) => setSigPhones(e.target.value)}
-                  className="text-right text-xs text-slate-600 font-mono border border-slate-200 rounded p-1 bg-white"
+                  className="text-right text-xs text-slate-600 font-sans border border-slate-200 rounded p-1 bg-white"
                 />
               </div>
             </div>
@@ -1669,7 +1676,7 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
                     <div className="font-black text-sm text-purple-900">{sigCompany}</div>
                     <div className="font-bold text-slate-800">{sigName}</div>
                     <div className="text-slate-600">{sigTitle}</div>
-                    <div className="text-slate-600 font-mono">{sigPhones}</div>
+                    <div className="text-slate-600 font-sans">{sigPhones}</div>
                   </div>
                 </div>
                 <div className="text-right text-[10px] text-slate-400 font-bold">Page 2 of 3</div>

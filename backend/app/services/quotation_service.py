@@ -227,6 +227,7 @@ def create_quotation(
         image_url=getattr(data, 'image_url', None),
         signatory_name=getattr(data, 'signatory_name', None) or (company.signatory_name if company and hasattr(company, 'signatory_name') else 'Mr. Manikandan Balamurugan'),
         signatory_designation=getattr(data, 'signatory_designation', None) or (company.signatory_designation if company and hasattr(company, 'signatory_designation') else 'Sales and Service Head'),
+        signatory_phone=getattr(data, 'signatory_phone', None) or (company.signatory_phone if company and hasattr(company, 'signatory_phone') else '+91 73388 82036'),
         prepared_by_id=current_user.id,
     )
     db.add(quotation)
@@ -529,6 +530,8 @@ def update_quotation(
         quotation.signatory_name = data.signatory_name
     if hasattr(data, 'signatory_designation') and data.signatory_designation is not None:
         quotation.signatory_designation = data.signatory_designation
+    if hasattr(data, 'signatory_phone') and data.signatory_phone is not None:
+        quotation.signatory_phone = data.signatory_phone
     quotation.updated_at = datetime.utcnow()
 
     if data.sections is not None:

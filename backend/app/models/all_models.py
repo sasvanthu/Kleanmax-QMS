@@ -60,6 +60,7 @@ class CompanySetting(Base):
     brand_color = Column(String(50), nullable=True, default="#FED10C")
     signatory_name = Column(String(255), nullable=True, default="Mr. Manikandan Balamurugan")
     signatory_designation = Column(String(255), nullable=True, default="Sales and Service Head")
+    signatory_phone = Column(String(50), nullable=True, default="+91 73388 82036")
     default_payment_terms = Column(Text, default="100% advance along with confirmed work order, or 50% advance and balance on completion.")
     default_delivery_terms = Column(Text, default="Work will commence within 3-5 business days of advance receipt and site clearance.")
     default_warranty_terms = Column(Text, default="Standard workmanship warranty of 30 days on deep cleaning services. Equipment as per OEM warranty terms.")
@@ -192,6 +193,7 @@ class Quotation(Base):
     image_url = Column(Text, nullable=True)
     signatory_name = Column(String(255), nullable=True, default="Mr. Manikandan Balamurugan")
     signatory_designation = Column(String(255), nullable=True, default="Sales and Service Head")
+    signatory_phone = Column(String(50), nullable=True, default="+91 73388 82036")
 
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)

@@ -722,7 +722,7 @@
                                 <div style="font-size: 8pt; color: #64748b; margin-top: 3px; line-height: 1.35;">{{ r.description }}</div>
                                 {% endif %}
                                 {% if r.area_sqft and r.area_sqft > 0 %}
-                                <div style="font-size: 8pt; color: #6d28d9; font-weight: 700; margin-top: 3px; font-family: monospace;">
+                                <div style="font-size: 8pt; color: #6d28d9; font-weight: 700; margin-top: 3px;">
                                     Area: {{ "{:,.0f}".format(r.area_sqft) }} sq.ft @ Rs.{{ "{:,.2f}".format(r.rate_per_sqft or 0) }} / sq.ft
                                 </div>
                                 {% endif %}
@@ -744,7 +744,7 @@
                                 <div style="font-size: 8pt; color: #64748b; margin-top: 3px; line-height: 1.35;">{{ sec.notes }}</div>
                                 {% endif %}
                                 {% if sec.billable_area %}
-                                <div style="font-size: 8pt; color: #6d28d9; font-weight: 700; margin-top: 3px; font-family: monospace;">
+                                <div style="font-size: 8pt; color: #6d28d9; font-weight: 700; margin-top: 3px;">
                                     Area: {{ "{:,.0f}".format(sec.billable_area) }} sq.ft @ Rs.{{ "{:,.2f}".format(sec.applied_rate) }} / sq.ft
                                 </div>
                                 {% endif %}
@@ -764,7 +764,7 @@
                                 <div style="font-size: 8pt; color: #64748b; margin-top: 3px;">
                                     APPLY TWO CODE PREMIER EMULSION SHYNE INTERIOR WALLS CEILING WALL PUTTY AREA TWO CODE
                                 </div>
-                                <div style="font-size: 8pt; color: #6d28d9; font-weight: 700; margin-top: 3px; font-family: monospace;">
+                                <div style="font-size: 8pt; color: #6d28d9; font-weight: 700; margin-top: 3px;">
                                     Area: 4,200 sq.ft @ Rs.22.14 / sq.ft
                                 </div>
                             </td>
@@ -822,7 +822,7 @@
             <span style="font-weight: 900; font-size: 10.5pt; text-transform: uppercase; color: #581c87;">
                 {{ snapshot.sigCompany or company.company_name or 'Unique Painters' }}
             </span>
-            <span style="font-size: 8.5pt; font-family: monospace; font-weight: 700; color: #475569;">
+            <span style="font-size: 8.5pt; font-weight: 700; color: #475569;">
                 Quotation No: {{ snapshot.quotationNo or quotation.quotation_number or 'UNP/2026/001' }} • Page 2
             </span>
         </div>
@@ -878,7 +878,7 @@
                 <div style="font-size: 10pt; font-weight: 900; color: #581c87;">{{ snapshot.sigCompany or company.company_name or 'Unique Painters' }}</div>
                 <div style="font-size: 9pt; font-weight: 800; color: #0f172a;">{{ snapshot.sigName or quotation.signatory_name or company.signatory_name or 'Mr. Manikandan Balamurugan' }}</div>
                 <div style="font-size: 8pt; color: #475569;">{{ snapshot.sigTitle or quotation.signatory_designation or company.signatory_designation or 'Sales and Service Head' }}</div>
-                <div style="font-size: 8pt; color: #475569; font-family: monospace;">{{ snapshot.sigPhones or company.phone1 or '+91 7338882036 / 9710148218' }}</div>
+                <div style="font-size: 8pt; color: #475569;">{{ (snapshot and (snapshot.signatoryPhone or snapshot.sigPhones or snapshot.sigPhone)) or quotation.signatory_phone or company.signatory_phone or company.phone1 or '+91 7338882036 / 9710148218' }}</div>
             </div>
         </div>
 
@@ -896,7 +896,7 @@
             <span style="font-weight: 900; font-size: 10.5pt; text-transform: uppercase; color: #581c87;">
                 Upcoming Technology Showcase
             </span>
-            <span style="font-size: 8.5pt; font-family: monospace; font-weight: 700; color: #475569;">
+            <span style="font-size: 8.5pt; font-weight: 700; color: #475569;">
                 Unique Painters • Page 3
             </span>
         </div>
@@ -1289,20 +1289,21 @@
         </div>
         {% endif %}
     </div>
-    {% elif items and items|length > 0 %}
+    {% elif (items and items|length > 0) or (snapshot and snapshot.get('items') and snapshot.get('items')|length > 0) %}
+    {% set render_items = items if (items and items|length > 0) else (snapshot.get('items') if (snapshot and snapshot.get('items')) else []) %}
     <table class="data-table">
         <thead>
             <tr>
-                <th style="width: 8%;" class="text-center">SL NO</th>
-                <th style="width: 52%;">DESCRIPTION</th>
-                <th style="width: 10%;" class="text-center">QTY</th>
-                <th style="width: 10%;" class="text-center">UOM</th>
-                <th style="width: 10%;" class="text-right">RATE</th>
-                <th style="width: 10%;" class="text-right">AMOUNT</th>
+                <th style="width: 8%;" class="text-center">{{ (snapshot and snapshot.columnHeaders and snapshot.columnHeaders.slNo) or 'SL NO' }}</th>
+                <th style="width: 52%;">{{ (snapshot and snapshot.columnHeaders and (snapshot.columnHeaders.description or snapshot.columnHeaders.desc)) or 'DESCRIPTION & TECHNICAL SPECIFICATIONS' }}</th>
+                <th style="width: 10%;" class="text-center">{{ (snapshot and snapshot.columnHeaders and (snapshot.columnHeaders.days or snapshot.columnHeaders.qty)) or 'QTY / DAYS' }}</th>
+                <th style="width: 10%;" class="text-center">{{ (snapshot and snapshot.columnHeaders and snapshot.columnHeaders.uom) or 'UOM' }}</th>
+                <th style="width: 10%;" class="text-right">{{ (snapshot and snapshot.columnHeaders and snapshot.columnHeaders.rate) or 'RATE (₹)' }}</th>
+                <th style="width: 10%;" class="text-right">{{ (snapshot and snapshot.columnHeaders and snapshot.columnHeaders.amount) or 'AMOUNT (₹)' }}</th>
             </tr>
         </thead>
         <tbody>
-            {% for item in items %}
+            {% for item in render_items %}
                 {# Check if this item is a section header (e.g. machine name) #}
                 {% if item.description and item.description.startswith('HEADER:') %}
                 <tr class="section-header-row">
@@ -1314,8 +1315,8 @@
                     <td class="text-center">{{ loop.index }}</td>
                     <td>
                         <div style="font-weight: 700; color: #0f172a; font-size: 9pt;">{{ item.item_name }}</div>
-                        {% if quotation.image_url and loop.first %}
-                        <div style="margin: 8px 0;"><img src="{{ quotation.image_url }}" style="max-height: 140px; max-width: 220px; width: auto; height: auto; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px; background: #ffffff; display: block;" alt="Uploaded Product Photo" /></div>
+                        {% if (item.image_url or quotation.image_url) and loop.first %}
+                        <div style="margin: 8px 0;"><img src="{{ item.image_url or quotation.image_url }}" style="max-height: 140px; max-width: 220px; width: auto; height: auto; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px; background: #ffffff; display: block;" alt="Uploaded Product Photo" /></div>
                         {% elif 'RB-800' in item.item_name|upper or '800' in item.item_name %}
                             {% if rb800_base64 %}
                             <div style="margin: 8px 0;"><img src="data:image/png;base64,{{ rb800_base64 }}" style="max-height: 140px; max-width: 220px; width: auto; height: auto; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px; background: #ffffff; display: block;" alt="RB-800" /></div>
@@ -1333,34 +1334,53 @@
                         <div class="machine-specs">{{ item.description }}</div>
                         {% endif %}
                     </td>
-                    <td class="text-center" style="font-weight: 700;">{{ item.quantity|int if item.quantity == item.quantity|int else item.quantity }}</td>
-                    <td class="text-center">{{ item.uom|upper }}</td>
-                    <td class="text-right">₹ {{ "%.2f"|format(item.applied_rate or 0) }}</td>
-                    <td class="text-right" style="font-weight: 700;">₹ {{ "%.2f"|format(item.line_total or 0) }}</td>
+                    <td class="text-center" style="font-weight: 700;">{{ item.days if item.days is defined else (item.quantity|int if item.quantity == item.quantity|int else item.quantity) }}</td>
+                    <td class="text-center">{{ (item.uom or 'NOS')|upper }}</td>
+                    <td class="text-right">₹ {{ "%.2f"|format((item.applied_rate or item.rate or item.unit_price or 0)|float) }}</td>
+                    <td class="text-right" style="font-weight: 700;">₹ {{ "%.2f"|format((item.line_total or item.amount or 0)|float) }}</td>
                 </tr>
                 {% endif %}
             {% endfor %}
 
-            {# Financial Totals #}
+            {# Financial Totals with independent CGST, SGST, IGST support #}
             {% set render_subtotal = snapshot.subtotal if (snapshot and snapshot.subtotal is defined) else (quotation.subtotal or 0) %}
-            {% set render_cgst = snapshot.cgst if (snapshot and snapshot.cgst is defined) else (snapshot.cgstAmount if (snapshot and snapshot.cgstAmount is defined) else (quotation.cgst_amount or 0)) %}
-            {% set render_sgst = snapshot.sgst if (snapshot and snapshot.sgst is defined) else (snapshot.sgstAmount if (snapshot and snapshot.sgstAmount is defined) else (quotation.sgst_amount or 0)) %}
+            {% set render_cgst = snapshot.cgstAmount if (snapshot and snapshot.cgstAmount is defined) else (snapshot.cgst if (snapshot and snapshot.cgst is defined) else (quotation.cgst_amount or 0)) %}
+            {% set render_sgst = snapshot.sgstAmount if (snapshot and snapshot.sgstAmount is defined) else (snapshot.sgst if (snapshot and snapshot.sgst is defined) else (quotation.sgst_amount or 0)) %}
+            {% set render_igst = snapshot.igstAmount if (snapshot and snapshot.igstAmount is defined) else (snapshot.igst if (snapshot and snapshot.igst is defined) else (quotation.igst_amount or 0)) %}
             {% set render_total = snapshot.totalAmount if (snapshot and snapshot.totalAmount is defined) else (snapshot.finalTotal if (snapshot and snapshot.finalTotal is defined) else (quotation.final_amount or 0)) %}
-            {% set show_tax = apply_tax_val or (render_cgst > 0) or (quotation.cgst_amount and quotation.cgst_amount > 0) %}
+            
+            {% set cgst_rate_val = snapshot.cgstRate if (snapshot and snapshot.cgstRate is defined) else (quotation.cgst_rate or 9) %}
+            {% set sgst_rate_val = snapshot.sgstRate if (snapshot and snapshot.sgstRate is defined) else (quotation.sgst_rate or 9) %}
+            {% set igst_rate_val = snapshot.igstRate if (snapshot and snapshot.igstRate is defined) else (quotation.igst_rate or 18) %}
 
-            {% if show_tax %}
+            {% set show_cgst = (snapshot and snapshot.applyCgst) or (render_cgst > 0) %}
+            {% set show_sgst = (snapshot and snapshot.applySgst) or (render_sgst > 0) %}
+            {% set show_igst = (snapshot and snapshot.applyIgst) or (render_igst > 0) %}
+            {% set has_any_tax = show_cgst or show_sgst or show_igst %}
+
+            {% if has_any_tax %}
             <tr class="total-row">
                 <td colspan="5" class="text-right">SUB TOTAL</td>
                 <td class="text-right">₹ {{ "%.2f"|format(render_subtotal) }}</td>
             </tr>
+            {% if show_cgst %}
             <tr>
-                <td colspan="5" class="text-right" style="font-weight: 600;">CGST ({{ (snapshot.taxPercent / 2) if (snapshot and snapshot.taxPercent) else (quotation.cgst_rate or 9) }}%)</td>
+                <td colspan="5" class="text-right" style="font-weight: 600;">CGST ({{ cgst_rate_val }}%)</td>
                 <td class="text-right">₹ {{ "%.2f"|format(render_cgst) }}</td>
             </tr>
+            {% endif %}
+            {% if show_sgst %}
             <tr>
-                <td colspan="5" class="text-right" style="font-weight: 600;">SGST ({{ (snapshot.taxPercent / 2) if (snapshot and snapshot.taxPercent) else (quotation.sgst_rate or 9) }}%)</td>
+                <td colspan="5" class="text-right" style="font-weight: 600;">SGST ({{ sgst_rate_val }}%)</td>
                 <td class="text-right">₹ {{ "%.2f"|format(render_sgst) }}</td>
             </tr>
+            {% endif %}
+            {% if show_igst %}
+            <tr>
+                <td colspan="5" class="text-right" style="font-weight: 600;">IGST ({{ igst_rate_val }}%)</td>
+                <td class="text-right">₹ {{ "%.2f"|format(render_igst) }}</td>
+            </tr>
+            {% endif %}
             <tr class="total-row" style="background-color: #fef08a;">
                 <td colspan="5" class="text-right" style="font-size: 10pt;">TOTAL</td>
                 <td class="text-right" style="font-size: 10pt; color: #0f172a;">₹ {{ "%.2f"|format(render_total) }}</td>
@@ -1377,12 +1397,12 @@
     <table class="data-table">
         <thead>
             <tr>
-                <th style="width: 8%;" class="text-center">SL NO</th>
-                <th style="width: 44%;">AREA & SERVICE SCOPE</th>
-                <th style="width: 14%;" class="text-center">DIMENSIONS</th>
-                <th style="width: 12%;" class="text-center">BILLABLE AREA</th>
-                <th style="width: 11%;" class="text-right">RATE</th>
-                <th style="width: 11%;" class="text-right">TOTAL</th>
+                <th style="width: 8%;" class="text-center">{{ (snapshot and snapshot.columnHeaders and snapshot.columnHeaders.slNo) or 'SL NO' }}</th>
+                <th style="width: 44%;">{{ (snapshot and snapshot.columnHeaders and (snapshot.columnHeaders.description or snapshot.columnHeaders.desc)) or 'AREA & SERVICE SCOPE' }}</th>
+                <th style="width: 14%;" class="text-center">{{ (snapshot and snapshot.columnHeaders and (snapshot.columnHeaders.days or snapshot.columnHeaders.qty or snapshot.columnHeaders.dimensions)) or 'DIMENSIONS' }}</th>
+                <th style="width: 12%;" class="text-center">{{ (snapshot and snapshot.columnHeaders and snapshot.columnHeaders.uom) or 'BILLABLE AREA' }}</th>
+                <th style="width: 11%;" class="text-right">{{ (snapshot and snapshot.columnHeaders and snapshot.columnHeaders.rate) or 'RATE' }}</th>
+                <th style="width: 11%;" class="text-right">{{ (snapshot and snapshot.columnHeaders and snapshot.columnHeaders.amount) or 'TOTAL' }}</th>
             </tr>
         </thead>
         <tbody>
@@ -1605,13 +1625,13 @@
             For {{ company.company_name or 'Cleantech Services' }}
         </div>
         <div style="font-size: 11pt; font-weight: 900; color: #0f172a; margin-top: 14px;">
-            {{ quotation.signatory_name or company.signatory_name or 'Mr. Manikandan Balamurugan' }}
+            {{ (snapshot and snapshot.signatoryName) or quotation.signatory_name or company.signatory_name or 'Mr. Manikandan Balamurugan' }}
         </div>
         <div style="font-size: 8.5pt; font-weight: 700; color: {% if company_code == 'cleantech' %}#0d9488{% elif company_code == 'kleanmax' %}#0284c7{% elif company_code == 'uniquepainters' %}#7c3aed{% else %}#b45309{% endif %};">
-            {{ quotation.signatory_designation or company.signatory_designation or 'Sales and Service Head' }}
+            {{ (snapshot and snapshot.signatoryDesignation) or quotation.signatory_designation or company.signatory_designation or 'Sales and Service Head' }}
         </div>
         <div style="font-size: 8pt; color: #64748b; margin-top: 2px;">
-            {{ company.phone1 or company.phone2 or '+91 73388 82036' }}
+            {{ (snapshot and (snapshot.signatoryPhone or snapshot.sigPhone)) or quotation.signatory_phone or company.signatory_phone or company.phone1 or company.phone2 or '+91 73388 82036' }}
         </div>
         <div style="font-size: 8pt; font-weight: 800; color: #1e293b; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px;">
             Authorised Signatory

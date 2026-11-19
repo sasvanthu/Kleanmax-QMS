@@ -150,6 +150,7 @@ export interface Quotation {
   image_url?: string | null;
   signatory_name?: string;
   signatory_designation?: string;
+  signatory_phone?: string;
   
   subtotal: number;
   discount_type: 'none' | 'percentage' | 'fixed';
@@ -213,6 +214,7 @@ export interface CompanySetting {
   bank_branch?: string;
   signatory_name?: string;
   signatory_designation?: string;
+  signatory_phone?: string;
   logo_url?: string;
   quotation_prefix: string;
   default_validity_days: number;

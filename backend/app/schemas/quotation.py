@@ -103,6 +103,7 @@ class QuotationCreate(BaseModel):
     image_url: Optional[str] = None
     signatory_name: Optional[str] = 'Mr. Manikandan Balamurugan'
     signatory_designation: Optional[str] = 'Sales and Service Head'
+    signatory_phone: Optional[str] = '+91 73388 82036'
 
 class QuotationUpdate(BaseModel):
     company_code: Optional[str] = None
@@ -147,6 +148,8 @@ class QuotationUpdate(BaseModel):
     image_url: Optional[str] = None
     signatory_name: Optional[str] = None
     signatory_designation: Optional[str] = None
+    signatory_phone: Optional[str] = None
+    snapshot_json: Optional[Any] = None
 
 class RevisionCreateRequest(BaseModel):
     revision_reason: str = Field(..., min_length=3, description="Explanation of why this revision was created")
@@ -201,6 +204,8 @@ class QuotationResponse(BaseModel):
     image_url: Optional[str] = None
     signatory_name: Optional[str] = None
     signatory_designation: Optional[str] = None
+    signatory_phone: Optional[str] = None
+    snapshot_json: Optional[Any] = None
     
     prepared_by_id: Optional[str] = None
     prepared_by_name: Optional[str] = None

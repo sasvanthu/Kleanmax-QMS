@@ -1222,6 +1222,18 @@ def generate_quotation_docx_bytes(
 
     company_code = (getattr(company, 'company_code', None) or getattr(quotation, 'company_code', None) or 'kleanmaxpro').lower()
 
+    # Parse snapshot if available
+    snapshot = {}
+    raw_snap = getattr(quotation, "snapshot_json", None)
+    if raw_snap:
+        if isinstance(raw_snap, dict):
+            snapshot = raw_snap
+        elif isinstance(raw_snap, str):
+            try:
+                snapshot = json.loads(raw_snap)
+            except Exception:
+                snapshot = {}
+
     if company_code == 'uniquepainters':
         return _generate_uniquepainters_docx(quotation, company, customer, sections=sections_list, items=items_list)
 
@@ -1356,10 +1368,25 @@ def generate_quotation_docx_bytes(
     # 5. Data Table (Items or Sections)
     table = None
     if items_list and len(items_list) > 0:
+        custom_cols = snapshot.get('columnHeaders', {}) if isinstance(snapshot.get('columnHeaders'), dict) else {}
         if 'RENTAL' in job_desc or q_type == 'rental':
-            headers = ["SL NO", "DESCRIPTION", "DAYS", "UOM", "PER MONTHLY RENT", "AMOUNT (₹)"]
+            headers = [
+                custom_cols.get('slNo', 'SL NO'),
+                custom_cols.get('description', 'DESCRIPTION & SPECIFICATIONS'),
+                custom_cols.get('days', 'DAYS / QTY'),
+                custom_cols.get('uom', 'UOM'),
+                custom_cols.get('rate', 'PER MONTHLY RENT'),
+                custom_cols.get('amount', 'AMOUNT (₹)')
+            ]
         else:
-            headers = ["SL NO", "DESCRIPTION", "QTY", "UOM", "RATE (₹)", "AMOUNT (₹)"]
+            headers = [
+                custom_cols.get('slNo', 'SL NO'),
+                custom_cols.get('description', 'DESCRIPTION'),
+                custom_cols.get('days', 'QTY'),
+                custom_cols.get('uom', 'UOM'),
+                custom_cols.get('rate', 'RATE (₹)'),
+                custom_cols.get('amount', 'AMOUNT (₹)')
+            ]
         col_widths = [Inches(0.6), Inches(3.27), Inches(0.7), Inches(0.7), Inches(0.9), Inches(1.0)]
 
         table = doc.add_table(rows=1, cols=6)
@@ -1531,11 +1558,13 @@ def generate_quotation_docx_bytes(
 
     # 6. Financial Summary Rows
     subtotal = safe_decimal(snapshot.get('subtotal') or getattr(quotation, 'subtotal', 0), '0')
-    cgst_rate = safe_decimal((snapshot.get('taxPercent', 18) / 2) if snapshot.get('taxPercent') else getattr(quotation, 'cgst_rate', 9), '9')
-    cgst_amount = safe_decimal(snapshot.get('cgst') or snapshot.get('cgstAmount') or getattr(quotation, 'cgst_amount', 0), '0')
-    sgst_rate = safe_decimal((snapshot.get('taxPercent', 18) / 2) if snapshot.get('taxPercent') else getattr(quotation, 'sgst_rate', 9), '9')
-    sgst_amount = safe_decimal(snapshot.get('sgst') or snapshot.get('sgstAmount') or getattr(quotation, 'sgst_amount', 0), '0')
-    final_amount = safe_decimal(snapshot.get('totalAmount') or snapshot.get('finalTotal') or getattr(quotation, 'final_amount', subtotal + cgst_amount + sgst_amount), str(subtotal + cgst_amount + sgst_amount))
+    cgst_rate = safe_decimal(snapshot.get('cgstRate') or getattr(quotation, 'cgst_rate', 9), '9')
+    cgst_amount = safe_decimal(snapshot.get('cgstAmount') or snapshot.get('cgst') or getattr(quotation, 'cgst_amount', 0), '0')
+    sgst_rate = safe_decimal(snapshot.get('sgstRate') or getattr(quotation, 'sgst_rate', 9), '9')
+    sgst_amount = safe_decimal(snapshot.get('sgstAmount') or snapshot.get('sgst') or getattr(quotation, 'sgst_amount', 0), '0')
+    igst_rate = safe_decimal(snapshot.get('igstRate') or getattr(quotation, 'igst_rate', 18), '18')
+    igst_amount = safe_decimal(snapshot.get('igstAmount') or snapshot.get('igst') or getattr(quotation, 'igst_amount', 0), '0')
+    final_amount = safe_decimal(snapshot.get('totalAmount') or snapshot.get('finalTotal') or getattr(quotation, 'final_amount', subtotal + cgst_amount + sgst_amount + igst_amount), str(subtotal + cgst_amount + sgst_amount + igst_amount))
 
     # Add Totals Rows
     def add_total_line(label, value_str, bold=False, highlight=False):
@@ -1563,9 +1592,12 @@ def generate_quotation_docx_bytes(
             _set_cell_background(row[5], "FEF08A")
 
     add_total_line("SUB TOTAL:", f"₹ {subtotal:,.2f}", bold=True)
-    if cgst_amount > 0:
+    if cgst_amount > 0 or snapshot.get('applyCgst'):
         add_total_line(f"CGST ({cgst_rate}%):", f"₹ {cgst_amount:,.2f}")
+    if sgst_amount > 0 or snapshot.get('applySgst'):
         add_total_line(f"SGST ({sgst_rate}%):", f"₹ {sgst_amount:,.2f}")
+    if igst_amount > 0 or snapshot.get('applyIgst'):
+        add_total_line(f"IGST ({igst_rate}%):", f"₹ {igst_amount:,.2f}")
     add_total_line("TOTAL AMOUNT:", f"₹ {final_amount:,.2f}", bold=True, highlight=True)
 
     # 7. Terms & Conditions and Bank Details
@@ -1679,9 +1711,9 @@ def generate_quotation_docx_bytes(
     r_for.bold = True
     r_for.font.size = Pt(8.5)
 
-    sig_name = getattr(quotation, 'signatory_name', None) or getattr(company, 'signatory_name', None) or "Mr. Manikandan Balamurugan"
-    sig_desig = getattr(quotation, 'signatory_designation', None) or getattr(company, 'signatory_designation', None) or "Sales and Service Head"
-    phone = getattr(company, 'phone1', None) or getattr(company, 'phone2', None) or "+91 73388 82036"
+    sig_name = snapshot.get('signatoryName') or getattr(quotation, 'signatory_name', None) or getattr(company, 'signatory_name', None) or "Mr. Manikandan Balamurugan"
+    sig_desig = snapshot.get('signatoryDesignation') or getattr(quotation, 'signatory_designation', None) or getattr(company, 'signatory_designation', None) or "Sales and Service Head"
+    phone = snapshot.get('signatoryPhone') or snapshot.get('sigPhone') or getattr(quotation, 'signatory_phone', None) or getattr(company, 'signatory_phone', None) or getattr(company, 'phone1', None) or getattr(company, 'phone2', None) or "+91 73388 82036"
 
     r_sig = p_sign.add_run(f"{sig_name}\n")
     r_sig.bold = True

@@ -33,6 +33,7 @@ class CompanySettingSchema(BaseModel):
     brand_color: Optional[str] = "#FED10C"
     signatory_name: Optional[str] = "Mr. Manikandan Balamurugan"
     signatory_designation: Optional[str] = "Sales and Service Head"
+    signatory_phone: Optional[str] = "+91 73388 82036"
     default_payment_terms: Optional[str] = None
     default_delivery_terms: Optional[str] = None
     default_warranty_terms: Optional[str] = None
