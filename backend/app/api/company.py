@@ -50,7 +50,7 @@ def update_company_by_identifier(
     identifier: str,
     data: CompanySettingSchema,
     db: Session = Depends(get_db),
-    current_user: Profile = Depends(require_roles(["admin"]))
+    current_user: Profile = Depends(require_roles(["admin", "superadmin", "super_admin"]))
 ):
     company = db.query(CompanySetting).filter(
         (CompanySetting.id == identifier) | (CompanySetting.company_code == identifier)
@@ -71,7 +71,7 @@ def update_company_by_identifier(
 def update_company_settings(
     data: CompanySettingSchema,
     db: Session = Depends(get_db),
-    current_user: Profile = Depends(require_roles(["admin"]))
+    current_user: Profile = Depends(require_roles(["admin", "superadmin", "super_admin"]))
 ):
     # If company_code is provided in payload, match that company
     target_code = data.company_code

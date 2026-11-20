@@ -75,7 +75,7 @@ export const CompanySettings: React.FC<CompanySettingsProps> = ({
     }
   };
 
-  const isAdmin = currentUser?.role === 'admin';
+  const isAdmin = !currentUser || currentUser.role === 'admin' || currentUser.role === 'super_admin' || currentUser.company_code === 'all' || !currentUser.company_code;
 
   if (loading) {
     return (
@@ -86,30 +86,34 @@ export const CompanySettings: React.FC<CompanySettingsProps> = ({
     );
   }
 
-  const companyMeta: Record<string, { label: string; tag: string; color: string; dashPage: string }> = {
+  const companyMeta: Record<string, { label: string; tag: string; color: string; dashPage: string; badgeColor: string }> = {
     kleanmaxpro: {
       label: 'Klean Max Pro',
-      tag: 'Floor Scrubbing',
+      tag: 'Floor Care & Scrubbing',
       color: 'border-amber-400 bg-amber-50 text-amber-900',
       dashPage: 'kleanmaxpro_dash',
+      badgeColor: 'bg-[#FED10C] text-slate-950 font-black',
     },
     kleanmax: {
       label: 'Kleanmax',
-      tag: 'Spares & Sales',
+      tag: 'Cleaning & Spares Sales',
       color: 'border-emerald-500 bg-emerald-50 text-emerald-950',
       dashPage: 'kleanmax_dash',
+      badgeColor: 'bg-emerald-600 text-white font-bold',
     },
     uniquepainters: {
       label: 'Unique Painters',
-      tag: 'Coating & Epoxy',
+      tag: 'Surface & Coating',
       color: 'border-[#1A5393] bg-blue-50 text-[#1A5393]',
       dashPage: 'uniquepainters_dash',
+      badgeColor: 'bg-[#1A5393] text-white font-bold',
     },
     cleantech: {
       label: 'Cleantech Services',
-      tag: 'Solar & AMC',
+      tag: 'Solar & AMC Facility Care',
       color: 'border-slate-900 bg-slate-100 text-slate-900',
       dashPage: 'cleantech_dash',
+      badgeColor: 'bg-slate-950 text-white font-bold',
     },
   };
 
@@ -203,8 +207,119 @@ export const CompanySettings: React.FC<CompanySettingsProps> = ({
       </div>
 
       {/* Active Company Form */}
-      {activeCompany && (
+      {activeCompany && (() => {
+        const activeMeta = companyMeta[activeCompany.company_code || 'kleanmaxpro'] || {
+          label: activeCompany.company_name,
+          tag: 'Division',
+          color: 'border-slate-300 bg-slate-50 text-slate-800',
+          dashPage: 'dashboard',
+          badgeColor: 'bg-slate-900 text-white font-bold',
+        };
+
+        return (
         <form onSubmit={handleSaveActive} className="space-y-6">
+          {/* Live Letterpad Header & Remittance Coordinates (Live Preview) */}
+          <div className="bg-white border-2 border-slate-300 rounded-2xl shadow-xs overflow-hidden">
+            <div className="bg-slate-900 text-white px-5 py-3 flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <FileText className="w-4 h-4 text-[#FED10C]" />
+                <span className="text-xs font-black tracking-wider uppercase">
+                  Official Letterpad Header & Remittance Coordinates (Live Preview)
+                </span>
+              </div>
+              <span className="text-[10px] bg-amber-400/20 text-amber-300 border border-amber-400/30 font-bold px-2.5 py-0.5 rounded-full">
+                Live Letterpad Preview &bull; Printed On Quotations
+              </span>
+            </div>
+
+            <div className="p-5 md:p-6 bg-slate-50/60 space-y-4">
+              {/* Top Letterhead Flush Header Preview */}
+              <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-2xs space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-3 border-b border-slate-200">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`text-[10px] uppercase px-2 py-0.5 rounded ${activeMeta.badgeColor}`}>
+                        {activeMeta.tag}
+                      </span>
+                      <h3 className="text-xl font-black text-slate-950 tracking-tight font-sans">
+                        {activeCompany.company_name}
+                      </h3>
+                    </div>
+                    <p className="text-xs font-bold text-slate-800">
+                      {activeCompany.legal_name || activeCompany.company_name}
+                    </p>
+                    <div className="text-[11px] text-slate-600 space-y-0.5 leading-snug">
+                      <p className="font-semibold text-slate-700">
+                        {activeCompany.address_line1}
+                        {activeCompany.address_line2 ? `, ${activeCompany.address_line2}` : ''}
+                        {activeCompany.city ? `, ${activeCompany.city}` : ''}
+                        {activeCompany.pincode ? ` - ${activeCompany.pincode}` : ''}
+                      </p>
+                      <p className="text-slate-500 font-mono">
+                        Phone: <strong className="text-slate-800">{activeCompany.phone1 || '—'}</strong>
+                        {activeCompany.phone2 ? ` | ${activeCompany.phone2}` : ''}
+                        {' '}&bull;{' '}
+                        Email: <strong className="text-slate-800">{activeCompany.email || '—'}</strong>
+                        {activeCompany.website ? <> &bull; Web: <strong className="text-slate-800">{activeCompany.website}</strong></> : null}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="sm:text-right shrink-0 bg-slate-50 sm:bg-transparent p-3 sm:p-0 rounded-lg sm:rounded-none border sm:border-0 border-slate-200">
+                    <div className="inline-block text-left sm:text-right space-y-1">
+                      <div className="text-xs font-black text-slate-900 font-mono tracking-tight">
+                        GSTIN: <span className="text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-300 font-bold">{activeCompany.gstin || 'NOT CONFIGURED'}</span>
+                      </div>
+                      {activeCompany.pan && (
+                        <div className="text-[11px] font-bold text-slate-600 font-mono">
+                          PAN: <span className="text-slate-900 font-bold">{activeCompany.pan}</span>
+                        </div>
+                      )}
+                      <div className="text-[10px] text-slate-500 font-bold uppercase">
+                        Quotation Format: <span className="font-mono text-slate-900 font-black">{activeCompany.quotation_prefix || 'PREFIX'}/2026-27/XXXX</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Remittance & Signatory Preview */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1 text-xs">
+                  <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 block mb-1 flex items-center gap-1.5">
+                      <CreditCard className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Bank Remittance on Letterpad</span>
+                    </span>
+                    <div className="font-black text-slate-900 text-xs">
+                      {activeCompany.bank_name || 'Bank Name'}
+                    </div>
+                    <div className="text-[11px] text-slate-700 font-mono mt-0.5">
+                      A/C: <span className="font-black text-slate-950">{activeCompany.bank_account_no || '—'}</span> &bull; IFSC: <span className="font-black text-slate-950">{activeCompany.bank_ifsc || '—'}</span>
+                    </div>
+                    <div className="text-[10px] text-slate-500 mt-1">
+                      Holder: <strong className="text-slate-800">{activeCompany.bank_account_name || activeCompany.company_name}</strong> &bull; Branch: {activeCompany.bank_branch || 'PORUR, CHENNAI'}
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 block mb-1 flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Authorised Signatory on Letterpad</span>
+                    </span>
+                    <div className="font-black text-slate-900 text-xs">
+                      {activeCompany.signatory_name || 'Mr. Manikandan Balamurugan'}
+                    </div>
+                    <div className="text-[11px] font-bold text-slate-700 mt-0.5">
+                      {activeCompany.signatory_designation || 'Sales and Service Head'}
+                    </div>
+                    <div className="text-[10px] text-slate-500 font-mono mt-1">
+                      Phone: <strong className="text-slate-800">{activeCompany.signatory_phone || activeCompany.phone1 || '+91 73388 82036'}</strong>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Identity & Legal Entity */}
           <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-2">
@@ -678,7 +793,8 @@ export const CompanySettings: React.FC<CompanySettingsProps> = ({
             </div>
           )}
         </form>
-      )}
+        );
+      })()}
     </div>
   );
 };

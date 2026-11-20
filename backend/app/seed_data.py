@@ -10,14 +10,10 @@ from backend.app.models.all_models import (
 def run_seed():
     db = SessionLocal()
     try:
-        # If database already has companies and services seeded in Supabase, ready immediately
-        comp_count = db.query(CompanySetting).count()
+        # Check if services already seeded
         svc_count = db.query(Service).count()
-        if comp_count >= 4 and svc_count >= 20:
-            print(f"Database ready: {comp_count} companies, {svc_count} services connected on Supabase.")
-            return
     except Exception:
-        pass
+        svc_count = 0
     finally:
         db.close()
 
@@ -33,7 +29,7 @@ def run_seed():
     db = SessionLocal()
 
     try:
-        # 2. Seed All 4 Companies
+        # 2. Seed All 4 Companies with Authentic Letterhead / Letterpad Coordinates
         companies_data = [
             {
                 "id": "c0000000-0000-0000-0000-000000000001",
@@ -56,8 +52,11 @@ def run_seed():
                 "bank_name": "ICICI BANK KMP",
                 "bank_account_no": "027505010327",
                 "bank_ifsc": "ICIC0000275",
-                "bank_branch": "PORUR",
-                "bank_account_name": "KLEAN MAX PRO",
+                "bank_branch": "PORUR, CHENNAI",
+                "bank_account_name": "KLEAN MAX PRO COMMERCIAL SERVICES PVT LTD",
+                "signatory_name": "Mr. Manikandan Balamurugan",
+                "signatory_designation": "Sales and Service Head",
+                "signatory_phone": "+91 73388 82036",
                 "quotation_prefix": "KMP",
                 "default_validity_days": 30,
                 "rounding_policy": "HALF_UP",
@@ -82,20 +81,23 @@ def run_seed():
                 "state": "Tamil Nadu",
                 "state_code": "33",
                 "pincode": "600077",
-                "phone1": "97101 48218",
+                "phone1": "+91 97101 48218",
                 "phone2": "+91 73388 82036",
                 "email": "info@kleanmax.com",
                 "website": "www.kleanmax.com",
                 "bank_name": "KVB BANK",
                 "bank_account_no": "1278135000007113",
                 "bank_ifsc": "KVBL000127",
-                "bank_branch": "ASHOK NAGAR",
-                "bank_account_name": "KLEANMAX",
-                "quotation_prefix": "KLM",
+                "bank_branch": "ASHOK NAGAR, CHENNAI",
+                "bank_account_name": "KLEANMAX SERVICES",
+                "signatory_name": "Mr. Manikandan Balamurugan",
+                "signatory_designation": "Sales and Service Head",
+                "signatory_phone": "+91 73388 82036",
+                "quotation_prefix": "KM",
                 "default_validity_days": 15,
                 "rounding_policy": "HALF_UP",
                 "tagline": "Industrial Cleaning Equipment, Spares & Authorized Service",
-                "brand_color": "#0284c7",
+                "brand_color": "#059669",
                 "default_payment_terms": "100% advance against Proforma Invoice prior to machine/spares dispatch.",
                 "default_delivery_terms": "Ex-works Chennai warehouse. Ready spares dispatched within 24-48 hours.",
                 "default_warranty_terms": "12 months standard OEM manufacturer warranty on machines. 90 days on genuine spares.",
@@ -109,25 +111,29 @@ def run_seed():
                 "gstin": "33AABUP9876G1ZK",
                 "pan": "AABUP9876G",
                 "cin": "U45200TN2022PTC156789",
-                "address_line1": "Plot No. 14, Industrial Corridor, Ambattur Industrial Estate",
-                "address_line2": "Near Telephone Exchange",
+                "address_line1": "No.6, B6, Jayam Industrial Estate, Chettiyar Agaram 1st Main Road",
+                "address_line2": "Vanagaram",
                 "city": "Chennai",
                 "state": "Tamil Nadu",
                 "state_code": "33",
-                "pincode": "600058",
-                "phone1": "+91 94440 88776",
-                "phone2": "+91 98402 33445",
+                "pincode": "600077",
+                "phone1": "+91 95000 65813",
+                "phone2": "+91 97101 48218",
                 "email": "contact@uniquepainters.in",
                 "website": "www.uniquepainters.in",
                 "bank_name": "State Bank of India",
                 "bank_account_no": "38992019283",
                 "bank_ifsc": "SBIN0001550",
-                "bank_branch": "Ambattur Industrial Estate Branch",
+                "bank_branch": "PORUR, CHENNAI",
+                "bank_account_name": "UNIQUE PAINTERS & SURFACE COATINGS",
+                "signatory_name": "Mr. Manikandan Balamurugan",
+                "signatory_designation": "Sales and Service Head",
+                "signatory_phone": "+91 73388 82036",
                 "quotation_prefix": "UNP",
                 "default_validity_days": 30,
                 "rounding_policy": "HALF_UP",
                 "tagline": "Commercial & Residential Painting, Epoxy Flooring & Waterproofing",
-                "brand_color": "#7c3aed",
+                "brand_color": "#1A5393",
                 "default_payment_terms": "40% advance with work order, 40% on primer/base completion, 20% on final coat inspection.",
                 "default_delivery_terms": "Painting starts within 48 hours of surface preparation clearance.",
                 "default_warranty_terms": "Up to 3-5 years warranty on exterior weather-coat paint and 24 months on epoxy floor coating.",
@@ -138,29 +144,32 @@ def run_seed():
                 "company_code": "cleantech",
                 "company_name": "Cleantech Services",
                 "legal_name": "Cleantech Environmental & Industrial Services LLP",
-                "gstin": "33ABWCS8841M1ZA",
-                "pan": "ABWCS8841M",
+                "gstin": "33BWHPM8908H2ZP9",
+                "pan": "BWHPM8908H",
                 "cin": "AAK-8921",
-                "address_line1": "28, Tech Park Road, Porur Phase II",
-                "address_line2": "Near Mount Poonamallee High Road",
+                "address_line1": "NO 6, B6, Jayam Industrial Estate, Chettiyar Agaram First Main Road, Near Porur Toll Plaza",
+                "address_line2": "Vanagaram",
                 "city": "Chennai",
                 "state": "Tamil Nadu",
                 "state_code": "33",
-                "pincode": "600116",
+                "pincode": "600077",
                 "phone1": "+91 73388 82036",
                 "phone2": "+91 97101 48218",
                 "email": "service@cleantechservices.in",
                 "website": "www.cleantechservices.in",
-                "bank_name": "IDFC BANK",
+                "bank_name": "IDFC FIRST BANK",
                 "bank_account_no": "73388820361",
                 "bank_ifsc": "IDFB0081831",
-                "bank_branch": "Chennai – Iyyapanthangal Branch",
+                "bank_branch": "PORUR, CHENNAI",
                 "bank_account_name": "CLEANTECH SERVICES",
+                "signatory_name": "Mr. Manikandan Balamurugan",
+                "signatory_designation": "Sales and Service Head",
+                "signatory_phone": "+91 73388 82036",
                 "quotation_prefix": "CTS",
                 "default_validity_days": 45,
                 "rounding_policy": "HALF_UP",
                 "tagline": "Specialized Sanitization, Solar Panel & Facade Tech Solutions",
-                "brand_color": "#0d9488",
+                "brand_color": "#0F172A",
                 "default_payment_terms": "Monthly/Quarterly in advance for AMC contracts; 50% advance for specialized projects.",
                 "default_delivery_terms": "Scheduled as per agreed SLA calendar and monthly service windows.",
                 "default_warranty_terms": "100% SLA adherence guarantee with documented before-after de-ionization and turbidity reports.",
