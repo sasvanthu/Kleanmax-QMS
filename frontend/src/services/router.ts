@@ -195,3 +195,4 @@ export const pathToPage = (pathname: string, search: string = ''): RouteState =>
       return { page: 'dashboard', params: queryParams };
   }
 };
+

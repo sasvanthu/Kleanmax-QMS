@@ -69,7 +69,7 @@ export const UniquePaintersDashboard: React.FC<UniquePaintersDashboardProps> = (
           </button>
           <div className="flex items-center gap-2">
             <span className="bg-purple-600 text-white font-black text-xs px-3 py-1 rounded-full uppercase tracking-wider shadow-xs">
-              Company 3 • UNP
+              Surface Coating & Painting
             </span>
             <span className="bg-purple-100 text-purple-900 text-xs font-bold px-2.5 py-1 rounded-full">
               Prefix: {company?.quotation_prefix || 'UNP'}
@@ -82,7 +82,6 @@ export const UniquePaintersDashboard: React.FC<UniquePaintersDashboardProps> = (
           </div>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight mt-2 flex items-center gap-2.5">
             <span>{company?.company_name || 'Unique Painters'}</span>
-            <span className="text-2xl">🎨</span>
           </h1>
           <p className="text-xs text-slate-500 mt-1">
             Industrial epoxy floor coatings, multi-coat interior/exterior painting & architectural robotic spray finishes.

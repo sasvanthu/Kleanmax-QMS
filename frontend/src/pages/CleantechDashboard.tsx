@@ -69,7 +69,7 @@ export const CleantechDashboard: React.FC<CleantechDashboardProps> = ({
           </button>
           <div className="flex items-center gap-2">
             <span className="bg-teal-500 text-slate-950 font-black text-xs px-3 py-1 rounded-full uppercase tracking-wider shadow-xs">
-              Company 4 • CTS
+              Solar & Facility Care
             </span>
             <span className="bg-teal-100 text-teal-900 text-xs font-bold px-2.5 py-1 rounded-full">
               Prefix: {company?.quotation_prefix || 'CTS'}
@@ -82,7 +82,6 @@ export const CleantechDashboard: React.FC<CleantechDashboardProps> = ({
           </div>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight mt-2 flex items-center gap-2.5">
             <span>{company?.company_name || 'Cleantech Services'}</span>
-            <span className="text-2xl">🌿</span>
           </h1>
           <p className="text-xs text-slate-500 mt-1">
             Rooftop & industrial solar panel cleaning, glass facade wash & scheduled comprehensive AMC maintenance.
