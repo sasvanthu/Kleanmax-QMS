@@ -11,7 +11,9 @@ import {
   Sun,
   LayoutDashboard,
   LogOut,
-  Plus
+  Plus,
+  Menu,
+  X
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -28,6 +30,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onLogout = () => {},
 }) => {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [expandedMobileSection, setExpandedMobileSection] = useState<string | null>(null);
 
   const toggleDropdown = (name: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -36,6 +40,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const handleSubOptionClick = (page: string, params?: any) => {
     setActiveDropdown(null);
+    setMobileMenuOpen(false);
     onNavigate(page, params);
   };
 
@@ -103,7 +108,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Center: Locked Navigation Dropdowns per Account */}
-        <nav className="flex items-center gap-1 sm:gap-2">
+        <nav className="hidden lg:flex items-center gap-1 sm:gap-2">
           {/* 1. Super Admin Dropdown */}
           {showSuperAdmin && (
             <div className="relative flex items-center">
@@ -447,18 +452,223 @@ export const Navbar: React.FC<NavbarProps> = ({
           )}
         </nav>
 
-        {/* Right Controls: Logout Button */}
-        <div className="flex items-center gap-3 shrink-0 pl-2">
+        {/* Right Controls: Logout & Mobile Menu Hamburger */}
+        <div className="flex items-center gap-2 shrink-0 pl-2">
           <button
             onClick={onLogout}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition-all cursor-pointer shadow-2xs"
             title="Log Out of QMS"
           >
             <LogOut className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Logout</span>
+            <span>Logout</span>
+          </button>
+
+          {/* Mobile Menu Hamburger (Visible on mobile / tablets < lg) */}
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="lg:hidden p-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 transition-colors cursor-pointer"
+            title="Toggle Navigation Menu"
+            aria-label="Toggle navigation menu"
+          >
+            {mobileMenuOpen ? <X className="w-5 h-5 text-slate-900" /> : <Menu className="w-5 h-5 text-slate-900" />}
           </button>
         </div>
       </header>
+
+      {/* Mobile Navigation Drawer Menu */}
+      {mobileMenuOpen && (
+        <div className="lg:hidden bg-white border-b border-slate-200 shadow-2xl fixed top-16 left-0 right-0 max-h-[calc(100vh-4rem)] overflow-y-auto z-40 animate-fade-in p-4 space-y-3 font-sans">
+          <div className="flex items-center justify-between px-1">
+            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+              Enterprise Navigation
+            </span>
+            <span className="text-[10px] font-bold text-amber-600 uppercase">
+              {currentUser?.full_name || 'User'}
+            </span>
+          </div>
+
+          <div className="space-y-2">
+            {/* Super Admin Section */}
+            {showSuperAdmin && (
+              <div className="rounded-xl border border-slate-200 overflow-hidden bg-slate-50/50">
+                <div
+                  onClick={() => setExpandedMobileSection(expandedMobileSection === 'superadmin' ? null : 'superadmin')}
+                  className="w-full flex items-center justify-between p-3 text-slate-900 font-extrabold text-xs cursor-pointer select-none"
+                >
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-amber-500 shrink-0" />
+                    <span>Super Admin Console</span>
+                  </div>
+                  <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${expandedMobileSection === 'superadmin' ? 'rotate-180' : ''}`} />
+                </div>
+                {expandedMobileSection === 'superadmin' && (
+                  <div className="p-2 bg-white space-y-1 border-t border-slate-200 text-xs">
+                    <button onClick={() => handleSubOptionClick('dashboard')} className="w-full text-left p-2.5 rounded-lg hover:bg-slate-50 font-bold text-slate-800 flex items-center gap-2">
+                      <LayoutDashboard className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                      <span>Console Hub</span>
+                    </button>
+                    <button onClick={() => handleSubOptionClick('settings')} className="w-full text-left p-2.5 rounded-lg hover:bg-slate-50 font-bold text-slate-800 flex items-center gap-2">
+                      <Building2 className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                      <span>Manage 4 Companies</span>
+                    </button>
+                    <button onClick={() => handleSubOptionClick('customers')} className="w-full text-left p-2.5 rounded-lg hover:bg-slate-50 font-bold text-slate-800 flex items-center gap-2">
+                      <Users className="w-3.5 h-3.5 text-sky-500 shrink-0" />
+                      <span>Customer Directory</span>
+                    </button>
+                    <button onClick={() => handleSubOptionClick('quotations')} className="w-full text-left p-2.5 rounded-lg hover:bg-slate-50 font-bold text-slate-800 flex items-center gap-2">
+                      <FileText className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      <span>All Past Records & Audit</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Klean Max Pro Section */}
+            {showKmp && (
+              <div className="rounded-xl border border-amber-200 overflow-hidden bg-amber-50/40">
+                <div
+                  onClick={() => setExpandedMobileSection(expandedMobileSection === 'kmp' ? null : 'kmp')}
+                  className="w-full flex items-center justify-between p-3 text-slate-900 font-extrabold text-xs cursor-pointer select-none"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0" />
+                    <span>Klean Max Pro</span>
+                  </div>
+                  <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${expandedMobileSection === 'kmp' ? 'rotate-180' : ''}`} />
+                </div>
+                {expandedMobileSection === 'kmp' && (
+                  <div className="p-2 bg-white space-y-1 border-t border-amber-200 text-xs">
+                    <button onClick={() => handleSubOptionClick('kleanmaxpro_dash')} className="w-full text-left p-2.5 rounded-lg hover:bg-amber-50 font-bold text-slate-800 flex items-center gap-2">
+                      <LayoutDashboard className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                      <span>Company Hub</span>
+                    </button>
+                    <button onClick={() => handleSubOptionClick('kleanmaxpro_area')} className="w-full text-left p-2.5 rounded-lg hover:bg-amber-50 font-bold text-slate-800 flex items-center gap-2">
+                      <Plus className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                      <span>Generate Quotation</span>
+                    </button>
+                    <button onClick={() => handleSubOptionClick('kleanmaxpro_quotes')} className="w-full text-left p-2.5 rounded-lg hover:bg-amber-50 font-bold text-slate-800 flex items-center gap-2">
+                      <FileText className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                      <span>Past Records</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Kleanmax Section */}
+            {showKlm && (
+              <div className="rounded-xl border border-emerald-200 overflow-hidden bg-emerald-50/40">
+                <div
+                  onClick={() => setExpandedMobileSection(expandedMobileSection === 'klm' ? null : 'klm')}
+                  className="w-full flex items-center justify-between p-3 text-slate-900 font-extrabold text-xs cursor-pointer select-none"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 shrink-0" />
+                    <span>Kleanmax</span>
+                  </div>
+                  <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${expandedMobileSection === 'klm' ? 'rotate-180' : ''}`} />
+                </div>
+                {expandedMobileSection === 'klm' && (
+                  <div className="p-2 bg-white space-y-1 border-t border-emerald-200 text-xs">
+                    <button onClick={() => handleSubOptionClick('kleanmax_dash')} className="w-full text-left p-2.5 rounded-lg hover:bg-emerald-50 font-bold text-slate-800 flex items-center gap-2">
+                      <LayoutDashboard className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span>Company Hub</span>
+                    </button>
+                    <button onClick={() => handleSubOptionClick('kleanmax_generator')} className="w-full text-left p-2.5 rounded-lg hover:bg-emerald-50 font-bold text-slate-800 flex items-center gap-2">
+                      <Plus className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span>Generate Quotation</span>
+                    </button>
+                    <button onClick={() => handleSubOptionClick('kleanmax_quotes')} className="w-full text-left p-2.5 rounded-lg hover:bg-emerald-50 font-bold text-slate-800 flex items-center gap-2">
+                      <FileText className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span>Past Records</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Unique Painters Section */}
+            {showUnp && (
+              <div className="rounded-xl border border-blue-200 overflow-hidden bg-blue-50/40">
+                <div
+                  onClick={() => setExpandedMobileSection(expandedMobileSection === 'unp' ? null : 'unp')}
+                  className="w-full flex items-center justify-between p-3 text-slate-900 font-extrabold text-xs cursor-pointer select-none"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#1A5393] shrink-0" />
+                    <span>Unique Painters</span>
+                  </div>
+                  <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${expandedMobileSection === 'unp' ? 'rotate-180' : ''}`} />
+                </div>
+                {expandedMobileSection === 'unp' && (
+                  <div className="p-2 bg-white space-y-1 border-t border-blue-200 text-xs">
+                    <button onClick={() => handleSubOptionClick('uniquepainters_dash')} className="w-full text-left p-2.5 rounded-lg hover:bg-blue-50 font-bold text-slate-800 flex items-center gap-2">
+                      <LayoutDashboard className="w-3.5 h-3.5 text-[#1A5393] shrink-0" />
+                      <span>Company Hub</span>
+                    </button>
+                    <button onClick={() => handleSubOptionClick('uniquepainters_generator')} className="w-full text-left p-2.5 rounded-lg hover:bg-blue-50 font-bold text-slate-800 flex items-center gap-2">
+                      <Plus className="w-3.5 h-3.5 text-[#1A5393] shrink-0" />
+                      <span>Generate Quotation</span>
+                    </button>
+                    <button onClick={() => handleSubOptionClick('uniquepainters_quotes')} className="w-full text-left p-2.5 rounded-lg hover:bg-blue-50 font-bold text-slate-800 flex items-center gap-2">
+                      <FileText className="w-3.5 h-3.5 text-[#1A5393] shrink-0" />
+                      <span>Past Records</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Cleantech Services Section */}
+            {showCts && (
+              <div className="rounded-xl border border-slate-300 overflow-hidden bg-slate-100/60">
+                <div
+                  onClick={() => setExpandedMobileSection(expandedMobileSection === 'cts' ? null : 'cts')}
+                  className="w-full flex items-center justify-between p-3 text-slate-900 font-extrabold text-xs cursor-pointer select-none"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-slate-950 shrink-0" />
+                    <span>Cleantech Services</span>
+                  </div>
+                  <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${expandedMobileSection === 'cts' ? 'rotate-180' : ''}`} />
+                </div>
+                {expandedMobileSection === 'cts' && (
+                  <div className="p-2 bg-white space-y-1 border-t border-slate-300 text-xs">
+                    <button onClick={() => handleSubOptionClick('cleantech_dash')} className="w-full text-left p-2.5 rounded-lg hover:bg-slate-100 font-bold text-slate-800 flex items-center gap-2">
+                      <LayoutDashboard className="w-3.5 h-3.5 text-slate-950 shrink-0" />
+                      <span>Company Hub</span>
+                    </button>
+                    <button onClick={() => handleSubOptionClick('cleantech_generator')} className="w-full text-left p-2.5 rounded-lg hover:bg-slate-100 font-bold text-slate-800 flex items-center gap-2">
+                      <Plus className="w-3.5 h-3.5 text-slate-950 shrink-0" />
+                      <span>Generate Quotation</span>
+                    </button>
+                    <button onClick={() => handleSubOptionClick('cleantech_quotes')} className="w-full text-left p-2.5 rounded-lg hover:bg-slate-100 font-bold text-slate-800 flex items-center gap-2">
+                      <FileText className="w-3.5 h-3.5 text-slate-950 shrink-0" />
+                      <span>Past Records</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Mobile Logout Button */}
+          <div className="pt-2 border-t border-slate-100">
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                onLogout();
+              }}
+              className="w-full flex items-center justify-center gap-2 p-2.5 bg-rose-50 text-rose-700 hover:bg-rose-100 rounded-xl font-black text-xs transition-colors cursor-pointer"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Log Out of QMS</span>
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 };

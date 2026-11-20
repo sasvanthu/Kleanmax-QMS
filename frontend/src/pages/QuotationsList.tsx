@@ -263,13 +263,13 @@ export const QuotationsList: React.FC<QuotationsListProps> = ({
       {/* Division Tabs & Search Bar */}
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs space-y-3">
         {/* Brand Division Selector */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-bold text-slate-500 uppercase">Division:</span>
-            <div className="flex flex-wrap items-center gap-1 bg-slate-100 p-1 rounded-lg">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 max-w-full">
+            <span className="text-[11px] font-bold text-slate-500 uppercase shrink-0">Division:</span>
+            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg shrink-0">
               <button
                 onClick={() => setBrandFilter('all')}
-                className={`px-3 py-1 text-xs font-black rounded-md transition-all ${
+                className={`px-3 py-1 text-xs font-black rounded-md transition-all shrink-0 ${
                   brandFilter === 'all'
                     ? 'bg-slate-900 text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
@@ -279,7 +279,7 @@ export const QuotationsList: React.FC<QuotationsListProps> = ({
               </button>
               <button
                 onClick={() => setBrandFilter('kleanmaxpro')}
-                className={`px-3 py-1 text-xs font-black rounded-md transition-all ${
+                className={`px-3 py-1 text-xs font-black rounded-md transition-all shrink-0 ${
                   brandFilter === 'kleanmaxpro'
                     ? 'bg-[#FED10C] text-slate-950 shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
@@ -289,7 +289,7 @@ export const QuotationsList: React.FC<QuotationsListProps> = ({
               </button>
               <button
                 onClick={() => setBrandFilter('kleanmax')}
-                className={`px-3 py-1 text-xs font-black rounded-md transition-all ${
+                className={`px-3 py-1 text-xs font-black rounded-md transition-all shrink-0 ${
                   brandFilter === 'kleanmax'
                     ? 'bg-emerald-600 text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
@@ -299,7 +299,7 @@ export const QuotationsList: React.FC<QuotationsListProps> = ({
               </button>
               <button
                 onClick={() => setBrandFilter('uniquepainters')}
-                className={`px-3 py-1 text-xs font-black rounded-md transition-all ${
+                className={`px-3 py-1 text-xs font-black rounded-md transition-all shrink-0 ${
                   brandFilter === 'uniquepainters'
                     ? 'bg-[#1A5393] text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
@@ -309,7 +309,7 @@ export const QuotationsList: React.FC<QuotationsListProps> = ({
               </button>
               <button
                 onClick={() => setBrandFilter('cleantech')}
-                className={`px-3 py-1 text-xs font-black rounded-md transition-all ${
+                className={`px-3 py-1 text-xs font-black rounded-md transition-all shrink-0 ${
                   brandFilter === 'cleantech'
                     ? 'bg-slate-950 text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
@@ -334,12 +334,12 @@ export const QuotationsList: React.FC<QuotationsListProps> = ({
         </div>
 
         {/* Status Filter Tabs */}
-        <div className="flex flex-wrap items-center gap-1">
+        <div className="flex items-center gap-1 overflow-x-auto pb-1 max-w-full">
           {filterTabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setStatusFilter(tab.id)}
-              className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${
+              className={`px-3 py-1 text-xs font-bold rounded-md transition-all shrink-0 ${
                 statusFilter === tab.id
                   ? 'bg-slate-200 text-slate-900 font-extrabold shadow-2xs'
                   : 'text-slate-500 hover:text-slate-900'
@@ -414,7 +414,7 @@ export const QuotationsList: React.FC<QuotationsListProps> = ({
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+            <table className="w-full text-left text-xs min-w-[720px]">
               <thead className="bg-slate-50 text-slate-700 uppercase font-bold text-[10px] border-b border-slate-200">
                 <tr>
                   <th className="p-3.5 text-center w-10">

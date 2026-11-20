@@ -15,6 +15,9 @@ COPY backend/requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r /app/requirements.txt
 
+# Pre-install Chromium & system rendering libraries for online PDF generation
+RUN python -m playwright install --with-deps chromium
+
 # Copy application source
 COPY backend /app/backend
 COPY supabase /app/supabase
