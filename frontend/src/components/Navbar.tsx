@@ -86,23 +86,18 @@ export const Navbar: React.FC<NavbarProps> = ({
       )}
 
       <header className="h-16 bg-white border-b border-slate-200 px-4 md:px-6 flex items-center justify-between sticky top-0 z-50 shadow-xs select-none">
-        {/* Left: Brand Identity & Home Link */}
+        {/* Left: Brand Identity (Clean Company Typography - No AI Generated Logo) */}
         <div className="flex items-center gap-3 shrink-0">
           <div
-            className="flex items-center gap-2.5 cursor-pointer group"
+            className="flex items-center gap-2 cursor-pointer group"
             onClick={() => handleSubOptionClick(getHomeRoute())}
             title="Go to Company Hub"
           >
-            <img
-              src="/logo.png"
-              alt="QMS Logo"
-              className="h-8 w-auto object-contain group-hover:scale-105 transition-transform"
-            />
-            <div className="hidden sm:block">
-              <span className="font-black text-sm tracking-tight text-slate-900 block leading-tight">
+            <div className="flex flex-col">
+              <span className="font-black text-sm md:text-base tracking-tight text-slate-900 block leading-tight font-sans">
                 KLEANMAX PRO QMS
               </span>
-              <span className="text-[9px] uppercase font-extrabold text-amber-500 tracking-wider">
+              <span className="text-[9px] uppercase font-black text-amber-600 tracking-wider">
                 {isSuperAdmin ? 'Enterprise Operations' : `${currentUser?.full_name || 'Portal'} Mode`}
               </span>
             </div>
@@ -143,7 +138,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   className="flex items-center gap-1.5 px-2.5 py-2 text-xs font-bold cursor-pointer"
                   title="Open Super Admin Console Hub"
                 >
-                  <span className="text-xs">👑</span>
+                  <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
                   <span className="hidden sm:inline">Super Admin</span>
                   <span className="sm:hidden">Admin</span>
                 </button>

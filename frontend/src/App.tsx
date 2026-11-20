@@ -3,6 +3,7 @@ import { User } from './services/types';
 import { api } from './services/api';
 import { Layout } from './components/Layout';
 import { Login } from './pages/Login';
+import { pageToPath, pathToPage } from './services/router';
 
 // 5 Dashboards
 import { Dashboard } from './pages/Dashboard'; // Merged Super Admin & 4 Companies Home
@@ -29,36 +30,74 @@ import { CleantechGenerator } from './pages/CleantechGenerator';
 import { PdfPreviewModal } from './components/quotation/PdfPreviewModal';
 
 export const App: React.FC = () => {
+  const initialRoute = pathToPage(window.location.pathname, window.location.search);
   const [currentUser, setCurrentUser] = useState<User | null>(() => api.auth.getStoredUser());
   const [currentPage, setCurrentPage] = useState<string>(() => {
     const user = api.auth.getStoredUser();
-    if (!user) return 'dashboard';
-    if (user.company_code === 'kleanmaxpro') return 'kleanmaxpro_dash';
-    if (user.company_code === 'kleanmax') return 'kleanmax_dash';
-    if (user.company_code === 'uniquepainters') return 'uniquepainters_dash';
-    if (user.company_code === 'cleantech') return 'cleantech_dash';
-    return 'dashboard';
+    if (!user) return 'login';
+
+    const userCompany = user.company_code;
+    const isSuperAdmin = user.role === 'admin' || userCompany === 'all' || !userCompany;
+
+    if (!isSuperAdmin) {
+      if (userCompany === 'kleanmaxpro' && !initialRoute.page.startsWith('kleanmaxpro') && initialRoute.page !== 'quotation_detail') {
+        return 'kleanmaxpro_dash';
+      }
+      if (userCompany === 'kleanmax' && !initialRoute.page.startsWith('kleanmax') && initialRoute.page !== 'quotation_detail') {
+        return 'kleanmax_dash';
+      }
+      if (userCompany === 'uniquepainters' && !initialRoute.page.startsWith('uniquepainters') && initialRoute.page !== 'quotation_detail') {
+        return 'uniquepainters_dash';
+      }
+      if (userCompany === 'cleantech' && !initialRoute.page.startsWith('cleantech') && initialRoute.page !== 'quotation_detail') {
+        return 'cleantech_dash';
+      }
+    }
+
+    return initialRoute.page || 'dashboard';
   });
-  const [pageParams, setPageParams] = useState<any>({});
+  const [pageParams, setPageParams] = useState<any>(() => initialRoute.params || {});
 
   // Global PDF preview modal
   const [previewQuotationId, setPreviewQuotationId] = useState<string | null>(null);
   const [previewModalOpen, setPreviewModalOpen] = useState<boolean>(false);
 
+  // Synchronize browser history and popstate (Back/Forward navigation)
+  useEffect(() => {
+    const onPopState = () => {
+      const route = pathToPage(window.location.pathname, window.location.search);
+      setCurrentPage(route.page);
+      setPageParams(route.params);
+    };
+
+    window.addEventListener('popstate', onPopState);
+
+    // Initial URL sync
+    const targetUrl = pageToPath(currentPage, pageParams);
+    const currentUrl = window.location.pathname + window.location.search;
+    if (currentUrl !== targetUrl && (currentUrl === '/' || currentUrl === '' || currentUrl === '/dashboard')) {
+      window.history.replaceState({ page: currentPage, params: pageParams }, '', targetUrl);
+    }
+
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
   // Handle successful login
   const handleLoginSuccess = (user: User) => {
     setCurrentUser(user);
+    let targetPage = 'dashboard';
     if (user.company_code === 'kleanmaxpro') {
-      setCurrentPage('kleanmaxpro_dash');
+      targetPage = 'kleanmaxpro_dash';
     } else if (user.company_code === 'kleanmax') {
-      setCurrentPage('kleanmax_dash');
+      targetPage = 'kleanmax_dash';
     } else if (user.company_code === 'uniquepainters') {
-      setCurrentPage('uniquepainters_dash');
+      targetPage = 'uniquepainters_dash';
     } else if (user.company_code === 'cleantech') {
-      setCurrentPage('cleantech_dash');
-    } else {
-      setCurrentPage('dashboard');
+      targetPage = 'cleantech_dash';
     }
+    const targetUrl = pageToPath(targetPage);
+    window.history.pushState({ page: targetPage }, '', targetUrl);
+    setCurrentPage(targetPage);
     setPageParams({});
   };
 
@@ -66,47 +105,51 @@ export const App: React.FC = () => {
   const handleLogout = () => {
     api.auth.logout();
     setCurrentUser(null);
-    setCurrentPage('dashboard');
+    window.history.pushState(null, '', '/login');
+    setCurrentPage('login');
     setPageParams({});
   };
 
-  // Navigation with Role-Based Access Control Lock
+  // Navigation with Role-Based Access Control Lock and Real URL routing
   const handleNavigate = (page: string, params: any = {}) => {
     if (!currentUser) return;
 
     const userCompany = currentUser.company_code;
     const isSuperAdmin = currentUser.role === 'admin' || userCompany === 'all' || !userCompany;
 
+    let targetPage = page;
     if (!isSuperAdmin) {
       // Company Staff Lock
       if (userCompany === 'kleanmaxpro') {
         const allowed = page.startsWith('kleanmaxpro') || page === 'quotation_detail' || page === 'services' || (page === 'quotation_edit' && (!params.company_code || params.company_code === 'kleanmaxpro')) || (page === 'settings' && params.tab === 'kleanmaxpro');
         if (!allowed) {
-          setCurrentPage('kleanmaxpro_dash');
-          return;
+          targetPage = 'kleanmaxpro_dash';
         }
       } else if (userCompany === 'kleanmax') {
         const allowed = page.startsWith('kleanmax') || page === 'quotation_detail' || (page === 'quotation_edit' && (!params.company_code || params.company_code === 'kleanmax')) || (page === 'settings' && params.tab === 'kleanmax');
         if (!allowed) {
-          setCurrentPage('kleanmax_dash');
-          return;
+          targetPage = 'kleanmax_dash';
         }
       } else if (userCompany === 'uniquepainters') {
         const allowed = page.startsWith('uniquepainters') || page === 'quotation_detail' || (page === 'quotation_edit' && (!params.company_code || params.company_code === 'uniquepainters')) || (page === 'settings' && params.tab === 'uniquepainters');
         if (!allowed) {
-          setCurrentPage('uniquepainters_dash');
-          return;
+          targetPage = 'uniquepainters_dash';
         }
       } else if (userCompany === 'cleantech') {
         const allowed = page.startsWith('cleantech') || page === 'quotation_detail' || (page === 'quotation_edit' && (!params.company_code || params.company_code === 'cleantech')) || (page === 'settings' && params.tab === 'cleantech');
         if (!allowed) {
-          setCurrentPage('cleantech_dash');
-          return;
+          targetPage = 'cleantech_dash';
         }
       }
     }
 
-    setCurrentPage(page);
+    const targetUrl = pageToPath(targetPage, params);
+    const currentUrl = window.location.pathname + window.location.search;
+    if (currentUrl !== targetUrl) {
+      window.history.pushState({ page: targetPage, params }, '', targetUrl);
+    }
+
+    setCurrentPage(targetPage);
     setPageParams(params);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };

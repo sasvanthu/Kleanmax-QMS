@@ -52,36 +52,34 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
       </div>
 
-      {/* SECTION 1: 4 COMPANY PORTALS */}
+      {/* SECTION 1: 4 SUBSIDIARY COMPANIES */}
       <div className="space-y-4">
         <div className="flex items-center justify-between border-b border-slate-200 pb-3">
           <div>
-            <h2 className="text-xl font-black text-slate-900 flex items-center gap-2">
-              <span>🏢 4 Subsidiary Portals</span>
+            <h2 className="text-xl font-black text-slate-900 tracking-tight">
+              4 Subsidiary Companies
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Select any company to enter its dedicated quotation generator, past records, and visual editor.
+              Select any company to access its dedicated quotation generator, past records, and visual editor.
             </p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
           {/* Company 1: Klean Max Pro */}
-          <div
-            onClick={() => onNavigate('kleanmaxpro_dash')}
-            className="group relative bg-white rounded-3xl p-6 border-2 border-slate-200 hover:border-amber-400 shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden"
-          >
-            <div className="absolute top-0 right-0 w-28 h-28 bg-amber-500/10 rounded-bl-full pointer-events-none group-hover:scale-110 transition-transform" />
-
+          <div className="group relative bg-white rounded-3xl p-6 border-2 border-slate-200 hover:border-amber-400 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between overflow-hidden">
             <div>
               <div className="flex items-center justify-between mb-3">
                 <span className="bg-[#FED10C] text-slate-950 font-black text-[11px] px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-2xs">
-                  Company 1 • KMP
+                  Company 1
                 </span>
-                <span className="text-xl">⚡</span>
+                <span className="text-xs font-black text-slate-400">KMP</span>
               </div>
 
-              <h3 className="text-lg font-black text-slate-900 group-hover:text-amber-600 transition-colors">
+              <h3
+                onClick={() => onNavigate('kleanmaxpro_dash')}
+                className="text-xl font-black text-slate-900 hover:text-amber-600 transition-colors cursor-pointer"
+              >
                 Klean Max Pro
               </h3>
               <p className="text-[11px] font-bold text-amber-700 mt-0.5 uppercase tracking-wider">
@@ -91,37 +89,53 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 Industrial mechanized scrubbing, ride-on sweeper sanitization & warehouse area calculations.
               </p>
 
-              <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap gap-1.5 text-[10px] font-bold text-amber-900">
-                <span className="bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">📐 Area Generator</span>
-                <span className="bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">📋 Past Records</span>
-                <span className="bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">✏️ Editor</span>
+              {/* Subpage Action Links */}
+              <div className="mt-4 pt-3 border-t border-slate-100 flex flex-col gap-1.5 text-xs">
+                <button
+                  type="button"
+                  onClick={() => onNavigate('kleanmaxpro_area')}
+                  className="w-full text-left font-bold text-amber-950 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-3 py-1.5 rounded-xl transition-colors flex items-center justify-between cursor-pointer"
+                >
+                  <span>+ Generate Quotation</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-amber-600" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onNavigate('kleanmaxpro_quotes')}
+                  className="w-full text-left font-bold text-slate-700 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-xl transition-colors flex items-center justify-between cursor-pointer"
+                >
+                  <span>Past Records</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                </button>
               </div>
             </div>
 
             <div className="mt-5 pt-3">
-              <button className="w-full py-2.5 px-3 bg-slate-900 group-hover:bg-[#FED10C] text-white group-hover:text-slate-950 font-black text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all">
-                <span>Enter Portal</span>
-                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+              <button
+                type="button"
+                onClick={() => onNavigate('kleanmaxpro_dash')}
+                className="w-full py-2.5 px-3 bg-slate-900 hover:bg-[#FED10C] text-white hover:text-slate-950 font-black text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+              >
+                <span>Enter Klean Max Pro Hub</span>
+                <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
 
           {/* Company 2: Kleanmax */}
-          <div
-            onClick={() => onNavigate('kleanmax_dash')}
-            className="group relative bg-white rounded-3xl p-6 border-2 border-slate-200 hover:border-sky-400 shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden"
-          >
-            <div className="absolute top-0 right-0 w-28 h-28 bg-sky-500/10 rounded-bl-full pointer-events-none group-hover:scale-110 transition-transform" />
-
+          <div className="group relative bg-white rounded-3xl p-6 border-2 border-slate-200 hover:border-sky-400 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between overflow-hidden">
             <div>
               <div className="flex items-center justify-between mb-3">
                 <span className="bg-sky-500 text-slate-950 font-black text-[11px] px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-2xs">
-                  Company 2 • KLM
+                  Company 2
                 </span>
-                <span className="text-xl">🔧</span>
+                <span className="text-xs font-black text-slate-400">KLM</span>
               </div>
 
-              <h3 className="text-lg font-black text-slate-900 group-hover:text-sky-600 transition-colors">
+              <h3
+                onClick={() => onNavigate('kleanmax_dash')}
+                className="text-xl font-black text-slate-900 hover:text-sky-600 transition-colors cursor-pointer"
+              >
                 Kleanmax
               </h3>
               <p className="text-[11px] font-bold text-sky-700 mt-0.5 uppercase tracking-wider">
@@ -131,37 +145,61 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 Commercial continuous cleaning proposals, ride-on scrubbers, genuine spare parts & machine service.
               </p>
 
-              <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap gap-1.5 text-[10px] font-bold text-sky-900">
-                <span className="bg-sky-50 border border-sky-200 px-2 py-0.5 rounded-md">📐 Proposals</span>
-                <span className="bg-sky-50 border border-sky-200 px-2 py-0.5 rounded-md">🛒 Sales Quote</span>
-                <span className="bg-sky-50 border border-sky-200 px-2 py-0.5 rounded-md">📋 Records</span>
+              {/* Subpage Action Links */}
+              <div className="mt-4 pt-3 border-t border-slate-100 flex flex-col gap-1.5 text-xs">
+                <button
+                  type="button"
+                  onClick={() => onNavigate('kleanmax_generator')}
+                  className="w-full text-left font-bold text-sky-950 bg-sky-50 hover:bg-sky-100 border border-sky-200 px-3 py-1.5 rounded-xl transition-colors flex items-center justify-between cursor-pointer"
+                >
+                  <span>+ Cleaning Proposal</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-sky-600" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onNavigate('kleanmax_sales')}
+                  className="w-full text-left font-bold text-sky-950 bg-sky-50 hover:bg-sky-100 border border-sky-200 px-3 py-1.5 rounded-xl transition-colors flex items-center justify-between cursor-pointer"
+                >
+                  <span>+ Sales Quotation</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-sky-600" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onNavigate('kleanmax_quotes')}
+                  className="w-full text-left font-bold text-slate-700 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-xl transition-colors flex items-center justify-between cursor-pointer"
+                >
+                  <span>Past Records</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                </button>
               </div>
             </div>
 
             <div className="mt-5 pt-3">
-              <button className="w-full py-2.5 px-3 bg-slate-900 group-hover:bg-sky-500 text-white group-hover:text-slate-950 font-black text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all">
-                <span>Enter Portal</span>
-                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+              <button
+                type="button"
+                onClick={() => onNavigate('kleanmax_dash')}
+                className="w-full py-2.5 px-3 bg-slate-900 hover:bg-sky-500 text-white hover:text-slate-950 font-black text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+              >
+                <span>Enter Kleanmax Hub</span>
+                <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
 
           {/* Company 3: Unique Painters */}
-          <div
-            onClick={() => onNavigate('uniquepainters_dash')}
-            className="group relative bg-white rounded-3xl p-6 border-2 border-slate-200 hover:border-purple-400 shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden"
-          >
-            <div className="absolute top-0 right-0 w-28 h-28 bg-purple-500/10 rounded-bl-full pointer-events-none group-hover:scale-110 transition-transform" />
-
+          <div className="group relative bg-white rounded-3xl p-6 border-2 border-slate-200 hover:border-purple-400 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between overflow-hidden">
             <div>
               <div className="flex items-center justify-between mb-3">
                 <span className="bg-purple-600 text-white font-black text-[11px] px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-2xs">
-                  Company 3 • UNP
+                  Company 3
                 </span>
-                <span className="text-xl">🎨</span>
+                <span className="text-xs font-black text-slate-400">UNP</span>
               </div>
 
-              <h3 className="text-lg font-black text-slate-900 group-hover:text-purple-600 transition-colors">
+              <h3
+                onClick={() => onNavigate('uniquepainters_dash')}
+                className="text-xl font-black text-slate-900 hover:text-purple-600 transition-colors cursor-pointer"
+              >
                 Unique Painters
               </h3>
               <p className="text-[11px] font-bold text-purple-700 mt-0.5 uppercase tracking-wider">
@@ -171,37 +209,53 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 Industrial epoxy floor coatings, multi-coat painting & surface prep with balanced 20mm margins.
               </p>
 
-              <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap gap-1.5 text-[10px] font-bold text-purple-900">
-                <span className="bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-md">📐 Painting Gen</span>
-                <span className="bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-md">📋 Past Records</span>
-                <span className="bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-md">✏️ Editor</span>
+              {/* Subpage Action Links */}
+              <div className="mt-4 pt-3 border-t border-slate-100 flex flex-col gap-1.5 text-xs">
+                <button
+                  type="button"
+                  onClick={() => onNavigate('uniquepainters_generator')}
+                  className="w-full text-left font-bold text-purple-950 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-3 py-1.5 rounded-xl transition-colors flex items-center justify-between cursor-pointer"
+                >
+                  <span>+ Generate Quotation</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-purple-600" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onNavigate('uniquepainters_quotes')}
+                  className="w-full text-left font-bold text-slate-700 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-xl transition-colors flex items-center justify-between cursor-pointer"
+                >
+                  <span>Past Records</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                </button>
               </div>
             </div>
 
             <div className="mt-5 pt-3">
-              <button className="w-full py-2.5 px-3 bg-slate-900 group-hover:bg-purple-600 text-white font-black text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all">
-                <span>Enter Portal</span>
-                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+              <button
+                type="button"
+                onClick={() => onNavigate('uniquepainters_dash')}
+                className="w-full py-2.5 px-3 bg-slate-900 hover:bg-purple-600 text-white font-black text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+              >
+                <span>Enter Unique Painters Hub</span>
+                <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
 
           {/* Company 4: Cleantech Services */}
-          <div
-            onClick={() => onNavigate('cleantech_dash')}
-            className="group relative bg-white rounded-3xl p-6 border-2 border-slate-200 hover:border-teal-400 shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden"
-          >
-            <div className="absolute top-0 right-0 w-28 h-28 bg-teal-500/10 rounded-bl-full pointer-events-none group-hover:scale-110 transition-transform" />
-
+          <div className="group relative bg-white rounded-3xl p-6 border-2 border-slate-200 hover:border-teal-400 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between overflow-hidden">
             <div>
               <div className="flex items-center justify-between mb-3">
                 <span className="bg-teal-500 text-slate-950 font-black text-[11px] px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-2xs">
-                  Company 4 • CTS
+                  Company 4
                 </span>
-                <span className="text-xl">🌿</span>
+                <span className="text-xs font-black text-slate-400">CTS</span>
               </div>
 
-              <h3 className="text-lg font-black text-slate-900 group-hover:text-teal-600 transition-colors">
+              <h3
+                onClick={() => onNavigate('cleantech_dash')}
+                className="text-xl font-black text-slate-900 hover:text-teal-600 transition-colors cursor-pointer"
+              >
                 Cleantech Services
               </h3>
               <p className="text-[11px] font-bold text-teal-700 mt-0.5 uppercase tracking-wider">
@@ -211,17 +265,35 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 Industrial solar panel de-dusting, high-rise facade cleaning & annual maintenance contracts.
               </p>
 
-              <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap gap-1.5 text-[10px] font-bold text-teal-900">
-                <span className="bg-teal-50 border border-teal-200 px-2 py-0.5 rounded-md">📐 Solar/AMC</span>
-                <span className="bg-teal-50 border border-teal-200 px-2 py-0.5 rounded-md">📋 Past Records</span>
-                <span className="bg-teal-50 border border-teal-200 px-2 py-0.5 rounded-md">✏️ Editor</span>
+              {/* Subpage Action Links */}
+              <div className="mt-4 pt-3 border-t border-slate-100 flex flex-col gap-1.5 text-xs">
+                <button
+                  type="button"
+                  onClick={() => onNavigate('cleantech_generator')}
+                  className="w-full text-left font-bold text-teal-950 bg-teal-50 hover:bg-teal-100 border border-teal-200 px-3 py-1.5 rounded-xl transition-colors flex items-center justify-between cursor-pointer"
+                >
+                  <span>+ Generate Quotation</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-teal-600" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onNavigate('cleantech_quotes')}
+                  className="w-full text-left font-bold text-slate-700 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-xl transition-colors flex items-center justify-between cursor-pointer"
+                >
+                  <span>Past Records</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                </button>
               </div>
             </div>
 
             <div className="mt-5 pt-3">
-              <button className="w-full py-2.5 px-3 bg-slate-900 group-hover:bg-teal-500 text-white group-hover:text-slate-950 font-black text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all">
-                <span>Enter Portal</span>
-                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+              <button
+                type="button"
+                onClick={() => onNavigate('cleantech_dash')}
+                className="w-full py-2.5 px-3 bg-slate-900 hover:bg-teal-500 text-white hover:text-slate-950 font-black text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+              >
+                <span>Enter Cleantech Hub</span>
+                <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
@@ -232,8 +304,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
       <div className="space-y-4 pt-2">
         <div className="flex items-center justify-between border-b border-slate-200 pb-3">
           <div>
-            <h2 className="text-xl font-black text-slate-900 flex items-center gap-2">
-              <span>🛡️ Master Enterprise Management</span>
+            <h2 className="text-xl font-black text-slate-900 tracking-tight">
+              Master Enterprise Management
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
               Super Admin controls for company profiles, client directory, and global audit.
