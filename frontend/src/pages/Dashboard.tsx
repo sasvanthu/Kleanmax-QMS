@@ -337,103 +337,199 @@ export const Dashboard: React.FC<DashboardProps> = ({
       </div>
 
       {/* SECTION 2: MASTER ENTERPRISE MANAGEMENT (SUPER ADMIN) */}
-      <div className="space-y-4 pt-2">
-        <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+      <div className="space-y-5 pt-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/80 pb-4">
           <div>
             <h2 className="text-xl font-black text-slate-900 tracking-tight">
-              Master Enterprise Management
+              Enterprise Management
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Super Admin controls for company profiles, client directory, and global audit.
+              Master administrative controls for company letterheads, client database, and global records audit.
             </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {/* Card 1: Manage 4 Companies */}
-          <div
-            onClick={() => onNavigate('settings')}
-            className="group relative bg-white rounded-3xl p-7 border-2 border-slate-200 hover:border-amber-400 shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col justify-between"
-          >
+          <div className="group relative bg-white rounded-2xl border-t-4 border-t-amber-500 border-x border-b border-slate-200 hover:border-amber-400/80 shadow-xs hover:shadow-xl transition-all duration-300 p-5 flex flex-col justify-between">
             <div>
-              <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 mb-5 group-hover:scale-110 transition-transform">
-                <Building2 className="w-6 h-6" />
+              {/* Header: Title & Shortcut Link */}
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <h3
+                    onClick={() => onNavigate('settings')}
+                    className="text-lg font-black text-slate-900 hover:text-amber-600 transition-colors cursor-pointer tracking-tight truncate"
+                  >
+                    Manage 4 Companies
+                  </h3>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                    <span className="text-[11px] font-bold text-amber-800 uppercase tracking-wider truncate">
+                      Letterhead, GSTIN & Bank Info
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onNavigate('settings')}
+                  className="w-8 h-8 rounded-xl bg-slate-50 hover:bg-amber-100/70 border border-slate-200/80 text-slate-500 hover:text-amber-700 flex items-center justify-center shrink-0 transition-colors cursor-pointer shadow-2xs"
+                  title="Edit Company Profiles"
+                >
+                  <ArrowRight className="w-4 h-4" />
+                </button>
               </div>
 
-              <h3 className="text-xl font-black text-slate-900 group-hover:text-amber-600 transition-colors">
-                Manage 4 Companies
-              </h3>
-              <p className="text-xs font-bold text-amber-700 mt-1 uppercase tracking-wider">
-                Letterhead, GSTIN & Bank Info
-              </p>
-              <p className="text-xs text-slate-600 mt-3 leading-relaxed">
-                Upload letterhead banners, configure registered addresses, GSTIN numbers, contact details, and bank account info for all 4 entities.
-              </p>
-            </div>
+              {/* Clean hairline divider */}
+              <div className="border-t border-slate-100 my-4" />
 
-            <div className="mt-8 pt-4 border-t border-slate-100">
-              <button className="w-full py-3 px-4 bg-slate-900 group-hover:bg-[#FED10C] text-white group-hover:text-slate-950 font-black text-xs rounded-2xl flex items-center justify-center gap-2 transition-all">
-                <span>Edit Company Profiles</span>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </button>
+              {/* Options */}
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => onNavigate('settings')}
+                  className="w-full text-left font-black text-xs text-slate-950 bg-[#FED10C] hover:bg-amber-400 px-3.5 py-2.5 rounded-xl transition-all flex items-center justify-between cursor-pointer shadow-xs active:scale-98 group/btn"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Building2 className="w-4 h-4 text-slate-950 shrink-0" />
+                    <span className="truncate">Edit Company Profiles</span>
+                  </div>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-900 group-hover/btn:translate-x-0.5 transition-transform shrink-0" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => onNavigate('settings', { tab: 'kleanmaxpro' })}
+                  className="w-full text-left font-bold text-xs text-slate-700 hover:text-slate-950 bg-slate-50 hover:bg-slate-100 border border-slate-200/80 hover:border-slate-300 px-3.5 py-2.5 rounded-xl transition-all flex items-center justify-between cursor-pointer active:scale-98 group/btn"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Settings className="w-3.5 h-3.5 text-slate-400 group-hover/btn:text-slate-700 shrink-0" />
+                    <span className="truncate">Letterhead Banners & Bank Accounts</span>
+                  </div>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover/btn:translate-x-0.5 transition-transform shrink-0" />
+                </button>
+              </div>
             </div>
           </div>
 
           {/* Card 2: Customer Directory */}
-          <div
-            onClick={() => onNavigate('customers')}
-            className="group relative bg-white rounded-3xl p-7 border-2 border-slate-200 hover:border-sky-400 shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col justify-between"
-          >
+          <div className="group relative bg-white rounded-2xl border-t-4 border-t-sky-500 border-x border-b border-slate-200 hover:border-sky-400/80 shadow-xs hover:shadow-xl transition-all duration-300 p-5 flex flex-col justify-between">
             <div>
-              <div className="w-12 h-12 rounded-2xl bg-sky-50 border border-sky-200 flex items-center justify-center text-sky-600 mb-5 group-hover:scale-110 transition-transform">
-                <Users className="w-6 h-6" />
+              {/* Header: Title & Shortcut Link */}
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <h3
+                    onClick={() => onNavigate('customers')}
+                    className="text-lg font-black text-slate-900 hover:text-sky-600 transition-colors cursor-pointer tracking-tight truncate"
+                  >
+                    Customer Directory
+                  </h3>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-sky-500 shrink-0" />
+                    <span className="text-[11px] font-bold text-sky-800 uppercase tracking-wider truncate">
+                      Client Database & Accounts
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onNavigate('customers')}
+                  className="w-8 h-8 rounded-xl bg-slate-50 hover:bg-sky-100/70 border border-slate-200/80 text-slate-500 hover:text-sky-700 flex items-center justify-center shrink-0 transition-colors cursor-pointer shadow-2xs"
+                  title="Open Client Directory"
+                >
+                  <ArrowRight className="w-4 h-4" />
+                </button>
               </div>
 
-              <h3 className="text-xl font-black text-slate-900 group-hover:text-sky-600 transition-colors">
-                Customer Directory
-              </h3>
-              <p className="text-xs font-bold text-sky-700 mt-1 uppercase tracking-wider">
-                Client Database & Accounts
-              </p>
-              <p className="text-xs text-slate-600 mt-3 leading-relaxed">
-                Centralized client address book shared across all subsidiaries: company names, site locations, contact persons, GSTIN, and billing addresses.
-              </p>
-            </div>
+              {/* Clean hairline divider */}
+              <div className="border-t border-slate-100 my-4" />
 
-            <div className="mt-8 pt-4 border-t border-slate-100">
-              <button className="w-full py-3 px-4 bg-slate-900 group-hover:bg-sky-500 text-white group-hover:text-slate-950 font-black text-xs rounded-2xl flex items-center justify-center gap-2 transition-all">
-                <span>Open Client Directory</span>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </button>
+              {/* Options */}
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => onNavigate('customers')}
+                  className="w-full text-left font-black text-xs text-slate-950 bg-sky-400 hover:bg-sky-500 px-3.5 py-2.5 rounded-xl transition-all flex items-center justify-between cursor-pointer shadow-xs active:scale-98 group/btn"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Users className="w-4 h-4 text-slate-950 shrink-0" />
+                    <span className="truncate">Open Client Directory</span>
+                  </div>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-900 group-hover/btn:translate-x-0.5 transition-transform shrink-0" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => onNavigate('customers')}
+                  className="w-full text-left font-bold text-xs text-slate-700 hover:text-slate-950 bg-slate-50 hover:bg-slate-100 border border-slate-200/80 hover:border-slate-300 px-3.5 py-2.5 rounded-xl transition-all flex items-center justify-between cursor-pointer active:scale-98 group/btn"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Plus className="w-3.5 h-3.5 text-slate-400 group-hover/btn:text-slate-700 shrink-0" />
+                    <span className="truncate">Add Customer & Billing Address</span>
+                  </div>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover/btn:translate-x-0.5 transition-transform shrink-0" />
+                </button>
+              </div>
             </div>
           </div>
 
           {/* Card 3: All Past Records & Audit */}
-          <div
-            onClick={() => onNavigate('quotations')}
-            className="group relative bg-white rounded-3xl p-7 border-2 border-slate-200 hover:border-emerald-400 shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col justify-between"
-          >
+          <div className="group relative bg-white rounded-2xl border-t-4 border-t-emerald-600 border-x border-b border-slate-200 hover:border-emerald-400/80 shadow-xs hover:shadow-xl transition-all duration-300 p-5 flex flex-col justify-between">
             <div>
-              <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 mb-5 group-hover:scale-110 transition-transform">
-                <FileText className="w-6 h-6" />
+              {/* Header: Title & Shortcut Link */}
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <h3
+                    onClick={() => onNavigate('quotations')}
+                    className="text-lg font-black text-slate-900 hover:text-emerald-600 transition-colors cursor-pointer tracking-tight truncate"
+                  >
+                    All Past Records & Audit
+                  </h3>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0" />
+                    <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider truncate">
+                      Consolidated Archive & Deletion
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onNavigate('quotations')}
+                  className="w-8 h-8 rounded-xl bg-slate-50 hover:bg-emerald-100/70 border border-slate-200/80 text-slate-500 hover:text-emerald-700 flex items-center justify-center shrink-0 transition-colors cursor-pointer shadow-2xs"
+                  title="View All Past Records"
+                >
+                  <ArrowRight className="w-4 h-4" />
+                </button>
               </div>
 
-              <h3 className="text-xl font-black text-slate-900 group-hover:text-emerald-600 transition-colors">
-                All Past Records & Audit
-              </h3>
-              <p className="text-xs font-bold text-emerald-700 mt-1 uppercase tracking-wider">
-                Consolidated Archive & Deletion
-              </p>
-              <p className="text-xs text-slate-600 mt-3 leading-relaxed">
-                View, download Word (.docx) & PDF, search, filter, or perform administrative deletions across every proposal generated by any subsidiary.
-              </p>
-            </div>
+              {/* Clean hairline divider */}
+              <div className="border-t border-slate-100 my-4" />
 
-            <div className="mt-8 pt-4 border-t border-slate-100">
-              <button className="w-full py-3 px-4 bg-slate-900 group-hover:bg-emerald-500 text-white group-hover:text-slate-950 font-black text-xs rounded-2xl flex items-center justify-center gap-2 transition-all">
-                <span>View All Past Records</span>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </button>
+              {/* Options */}
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => onNavigate('quotations')}
+                  className="w-full text-left font-black text-xs text-white bg-emerald-600 hover:bg-emerald-700 px-3.5 py-2.5 rounded-xl transition-all flex items-center justify-between cursor-pointer shadow-xs active:scale-98 group/btn"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <FileText className="w-4 h-4 text-white shrink-0" />
+                    <span className="truncate">View All Past Records</span>
+                  </div>
+                  <ChevronRight className="w-3.5 h-3.5 text-white group-hover/btn:translate-x-0.5 transition-transform shrink-0" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => onNavigate('services')}
+                  className="w-full text-left font-bold text-xs text-slate-700 hover:text-slate-950 bg-slate-50 hover:bg-slate-100 border border-slate-200/80 hover:border-slate-300 px-3.5 py-2.5 rounded-xl transition-all flex items-center justify-between cursor-pointer active:scale-98 group/btn"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Layers className="w-3.5 h-3.5 text-slate-400 group-hover/btn:text-slate-700 shrink-0" />
+                    <span className="truncate">Master Services Catalogue</span>
+                  </div>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover/btn:translate-x-0.5 transition-transform shrink-0" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
