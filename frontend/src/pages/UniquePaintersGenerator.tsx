@@ -211,6 +211,7 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
 
   // Call notice & Satisfaction
   const [callNotice, setCallNotice] = useState<string>('Looking forward for your favourable orders. Please call - 9500065813 / 9710148218.');
+  const [includeNote, setIncludeNote] = useState<boolean>(true);
   const [satisfactionGoal, setSatisfactionGoal] = useState<string>('Your satisfaction is our Goal. Looking forward for your favourable orders.');
 
   // Signatory (Dynamic from DB Company Settings)
@@ -320,6 +321,7 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
               if (Array.isArray(snap.rows) && snap.rows.length > 0) setRows(snap.rows);
               if (Array.isArray(snap.machineries) && snap.machineries.length > 0) setMachineries(snap.machineries);
               if (Array.isArray(snap.terms) && snap.terms.length > 0) setTerms(snap.terms);
+              if (snap.include_note !== undefined) setIncludeNote(Boolean(snap.include_note));
               if (snap.callNotice) setCallNotice(snap.callNotice);
               if (snap.satisfactionGoal) setSatisfactionGoal(snap.satisfactionGoal);
               if (snap.sigCompany) setSigCompany(snap.sigCompany);
@@ -644,6 +646,7 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
         totalAmount: finalTotal,
         machineries,
         terms,
+        include_note: includeNote,
         callNotice,
         satisfactionGoal,
         sigCompany,
@@ -663,7 +666,7 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
         quotation_type: 'area_based',
         quotation_date: toISODate(quotationDate),
         job_description: `${introText1}\n\n${introText2}`,
-        notes: callNotice,
+        notes: includeNote ? callNotice : '',
         terms_and_conditions: terms.join('\n'),
         items: payloadItems,
         sections: [],
@@ -1451,17 +1454,37 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
             </div>
           </div>
 
-          {/* Call Notice */}
-          <div className="text-xs bg-purple-50 p-2.5 rounded-lg border border-purple-200">
-            <label className="block text-[10px] font-black uppercase text-purple-800 mb-1">
-              Call Notice Box:
-            </label>
-            <input
-              type="text"
-              value={callNotice}
-              onChange={(e) => setCallNotice(e.target.value)}
-              className="w-full text-xs font-bold text-purple-950 bg-white border border-purple-300 rounded p-1.5 focus:ring-1 focus:ring-purple-500"
-            />
+          {/* Call Notice / Note (Toggleable with Checkbox) */}
+          <div className="bg-purple-50/70 p-4 rounded-xl border border-purple-200 space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={includeNote}
+                  onChange={(e) => setIncludeNote(e.target.checked)}
+                  className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 cursor-pointer"
+                />
+                <span className="font-black text-xs text-purple-950 uppercase tracking-wide">
+                  Include Note / Call Notice in Quotation
+                </span>
+              </label>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${includeNote ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'}`}>
+                {includeNote ? 'Note Visible' : 'Note Hidden in Final Format'}
+              </span>
+            </div>
+
+            {includeNote ? (
+              <input
+                type="text"
+                value={callNotice}
+                onChange={(e) => setCallNotice(e.target.value)}
+                className="w-full text-xs font-bold text-purple-950 bg-white border border-purple-300 rounded-lg p-2 focus:ring-1 focus:ring-purple-500 shadow-2xs"
+              />
+            ) : (
+              <div className="text-xs text-slate-500 italic p-2 bg-white/60 rounded-lg border border-slate-200">
+                Note / Call notice is disabled and will be omitted completely from preview, PDF, and DOCX exports.
+              </div>
+            )}
           </div>
 
           {/* Terms */}
@@ -1791,10 +1814,12 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
                   </ul>
                 </div>
 
-                {/* Call Notice */}
-                <div className="text-xs bg-purple-50 p-2.5 rounded-lg border border-purple-200 font-bold text-purple-900">
-                  {callNotice}
-                </div>
+                {/* Call Notice / Note (Toggleable: completely disappears when unchecked) */}
+                {includeNote && callNotice && (
+                  <div className="text-xs bg-purple-50 p-2.5 rounded-lg border border-purple-200 font-bold text-purple-900">
+                    {callNotice}
+                  </div>
+                )}
 
                 {/* Terms */}
                 <div className="text-xs space-y-1">

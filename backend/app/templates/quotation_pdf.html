@@ -683,7 +683,7 @@
                     </td>
                     <td class="unp-date-cell" style="vertical-align: top; width: 40%; text-align: right; font-size: 9.5pt; line-height: 1.5;">
                         <div class="unp-meta-line" style="color: #0f172a;">
-                            <strong>DATE:</strong> {{ snapshot.quotationDate or (quotation.quotation_date.strftime('%d/%m/%Y') if quotation.quotation_date else '21/10/2025') }}
+                            <strong>DATE:</strong> {{ snapshot.quotationDate or (quotation.quotation_date.strftime('%d/%m/%Y') if (quotation.quotation_date and quotation.quotation_date.strftime is defined) else quotation.quotation_date or '21/10/2025') }}
                         </div>
                         <div class="unp-meta-line" style="color: #0f172a;">
                             <strong>QUOTATION NO:</strong> {{ snapshot.quotationNo or quotation.quotation_number or 'UNP/2026/001' }}
@@ -882,10 +882,12 @@
             {% endfor %}
         </div>
 
-        <!-- Call Notice Box -->
+        <!-- Call Notice Box (Toggleable: disappears if include_note is false) -->
+        {% if (snapshot and snapshot.include_note is not sameas false) or (not snapshot and quotation.notes) %}
         <div style="background-color: #faf5ff; border: 1px solid #e9d5ff; border-radius: 8px; padding: 8px 12px; font-weight: 800; font-size: 8.5pt; color: #581c87; margin: 10px 0;">
-            {{ snapshot.callNotice or "Looking forward for your favourable orders. Please call - 9500065813 / 9710148218." }}
+            {{ snapshot.callNotice or quotation.notes or "Looking forward for your favourable orders. Please call - 9500065813 / 9710148218." }}
         </div>
+        {% endif %}
 
         <!-- Terms & Conditions -->
         <div style="font-size: 9.5pt; font-weight: 800; color: #0f172a; margin-top: 10px; margin-bottom: 6px;">
@@ -1011,13 +1013,13 @@
 
         <!-- Main Title & Proposal Details -->
         <div style="padding-left: 24mm; padding-right: 20mm; margin-top: 25mm;">
-            <div style="font-family: 'Times New Roman', Georgia, serif; font-size: 40pt; font-weight: 900; line-height: 1.15; color: #000000;">
+            <div style="font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; font-size: 38pt; font-weight: 900; line-height: 1.15; color: #000000; letter-spacing: -0.5px;">
                 Commercial
             </div>
-            <div style="font-family: 'Times New Roman', Georgia, serif; font-size: 40pt; font-weight: 900; line-height: 1.15; color: #000000;">
+            <div style="font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; font-size: 38pt; font-weight: 900; line-height: 1.15; color: #000000; letter-spacing: -0.5px;">
                 Cleaning
             </div>
-            <div style="font-family: 'Times New Roman', Georgia, serif; font-size: 40pt; font-weight: 900; line-height: 1.15; color: #fed10c; -webkit-text-stroke: 1.5px #000000; text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;">
+            <div style="font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; font-size: 38pt; font-weight: 900; line-height: 1.15; color: #fed10c; -webkit-text-stroke: 1.5px #000000; text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000; letter-spacing: -0.5px;">
                 Proposal
             </div>
 
@@ -1134,19 +1136,36 @@
         </div>
 
         <!-- Total Project Value Block (Teal bar #205B73) -->
-        <div style="position: absolute; bottom: 22mm; left: 20mm; right: 20mm; font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif;">
-            <div style="font-size: 13pt; font-weight: 900; text-decoration: underline; color: #000000; margin-bottom: 6px;">
+        <div style="position: absolute; bottom: 16mm; left: 20mm; right: 20mm; font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif;">
+            <div style="font-size: 13pt; font-weight: 900; text-decoration: underline; color: #000000; margin-bottom: 4px;">
                 TOTAL PROJECT VALUE:
             </div>
-            <div style="font-size: 11.5pt; font-weight: 800; color: #000000; margin-bottom: 3px;">
+            <div style="font-size: 11pt; font-weight: 800; color: #000000; margin-bottom: 2px;">
                 TOTAL CLEANABLE SQFT – APPROX {{ snapshot.cleanableSqft or '36,000 SQFT' }}.
             </div>
-            <div style="font-size: 11.5pt; font-weight: 800; color: #000000; margin-bottom: 10px;">
+            <div style="font-size: 11pt; font-weight: 800; color: #000000; margin-bottom: 6px;">
                 TOTAL CLEANABLE VALUE SQFT – RS.{{ "%.2f"|format(snapshot.ratePerSqft|float) if snapshot.ratePerSqft else '12.00' }}
             </div>
-            <div style="background-color: #205B73; color: #ffffff; padding: 10px 16px; font-size: 13.5pt; font-weight: 900; letter-spacing: 0.5px;">
-                TOTAL CLEANABLE VALUE – RS.{{ "{:,.2f}".format(final_amount_val) }}
+            <div style="background-color: #205B73; color: #ffffff; padding: 8px 14px; font-size: 12.5pt; font-weight: 900; letter-spacing: 0.5px;">
+                TOTAL CLEANABLE VALUE – RS.{{ "{:,.2f}".format(snapshot.subtotal if (snapshot and snapshot.subtotal is defined) else final_amount_val) }}
             </div>
+            {% set km_show_cgst = (snapshot and snapshot.applyCgst) or (snapshot and snapshot.cgstAmount and snapshot.cgstAmount > 0) or (quotation.cgst_amount and quotation.cgst_amount > 0) %}
+            {% set km_show_sgst = (snapshot and snapshot.applySgst) or (snapshot and snapshot.sgstAmount and snapshot.sgstAmount > 0) or (quotation.sgst_amount and quotation.sgst_amount > 0) %}
+            {% set km_show_igst = (snapshot and snapshot.applyIgst) or (snapshot and snapshot.igstAmount and snapshot.igstAmount > 0) or (quotation.igst_amount and quotation.igst_amount > 0) %}
+            {% if km_show_cgst or km_show_sgst or km_show_igst %}
+            <div style="margin-top: 4px; font-size: 8.5pt; font-weight: 700; color: #1e293b; background: #f8fafc; padding: 5px 10px; border: 1px solid #cbd5e1; border-radius: 4px;">
+                {% if km_show_cgst %}<span style="margin-right: 12px;">CGST ({{ snapshot.cgstRate or quotation.cgst_rate or 9 }}%): ₹{{ "{:,.2f}".format(snapshot.cgstAmount or quotation.cgst_amount or 0) }}</span>{% endif %}
+                {% if km_show_sgst %}<span style="margin-right: 12px;">SGST ({{ snapshot.sgstRate or quotation.sgst_rate or 9 }}%): ₹{{ "{:,.2f}".format(snapshot.sgstAmount or quotation.sgst_amount or 0) }}</span>{% endif %}
+                {% if km_show_igst %}<span>IGST ({{ snapshot.igstRate or quotation.igst_rate or 18 }}%): ₹{{ "{:,.2f}".format(snapshot.igstAmount or quotation.igst_amount or 0) }}</span>{% endif %}
+                <div style="font-weight: 900; color: #047857; margin-top: 2px;">TOTAL AMOUNT (INCL. GST): ₹{{ "{:,.2f}".format(final_amount_val) }}</div>
+            </div>
+            {% endif %}
+
+            {% if (snapshot and snapshot.include_note is not sameas false and snapshot.notes_text) or (not snapshot and quotation.notes) %}
+            <div style="margin-top: 6px; font-size: 8pt; font-weight: 700; color: #0f172a; line-height: 1.4; background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; padding: 6px 10px;">
+                {{ (snapshot.notes_text or quotation.notes)|replace('\n', '<br/>') }}
+            </div>
+            {% endif %}
         </div>
     </div>
 
@@ -1503,18 +1522,21 @@
         <!-- 6. Fixed After-Table Content -->
     {% if 'RENTAL' in quotation.job_description|default('')|upper or quotation.quotation_type == 'rental' %}
     <!-- Rental Quotation After-Table -->
-    {% if quotation.notes %}
-    <div style="margin-top: 10px; font-size: 8pt; font-weight: 700; color: #0f172a; line-height: 1.5;">
-        {{ quotation.notes|replace('\n', '<br/>') }}
-    </div>
-    {% else %}
-    <div style="margin-top: 10px; font-size: 8pt; font-weight: 700; color: #0f172a; line-height: 1.5;">
-        NOTE :<br/>
-        1. TRANSPORT IS CUSTOMER SCOPE.<br/>
-        2. TAX WILL BE EXTRA.<br/>
-        3. 2 MONTHS RENTAL AMOUNT DEPOSIT REQUIRED.<br/>
-        4. RENTAL PERIOD MAXIMUM 3 YEARS REQUIRED.
-    </div>
+    {% set show_rental_note = (snapshot.include_note if (snapshot and snapshot.include_note is defined) else (quotation.notes is not none and quotation.notes|length > 0)) %}
+    {% if show_rental_note %}
+        {% if quotation.notes %}
+        <div style="margin-top: 10px; font-size: 8pt; font-weight: 700; color: #0f172a; line-height: 1.5;">
+            {{ quotation.notes|replace('\n', '<br/>') }}
+        </div>
+        {% elif not snapshot %}
+        <div style="margin-top: 10px; font-size: 8pt; font-weight: 700; color: #0f172a; line-height: 1.5;">
+            NOTE :<br/>
+            1. TRANSPORT IS CUSTOMER SCOPE.<br/>
+            2. TAX WILL BE EXTRA.<br/>
+            3. 2 MONTHS RENTAL AMOUNT DEPOSIT REQUIRED.<br/>
+            4. RENTAL PERIOD MAXIMUM 3 YEARS REQUIRED.
+        </div>
+        {% endif %}
     {% endif %}
 
     <div style="margin-top: 10px;">
@@ -1557,6 +1579,12 @@
     </div>
     {% elif quotation.quotation_type == 'item_based' or 'SALE' in quotation.job_description|default('')|upper %}
     <!-- Equipment Sales After-Table -->
+    {% set show_sales_note = (snapshot.include_note if (snapshot and snapshot.include_note is defined) else (quotation.notes is not none and quotation.notes|length > 0)) %}
+    {% if show_sales_note and (snapshot.notes_text or quotation.notes) %}
+    <div style="margin-top: 10px; font-size: 8pt; font-weight: 700; color: #0f172a; line-height: 1.5; background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; padding: 6px 10px;">
+        {{ (snapshot.notes_text or quotation.notes)|replace('\n', '<br/>') }}
+    </div>
+    {% endif %}
     <div style="margin-top: 10px;">
         <div class="section-heading">Advantages of Buying from Kleanmax</div>
         <ul class="bullet-list">
@@ -1584,6 +1612,13 @@
     </div>
     {% elif company_code == 'cleantech' %}
     <!-- Cleantech Services After-Table matching authentic PDF -->
+    {% set show_cleantech_note = (snapshot.include_note if (snapshot and snapshot.include_note is defined) else (quotation.notes is not none and quotation.notes|length > 0)) %}
+    {% if show_cleantech_note and (snapshot.notes_text or quotation.notes) %}
+    <div style="margin-top: 10px; font-size: 8pt; font-weight: 700; color: #0f172a; line-height: 1.5; background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; padding: 6px 10px;">
+        {{ (snapshot.notes_text or quotation.notes)|replace('\n', '<br/>') }}
+    </div>
+    {% endif %}
+
     <div style="margin-top: 10px;">
         <div class="section-heading">Terms & Conditions</div>
         <ul class="bullet-list">
@@ -1606,7 +1641,7 @@
             <li>Commercial Cleaning & Painting Services</li>
         </ul>
     </div>
-    {% elif company_code == 'kleanmax' %}
+    {% elif company_code == 'kleanmax' and ('COMMERCIAL' in quotation.job_description|default('')|upper or 'PROPOSAL' in quotation.job_description|default('')|upper) %}
     <!-- Kleanmax Authentic Terms from Wilston Power Plant Proposal -->
     <div style="margin-top: 10px;">
         <div class="section-heading">TERMS AND CONDITIONS</div>
@@ -1624,6 +1659,13 @@
     </div>
     {% else %}
     <!-- Spares and Service After-Table -->
+    {% set show_spares_note = (snapshot.include_note if (snapshot and snapshot.include_note is defined) else (quotation.notes is not none and quotation.notes|length > 0)) %}
+    {% if show_spares_note and (snapshot.notes_text or quotation.notes) %}
+    <div style="margin-top: 10px; font-size: 8pt; font-weight: 700; color: #0f172a; line-height: 1.5; background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; padding: 6px 10px;">
+        {{ (snapshot.notes_text or quotation.notes)|replace('\n', '<br/>') }}
+    </div>
+    {% endif %}
+
     <div style="margin-top: 10px;">
         <div class="section-heading">Other Services</div>
         <ul class="bullet-list">

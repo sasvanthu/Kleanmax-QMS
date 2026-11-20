@@ -341,7 +341,7 @@ def _generate_uniquepainters_docx(
     else:
         subtotal = safe_decimal(quotation.subtotal or 0, "0")
 
-    apply_tax = bool(snapshot.get("applyTax") if "applyTax" in snapshot else (getattr(quotation, "tax_rate", 0) > 0 or (quotation.total_tax and quotation.total_tax > 0)))
+    apply_tax = bool(snapshot.get("applyTax") if "applyTax" in snapshot else (float(getattr(quotation, "tax_rate", 0) or 0) > 0 or float(getattr(quotation, "total_tax", 0) or 0) > 0))
     tax_percent = float(snapshot.get("taxPercent") or getattr(quotation, "tax_rate", 18) or 18)
     if apply_tax:
         gst_amt = safe_decimal(snapshot.get("gstAmount") or (subtotal * Decimal(str(tax_percent / 100))), "0")
@@ -577,16 +577,17 @@ def _generate_uniquepainters_docx(
         r.font.name = "Arial"
         r.font.color.rgb = RGBColor(51, 65, 85)
 
-    # Call Notice Box
-    call_notice = snapshot.get("callNotice") or "Looking forward for your favourable orders. Please call - 9500065813 / 9710148218."
-    p_call = doc.add_paragraph()
-    p_call.paragraph_format.space_before = Pt(8)
-    p_call.paragraph_format.space_after = Pt(10)
-    r = p_call.add_run(call_notice)
-    r.bold = True
-    r.font.size = Pt(9)
-    r.font.name = "Arial"
-    r.font.color.rgb = RGBColor(88, 28, 135)
+    # Call Notice Box (Toggleable: disappears if include_note is false)
+    if snapshot.get("include_note") is not False:
+        call_notice = snapshot.get("callNotice") or getattr(quotation, "notes", None) or "Looking forward for your favourable orders. Please call - 9500065813 / 9710148218."
+        p_call = doc.add_paragraph()
+        p_call.paragraph_format.space_before = Pt(8)
+        p_call.paragraph_format.space_after = Pt(10)
+        r = p_call.add_run(call_notice)
+        r.bold = True
+        r.font.size = Pt(9)
+        r.font.name = "Arial"
+        r.font.color.rgb = RGBColor(88, 28, 135)
 
     # Terms & Conditions Heading
     p_tc_title = doc.add_paragraph()
@@ -917,7 +918,7 @@ def _generate_kleanmax_docx(
     p_t1.paragraph_format.space_after = Pt(0)
     r = p_t1.add_run("Commercial")
     r.bold = True
-    r.font.name = "Times New Roman"
+    r.font.name = "Arial"
     r.font.size = Pt(36)
     r.font.color.rgb = RGBColor(0, 0, 0)
 
@@ -927,7 +928,7 @@ def _generate_kleanmax_docx(
     p_t2.paragraph_format.space_after = Pt(0)
     r = p_t2.add_run("Cleaning")
     r.bold = True
-    r.font.name = "Times New Roman"
+    r.font.name = "Arial"
     r.font.size = Pt(36)
     r.font.color.rgb = RGBColor(0, 0, 0)
 
@@ -937,7 +938,7 @@ def _generate_kleanmax_docx(
     p_t3.paragraph_format.space_after = Pt(14)
     r = p_t3.add_run("Proposal")
     r.bold = True
-    r.font.name = "Times New Roman"
+    r.font.name = "Arial"
     r.font.size = Pt(36)
     r.font.color.rgb = RGBColor(254, 209, 12)
 
@@ -1123,11 +1124,49 @@ def _generate_kleanmax_docx(
     p_c_pv = c_pv.paragraphs[0]
     p_c_pv.paragraph_format.space_before = Pt(0)
     p_c_pv.paragraph_format.space_after = Pt(0)
-    r = p_c_pv.add_run(f"TOTAL CLEANABLE VALUE – RS.{final_amt:,.2f}")
+    km_subtotal = safe_decimal(snapshot.get("subtotal") or final_amt, "0")
+    r = p_c_pv.add_run(f"TOTAL CLEANABLE VALUE – RS.{km_subtotal:,.2f}")
     r.bold = True
     r.font.name = "Arial"
     r.font.size = Pt(13)
     r.font.color.rgb = RGBColor(255, 255, 255)
+
+    # GST Breakdown for Kleanmax Proposal
+    km_cgst = safe_decimal(snapshot.get("cgstAmount") or snapshot.get("cgst") or getattr(quotation, "cgst_amount", 0), "0")
+    km_sgst = safe_decimal(snapshot.get("sgstAmount") or snapshot.get("sgst") or getattr(quotation, "sgst_amount", 0), "0")
+    km_igst = safe_decimal(snapshot.get("igstAmount") or snapshot.get("igst") or getattr(quotation, "igst_amount", 0), "0")
+    km_show_cgst = bool(snapshot.get("applyCgst") or km_cgst > 0)
+    km_show_sgst = bool(snapshot.get("applySgst") or km_sgst > 0)
+    km_show_igst = bool(snapshot.get("applyIgst") or km_igst > 0)
+    if km_show_cgst or km_show_sgst or km_show_igst:
+        p_gst = doc.add_paragraph()
+        p_gst.paragraph_format.space_before = Pt(6)
+        p_gst.paragraph_format.space_after = Pt(2)
+        gst_parts = []
+        if km_show_cgst:
+            gst_parts.append(f"CGST ({snapshot.get('cgstRate', 9)}%): ₹{km_cgst:,.2f}")
+        if km_show_sgst:
+            gst_parts.append(f"SGST ({snapshot.get('sgstRate', 9)}%): ₹{km_sgst:,.2f}")
+        if km_show_igst:
+            gst_parts.append(f"IGST ({snapshot.get('igstRate', 18)}%): ₹{km_igst:,.2f}")
+        r_gst = p_gst.add_run(" | ".join(gst_parts) + f"\nTOTAL AMOUNT (INCL. GST): ₹{final_amt:,.2f}")
+        r_gst.bold = True
+        r_gst.font.name = "Arial"
+        r_gst.font.size = Pt(9.5)
+        r_gst.font.color.rgb = RGBColor(4, 120, 87)
+
+    # Toggleable Note in Kleanmax Proposal
+    if snapshot.get("include_note") is not False:
+        km_note = snapshot.get("notes_text") or (getattr(quotation, "notes", None) if getattr(quotation, "notes", None) != scope_text else None)
+        if km_note:
+            p_km_note = doc.add_paragraph()
+            p_km_note.paragraph_format.space_before = Pt(6)
+            p_km_note.paragraph_format.space_after = Pt(4)
+            r = p_km_note.add_run(km_note)
+            r.bold = True
+            r.font.name = "Arial"
+            r.font.size = Pt(8.5)
+            r.font.color.rgb = RGBColor(15, 23, 42)
 
     # ===== PAGE 4: BANK DETAILS, TERMS & THANK YOU =====
     doc.add_page_break()
@@ -1618,6 +1657,19 @@ def generate_quotation_docx_bytes(
     add_total_line("TOTAL AMOUNT:", f"₹ {final_amount:,.2f}", bold=True, highlight=True)
 
     # 7. Terms & Conditions and Bank Details
+    # Note above terms (Toggleable: omitted if include_note is false)
+    include_note_flag = snapshot.get("include_note") is not False
+    std_note = snapshot.get("notes_text") or getattr(quotation, "notes", None)
+    if include_note_flag and std_note and std_note.strip():
+        p_note_box = doc.add_paragraph()
+        p_note_box.paragraph_format.space_before = Pt(6)
+        p_note_box.paragraph_format.space_after = Pt(2)
+        r_nh = p_note_box.add_run(std_note.strip())
+        r_nh.bold = True
+        r_nh.font.name = "Arial"
+        r_nh.font.size = Pt(8)
+        r_nh.font.color.rgb = RGBColor(15, 23, 42)
+
     doc.add_paragraph().paragraph_format.space_after = Pt(4)
 
     terms_box = doc.add_table(rows=1, cols=2)
@@ -1640,12 +1692,17 @@ def generate_quotation_docx_bytes(
     if custom_terms and custom_terms.strip():
         p_t.add_run(custom_terms.strip()).font.size = Pt(7.5)
     elif 'RENTAL' in job_desc or q_type == 'rental':
+        note_prefix = ""
+        if include_note_flag and not std_note:
+            note_prefix = (
+                "NOTE:\n"
+                "1. Transport is customer scope.\n"
+                "2. Tax will be extra.\n"
+                "3. 2 months rental amount deposit required.\n"
+                "4. Rental period maximum 3 years required.\n\n"
+            )
         rental_terms = (
-            "NOTE:\n"
-            "1. Transport is customer scope.\n"
-            "2. Tax will be extra.\n"
-            "3. 2 months rental amount deposit required.\n"
-            "4. Rental period maximum 3 years required.\n\n"
+            note_prefix +
             "TERMS & CONDITIONS:\n"
             "• Consumables are included in rental scope.\n"
             "• Machine maintenance and service spares included in our scope.\n"

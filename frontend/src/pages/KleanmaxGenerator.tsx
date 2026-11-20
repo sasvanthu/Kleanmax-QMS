@@ -101,6 +101,22 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
   const [ratePerSqft, setRatePerSqft] = useState<number>(12.0);
   const [projectValue, setProjectValue] = useState<number>(432000.0);
 
+  // GST Settings (Independent CGST, SGST, IGST with checkboxes & editable rates)
+  const [applyCgst, setApplyCgst] = useState<boolean>(true);
+  const [cgstRate, setCgstRate] = useState<number>(9);
+  const [applySgst, setApplySgst] = useState<boolean>(true);
+  const [sgstRate, setSgstRate] = useState<number>(9);
+  const [applyIgst, setApplyIgst] = useState<boolean>(false);
+  const [igstRate, setIgstRate] = useState<number>(18);
+
+  // Toggleable Note
+  const DEFAULT_KLEANMAX_NOTE = `NOTE :
+1. Boom lift / Scissor lift if required will be charged extra at actuals.
+2. Power and water supply to be provided by the client free of cost.
+3. Safe covered storage space for equipment and chemicals to be provided at the premises.`;
+  const [notes, setNotes] = useState<string>(DEFAULT_KLEANMAX_NOTE);
+  const [includeNote, setIncludeNote] = useState<boolean>(true);
+
   // Page 4: Bank Details, Terms & Conditions (Directly Editable)
   const [bankAccountName, setBankAccountName] = useState('KLEAN MAX BANK');
   const [bankName, setBankName] = useState('KVB BANK');
@@ -124,6 +140,18 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
   const [isEditMode, setIsEditMode] = useState<boolean>(!!quotationId);
   const [loadingEdit, setLoadingEdit] = useState<boolean>(!!quotationId);
   const [inPagePreviewOpen, setInPagePreviewOpen] = useState(false);
+
+  // Financial Calculations (Independent CGST, SGST, IGST)
+  const subtotal = Number(projectValue || 0);
+  const activeCgstRate = applyCgst ? Number(cgstRate || 0) : 0;
+  const activeSgstRate = applySgst ? Number(sgstRate || 0) : 0;
+  const activeIgstRate = applyIgst ? Number(igstRate || 0) : 0;
+  const cgstAmount = applyCgst ? (subtotal * activeCgstRate) / 100 : 0;
+  const sgstAmount = applySgst ? (subtotal * activeSgstRate) / 100 : 0;
+  const igstAmount = applyIgst ? (subtotal * activeIgstRate) / 100 : 0;
+  const totalTax = cgstAmount + sgstAmount + igstAmount;
+  const finalTotal = subtotal + totalTax;
+  const combinedTaxRate = (applyCgst ? activeCgstRate : 0) + (applySgst ? activeSgstRate : 0) + (applyIgst ? activeIgstRate : 0);
 
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -225,6 +253,16 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
               if (snap.bankIfsc) setBankIfsc(snap.bankIfsc);
               if (snap.satisfactionGoal) setSatisfactionGoal(snap.satisfactionGoal);
               if (Array.isArray(snap.terms) && snap.terms.length > 0) setTerms(snap.terms);
+              if (snap.include_note !== undefined) setIncludeNote(Boolean(snap.include_note));
+              if (snap.notes_text) setNotes(snap.notes_text);
+              if (snap.applyCgst !== undefined || snap.applySgst !== undefined || snap.applyIgst !== undefined) {
+                setApplyCgst(Boolean(snap.applyCgst));
+                if (snap.cgstRate !== undefined) setCgstRate(Number(snap.cgstRate));
+                setApplySgst(Boolean(snap.applySgst));
+                if (snap.sgstRate !== undefined) setSgstRate(Number(snap.sgstRate));
+                setApplyIgst(Boolean(snap.applyIgst));
+                if (snap.igstRate !== undefined) setIgstRate(Number(snap.igstRate));
+              }
             }
 
             if (q.customer) {
@@ -283,7 +321,17 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
 
   // Build Payload
   const buildQuotationPayload = () => {
-    const total = Number(projectValue || 0);
+    const subtotal = Number(projectValue || 0);
+    const activeCgstRate = applyCgst ? Number(cgstRate || 0) : 0;
+    const activeSgstRate = applySgst ? Number(sgstRate || 0) : 0;
+    const activeIgstRate = applyIgst ? Number(igstRate || 0) : 0;
+    const cgstAmount = applyCgst ? (subtotal * activeCgstRate) / 100 : 0;
+    const sgstAmount = applySgst ? (subtotal * activeSgstRate) / 100 : 0;
+    const igstAmount = applyIgst ? (subtotal * activeIgstRate) / 100 : 0;
+    const totalTax = cgstAmount + sgstAmount + igstAmount;
+    const finalTotal = subtotal + totalTax;
+    const combinedTaxRate = (applyCgst ? activeCgstRate : 0) + (applySgst ? activeSgstRate : 0) + (applyIgst ? activeIgstRate : 0);
+
     return {
       company_code: 'kleanmax',
       quotation_number: quotationNumber.trim() || 'KM/0309',
@@ -295,17 +343,18 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
       client_gstin: clientGstin.trim(),
       client_phone: clientPhone.trim(),
       attention_person: attentionPerson.trim(),
-      notes: scopeText.trim(),
-      subtotal: total,
-      taxable_amount: total,
-      cgst_rate: 0,
-      cgst_amount: 0,
-      sgst_rate: 0,
-      sgst_amount: 0,
-      igst_rate: 0,
-      igst_amount: 0,
-      total_tax: 0,
-      final_amount: total,
+      notes: includeNote ? notes : '',
+      subtotal: subtotal,
+      taxable_amount: subtotal,
+      cgst_rate: activeCgstRate,
+      cgst_amount: cgstAmount,
+      sgst_rate: activeSgstRate,
+      sgst_amount: sgstAmount,
+      igst_rate: activeIgstRate,
+      igst_amount: igstAmount,
+      total_tax: totalTax,
+      final_amount: finalTotal,
+      tax_rate: combinedTaxRate,
       payment_terms: '50% advance payment required. Remaining balance due upon completion.',
       terms_and_conditions: terms.join('\n'),
       signatory_name: 'Mr. Manikandan Balamurugan',
@@ -321,8 +370,24 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
         scopeText,
         cleanableSqft,
         ratePerSqft,
-        subtotal: total,
-        finalTotal: total,
+        subtotal: subtotal,
+        applyCgst,
+        cgstRate: activeCgstRate,
+        cgstAmount,
+        cgst: cgstAmount,
+        applySgst,
+        sgstRate: activeSgstRate,
+        sgstAmount,
+        sgst: sgstAmount,
+        applyIgst,
+        igstRate: activeIgstRate,
+        igstAmount,
+        igst: igstAmount,
+        totalTax,
+        finalTotal: finalTotal,
+        totalAmount: finalTotal,
+        include_note: includeNote,
+        notes_text: notes,
         bankAccountName,
         bankName,
         bankAccountNo,
@@ -337,8 +402,8 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
           description: scopeText.slice(0, 150) + '...',
           quantity: 1,
           uom: 'JOB',
-          unit_price: total,
-          line_total: total,
+          unit_price: subtotal,
+          line_total: subtotal,
           hsn_sac_code: '998533',
         },
       ],
@@ -657,7 +722,7 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
 
           {/* Proposal Title Block */}
           <div className="pt-16 px-12 space-y-4">
-            <div className="font-serif font-black text-5xl leading-tight text-black tracking-tight">
+            <div className="font-sans font-black text-5xl leading-tight text-black tracking-tight">
               <div>Commercial</div>
               <div>Cleaning</div>
               <div
@@ -899,6 +964,138 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
                 />
               </div>
             </div>
+
+            {/* GST Settings & Summary Box (Independent CGST, SGST, IGST with Checkboxes) */}
+            <div className="bg-slate-50 rounded-xl p-4 border border-slate-300 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black uppercase text-slate-800 tracking-wider">
+                  GST Calculation Settings:
+                </span>
+                <span className="text-xs font-bold text-slate-500">
+                  Subtotal: <strong className="text-slate-900">₹ {subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong>
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                {/* CGST */}
+                <div className="flex items-center justify-between gap-2 p-2 bg-white rounded-lg border border-slate-200">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={applyCgst}
+                      onChange={(e) => setApplyCgst(e.target.checked)}
+                      className="w-4 h-4 rounded text-lime-600 focus:ring-lime-500 cursor-pointer"
+                    />
+                    <span>CGST</span>
+                  </label>
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      step="0.5"
+                      disabled={!applyCgst}
+                      value={cgstRate}
+                      onChange={(e) => setCgstRate(parseFloat(e.target.value) || 0)}
+                      className="w-14 text-center text-xs font-bold border border-slate-300 rounded p-1 disabled:bg-slate-100"
+                    />
+                    <span className="text-xs text-slate-500 font-bold">%</span>
+                  </div>
+                </div>
+
+                {/* SGST */}
+                <div className="flex items-center justify-between gap-2 p-2 bg-white rounded-lg border border-slate-200">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={applySgst}
+                      onChange={(e) => setApplySgst(e.target.checked)}
+                      className="w-4 h-4 rounded text-lime-600 focus:ring-lime-500 cursor-pointer"
+                    />
+                    <span>SGST</span>
+                  </label>
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      step="0.5"
+                      disabled={!applySgst}
+                      value={sgstRate}
+                      onChange={(e) => setSgstRate(parseFloat(e.target.value) || 0)}
+                      className="w-14 text-center text-xs font-bold border border-slate-300 rounded p-1 disabled:bg-slate-100"
+                    />
+                    <span className="text-xs text-slate-500 font-bold">%</span>
+                  </div>
+                </div>
+
+                {/* IGST */}
+                <div className="flex items-center justify-between gap-2 p-2 bg-white rounded-lg border border-slate-200">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={applyIgst}
+                      onChange={(e) => setApplyIgst(e.target.checked)}
+                      className="w-4 h-4 rounded text-lime-600 focus:ring-lime-500 cursor-pointer"
+                    />
+                    <span>IGST</span>
+                  </label>
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      step="0.5"
+                      disabled={!applyIgst}
+                      value={igstRate}
+                      onChange={(e) => setIgstRate(parseFloat(e.target.value) || 0)}
+                      className="w-14 text-center text-xs font-bold border border-slate-300 rounded p-1 disabled:bg-slate-100"
+                    />
+                    <span className="text-xs text-slate-500 font-bold">%</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tax totals and Grand Total */}
+              <div className="flex flex-wrap items-center justify-between pt-2 border-t border-slate-200 text-xs">
+                <div className="space-x-3 text-slate-600 font-bold">
+                  {applyCgst && <span>CGST ({cgstRate}%): ₹{cgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>}
+                  {applySgst && <span>SGST ({sgstRate}%): ₹{sgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>}
+                  {applyIgst && <span>IGST ({igstRate}%): ₹{igstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>}
+                  {!applyCgst && !applySgst && !applyIgst && <span className="italic text-amber-600">No GST applied (Exclusive)</span>}
+                </div>
+                <div className="font-black text-slate-900 text-sm">
+                  TOTAL AMOUNT (INCL. GST): <span className="text-lime-700">₹ {finalTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Toggleable Note Card */}
+            <div className="bg-amber-50/70 p-4 rounded-xl border border-amber-200 space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={includeNote}
+                    onChange={(e) => setIncludeNote(e.target.checked)}
+                    className="w-4 h-4 rounded text-lime-600 focus:ring-lime-500 cursor-pointer"
+                  />
+                  <span className="font-black text-xs text-slate-900 uppercase tracking-wide">
+                    Include Note in Quotation
+                  </span>
+                </label>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${includeNote ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'}`}>
+                  {includeNote ? 'Note Visible in Quotation' : 'Note Hidden in Final Format'}
+                </span>
+              </div>
+
+              {includeNote ? (
+                <textarea
+                  rows={3}
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  className="w-full text-xs font-bold text-slate-800 bg-white border border-amber-300 rounded-lg p-2.5 leading-relaxed focus:outline-none focus:border-lime-500 shadow-2xs"
+                />
+              ) : (
+                <div className="text-xs text-slate-500 italic p-2 bg-white/60 rounded-lg border border-slate-200">
+                  Note is disabled and will be omitted completely from the preview, PDF, and DOCX exports.
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="text-right text-[11px] text-slate-400 font-bold pt-4">Page 3 of 4</div>
@@ -1088,7 +1285,7 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
                   </div>
                 </div>
                 <div className="pt-12 px-10 space-y-3">
-                  <div className="font-serif font-black text-4xl text-black leading-tight">
+                  <div className="font-sans font-black text-4xl text-black leading-tight">
                     <div>Commercial</div>
                     <div>Cleaning</div>
                     <div style={{ color: '#fed10c', WebkitTextStroke: '1.2px black' }}>Proposal</div>
@@ -1135,9 +1332,31 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
                   <div className="font-black text-sm text-black underline">TOTAL PROJECT VALUE:</div>
                   <div className="font-extrabold text-xs text-black">TOTAL CLEANABLE SQFT – APPROX {cleanableSqft}.</div>
                   <div className="font-extrabold text-xs text-black">TOTAL CLEANABLE VALUE SQFT – RS.{Number(ratePerSqft).toFixed(2)}</div>
-                  <div className="bg-[#205B73] text-white p-3 rounded font-black text-sm uppercase">
-                    TOTAL CLEANABLE VALUE – RS. {projectValue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  <div className="bg-[#205B73] text-white p-3 rounded font-black text-sm uppercase flex justify-between items-center">
+                    <span>TOTAL CLEANABLE VALUE – RS. {projectValue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                    <span className="text-xs font-normal opacity-90">(Exclusive of Tax)</span>
                   </div>
+
+                  {/* GST summary in preview */}
+                  {(applyCgst || applySgst || applyIgst) && (
+                    <div className="bg-slate-50 border border-slate-200 rounded p-2 text-xs space-y-1 font-bold">
+                      {applyCgst && <div className="flex justify-between"><span>CGST ({cgstRate}%):</span><span>₹{cgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></div>}
+                      {applySgst && <div className="flex justify-between"><span>SGST ({sgstRate}%):</span><span>₹{sgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></div>}
+                      {applyIgst && <div className="flex justify-between"><span>IGST ({igstRate}%):</span><span>₹{igstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></div>}
+                      <div className="border-t border-slate-300 pt-1 flex justify-between font-black text-sm text-lime-800">
+                        <span>TOTAL AMOUNT (INCL. GST):</span>
+                        <span>₹{finalTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Toggleable Note in Preview (Completely disappears when unchecked) */}
+                  {includeNote && notes && (
+                    <div className="bg-amber-50/80 p-3 rounded-lg border border-amber-300 text-xs mt-3">
+                      <div className="font-black text-slate-900 text-xs mb-1">NOTE :</div>
+                      <div className="text-[11px] text-slate-800 whitespace-pre-wrap leading-relaxed">{notes}</div>
+                    </div>
+                  )}
                 </div>
                 <div className="text-right text-[10px] text-slate-400 font-bold pt-4">Page 3 of 4</div>
               </div>

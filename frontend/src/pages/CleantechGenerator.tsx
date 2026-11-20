@@ -300,9 +300,21 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
     },
   ]);
 
-  // Tax rates
-  const [applyTax, setApplyTax] = useState<boolean>(true);
-  const [taxPercent, setTaxPercent] = useState<number>(18);
+  // Tax rates (Independent CGST, SGST, IGST with checkboxes & editable rates)
+  const [applyCgst, setApplyCgst] = useState<boolean>(true);
+  const [cgstRate, setCgstRate] = useState<number>(9);
+  const [applySgst, setApplySgst] = useState<boolean>(true);
+  const [sgstRate, setSgstRate] = useState<number>(9);
+  const [applyIgst, setApplyIgst] = useState<boolean>(false);
+  const [igstRate, setIgstRate] = useState<number>(18);
+
+  // Toggleable Note
+  const DEFAULT_CLEANTECH_NOTE = `NOTE :
+1. All cleaning chemicals, consumables, and machine tools will be deployed by Cleantech Services.
+2. Continuous power supply and clean water to be provided by the client free of cost.
+3. Safe covered storage space for equipment and materials to be provided at the premises.`;
+  const [notes, setNotes] = useState<string>(DEFAULT_CLEANTECH_NOTE);
+  const [includeNote, setIncludeNote] = useState<boolean>(true);
 
   // Table Layout Style: 'standard' (compact without images) or 'with_images' (Kleanmax Pro style with machine photos and specs)
   const [tableLayout, setTableLayout] = useState<'standard' | 'with_images'>('standard');
@@ -460,8 +472,21 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
               if (snap.bankIfsc) setBankIfsc(snap.bankIfsc);
               if (snap.signatoryName) setSignatoryName(snap.signatoryName);
               if (snap.signatoryDesignation) setSignatoryDesignation(snap.signatoryDesignation);
-              if (snap.applyTax !== undefined) setApplyTax(snap.applyTax);
-              if (snap.taxPercent !== undefined) setTaxPercent(snap.taxPercent);
+              if (snap.applyCgst !== undefined || snap.applySgst !== undefined || snap.applyIgst !== undefined) {
+                setApplyCgst(Boolean(snap.applyCgst));
+                if (snap.cgstRate !== undefined) setCgstRate(Number(snap.cgstRate));
+                setApplySgst(Boolean(snap.applySgst));
+                if (snap.sgstRate !== undefined) setSgstRate(Number(snap.sgstRate));
+                setApplyIgst(Boolean(snap.applyIgst));
+                if (snap.igstRate !== undefined) setIgstRate(Number(snap.igstRate));
+              } else if (snap.applyTax !== undefined) {
+                const taxOn = Boolean(snap.applyTax);
+                setApplyCgst(taxOn);
+                setApplySgst(taxOn);
+                setApplyIgst(false);
+              }
+              if (snap.include_note !== undefined) setIncludeNote(Boolean(snap.include_note));
+              if (snap.notes_text) setNotes(snap.notes_text);
               if (snap.tableLayout) setTableLayout(snap.tableLayout);
               if (snap.columnHeaders) setColumnHeaders(snap.columnHeaders);
             } else {
@@ -496,16 +521,26 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
                 setItems(parsedItems);
               }
               if (q.notes) {
-                const lines = q.notes.split('\n').map((l: string) => l.trim()).filter(Boolean);
-                if (lines.length > 0) setWhyChooseUs(lines);
+                setNotes(q.notes);
               }
               if (q.terms_and_conditions) {
                 const lines = q.terms_and_conditions.split('\n').map((l: string) => l.trim()).filter(Boolean);
                 if (lines.length > 0) setTerms(lines);
               }
-              setApplyTax(Number(q.tax_rate || 0) > 0 || Number(q.total_tax || 0) > 0);
-              if (q.tax_rate) {
-                setTaxPercent(Number(q.tax_rate));
+              const hasCgst = Number(q.cgst_rate || 0) > 0 || Number(q.cgst_amount || 0) > 0;
+              const hasSgst = Number(q.sgst_rate || 0) > 0 || Number(q.sgst_amount || 0) > 0;
+              const hasIgst = Number(q.igst_rate || 0) > 0 || Number(q.igst_amount || 0) > 0;
+              if (hasCgst || hasSgst || hasIgst) {
+                setApplyCgst(hasCgst);
+                if (q.cgst_rate) setCgstRate(Number(q.cgst_rate));
+                setApplySgst(hasSgst);
+                if (q.sgst_rate) setSgstRate(Number(q.sgst_rate));
+                setApplyIgst(hasIgst);
+                if (q.igst_rate) setIgstRate(Number(q.igst_rate));
+              } else if (Number(q.tax_rate || 0) > 0 || Number(q.total_tax || 0) > 0) {
+                setApplyCgst(true);
+                setApplySgst(true);
+                setApplyIgst(false);
               }
             }
           }
@@ -698,13 +733,17 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
     );
   };
 
-  // Calculations
+  // Calculations (Independent CGST, SGST, IGST)
   const subtotal = items.reduce((acc, it) => acc + (it.is_header ? 0 : Number(it.total) || 0), 0);
-  const cgstRate = applyTax ? taxPercent / 2 : 0;
-  const sgstRate = applyTax ? taxPercent / 2 : 0;
-  const cgstAmount = applyTax ? (subtotal * cgstRate) / 100 : 0;
-  const sgstAmount = applyTax ? (subtotal * sgstRate) / 100 : 0;
-  const totalAmount = subtotal + (applyTax ? cgstAmount + sgstAmount : 0);
+  const activeCgstRate = applyCgst ? Number(cgstRate || 0) : 0;
+  const activeSgstRate = applySgst ? Number(sgstRate || 0) : 0;
+  const activeIgstRate = applyIgst ? Number(igstRate || 0) : 0;
+  const cgstAmount = applyCgst ? (subtotal * activeCgstRate) / 100 : 0;
+  const sgstAmount = applySgst ? (subtotal * activeSgstRate) / 100 : 0;
+  const igstAmount = applyIgst ? (subtotal * activeIgstRate) / 100 : 0;
+  const totalTax = cgstAmount + sgstAmount + igstAmount;
+  const totalAmount = subtotal + totalTax;
+  const combinedTaxRate = (applyCgst ? activeCgstRate : 0) + (applySgst ? activeSgstRate : 0) + (applyIgst ? activeIgstRate : 0);
 
   // Convert Number to Indian Words
   const numberToWords = (num: number): string => {
@@ -766,7 +805,7 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
         unit_price: it.is_header ? 0 : Number(it.rate),
         applied_rate: it.is_header ? 0 : Number(it.rate),
         rate_source: 'catalogue',
-        tax_rate: applyTax ? taxPercent : 0,
+        tax_rate: combinedTaxRate,
         line_total: it.is_header ? 0 : Number(it.total),
         item_order: idx + 1,
         image_url: it.image_url || null,
@@ -789,17 +828,27 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
         quotationDate,
         items,
         subtotal,
-        cgst: cgstAmount,
-        sgst: sgstAmount,
+        applyCgst,
+        cgstRate: activeCgstRate,
         cgstAmount,
+        cgst: cgstAmount,
+        applySgst,
+        sgstRate: activeSgstRate,
         sgstAmount,
-        totalTax: cgstAmount + sgstAmount,
+        sgst: sgstAmount,
+        applyIgst,
+        igstRate: activeIgstRate,
+        igstAmount,
+        igst: igstAmount,
+        totalTax,
         totalAmount,
         finalTotal: totalAmount,
+        include_note: includeNote,
+        notes_text: notes,
         whyChooseUs,
         terms,
-        applyTax,
-        taxPercent,
+        applyTax: (applyCgst || applySgst || applyIgst),
+        taxPercent: combinedTaxRate,
         companyName,
         companyAddress,
         companyGstin,
@@ -823,19 +872,21 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
         quotation_type: 'repair_service',
         quotation_date: toISODate(quotationDate),
         job_description: quotationTitle,
-        notes: whyChooseUs.join('\n'),
+        notes: includeNote ? notes : '',
         terms_and_conditions: terms.join('\n'),
         items: payloadItems,
         sections: [],
         subtotal: subtotal,
         taxable_amount: subtotal,
-        cgst_rate: cgstRate,
+        cgst_rate: activeCgstRate,
         cgst_amount: cgstAmount,
-        sgst_rate: sgstRate,
+        sgst_rate: activeSgstRate,
         sgst_amount: sgstAmount,
-        total_tax: cgstAmount + sgstAmount,
+        igst_rate: activeIgstRate,
+        igst_amount: igstAmount,
+        total_tax: totalTax,
         final_amount: totalAmount,
-        tax_rate: applyTax ? taxPercent : 0,
+        tax_rate: combinedTaxRate,
         discount_type: 'none',
         discount_value: 0,
         snapshot_json: snapshot,
@@ -1686,7 +1737,7 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
             </div>
           </div>
 
-          {/* Financial Summary Box (SUB TOTAL, CGST 9%, SGST 9%, TOTAL) */}
+          {/* Financial Summary Box (SUB TOTAL, CGST, SGST, IGST, TOTAL) */}
           <div className="flex justify-end">
             <div className="bg-slate-50 rounded-2xl p-5 border border-slate-300 w-full sm:w-96 space-y-2.5">
               <div className="flex justify-between text-xs font-bold text-slate-600">
@@ -1696,23 +1747,35 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
                 </span>
               </div>
 
-              {applyTax ? (
-                <>
-                  <div className="flex justify-between text-xs text-slate-600">
-                    <span>CGST ({cgstRate}%):</span>
-                    <span className="font-sans text-slate-900 font-bold">
-                      ₹ {cgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-xs text-slate-600">
-                    <span>SGST ({sgstRate}%):</span>
-                    <span className="font-sans text-slate-900 font-bold">
-                      ₹ {sgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                    </span>
-                  </div>
-                </>
-              ) : (
-                <div className="text-[11px] text-amber-700 italic">Tax excluded / Extra</div>
+              {applyCgst && (
+                <div className="flex justify-between text-xs text-slate-600">
+                  <span>CGST ({cgstRate}%):</span>
+                  <span className="font-sans text-slate-900 font-bold">
+                    ₹ {cgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+              )}
+
+              {applySgst && (
+                <div className="flex justify-between text-xs text-slate-600">
+                  <span>SGST ({sgstRate}%):</span>
+                  <span className="font-sans text-slate-900 font-bold">
+                    ₹ {sgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+              )}
+
+              {applyIgst && (
+                <div className="flex justify-between text-xs text-slate-600">
+                  <span>IGST ({igstRate}%):</span>
+                  <span className="font-sans text-slate-900 font-bold">
+                    ₹ {igstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+              )}
+
+              {!applyCgst && !applySgst && !applyIgst && (
+                <div className="text-[11px] text-amber-700 italic">Taxes excluded / Extra</div>
               )}
 
               <div className="pt-2 border-t-2 border-slate-300 flex justify-between items-center bg-teal-500/20 p-2.5 rounded-xl">
@@ -1726,23 +1789,124 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
                 Amount in Words: <strong>{numberToWords(totalAmount)}</strong>
               </div>
 
-              <div className="pt-1 flex items-center justify-between text-xs">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={applyTax}
-                    onChange={(e) => setApplyTax(e.target.checked)}
-                    className="w-4 h-4 rounded text-teal-600 focus:ring-teal-500"
-                  />
-                  <span className="font-bold text-slate-700">Include GST (18%) in Calculation</span>
-                </label>
+              {/* Independent GST Checkboxes with rate inputs (Kleanmax Pro style) */}
+              <div className="pt-2 border-t border-slate-200 space-y-1.5">
+                <div className="text-[11px] font-black uppercase text-slate-700 tracking-wider">
+                  GST Settings (Independent Checkboxes):
+                </div>
+
+                {/* CGST */}
+                <div className="flex items-center justify-between gap-2 p-1.5 bg-white rounded-lg border border-slate-200">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={applyCgst}
+                      onChange={(e) => setApplyCgst(e.target.checked)}
+                      className="w-4 h-4 rounded text-teal-600 focus:ring-teal-500 cursor-pointer"
+                    />
+                    <span>CGST</span>
+                  </label>
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      step="0.5"
+                      disabled={!applyCgst}
+                      value={cgstRate}
+                      onChange={(e) => setCgstRate(parseFloat(e.target.value) || 0)}
+                      className="w-14 text-center text-xs font-bold border border-slate-300 rounded p-1 disabled:bg-slate-100"
+                    />
+                    <span className="text-xs text-slate-500 font-bold">%</span>
+                  </div>
+                </div>
+
+                {/* SGST */}
+                <div className="flex items-center justify-between gap-2 p-1.5 bg-white rounded-lg border border-slate-200">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={applySgst}
+                      onChange={(e) => setApplySgst(e.target.checked)}
+                      className="w-4 h-4 rounded text-teal-600 focus:ring-teal-500 cursor-pointer"
+                    />
+                    <span>SGST</span>
+                  </label>
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      step="0.5"
+                      disabled={!applySgst}
+                      value={sgstRate}
+                      onChange={(e) => setSgstRate(parseFloat(e.target.value) || 0)}
+                      className="w-14 text-center text-xs font-bold border border-slate-300 rounded p-1 disabled:bg-slate-100"
+                    />
+                    <span className="text-xs text-slate-500 font-bold">%</span>
+                  </div>
+                </div>
+
+                {/* IGST */}
+                <div className="flex items-center justify-between gap-2 p-1.5 bg-white rounded-lg border border-slate-200">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={applyIgst}
+                      onChange={(e) => setApplyIgst(e.target.checked)}
+                      className="w-4 h-4 rounded text-teal-600 focus:ring-teal-500 cursor-pointer"
+                    />
+                    <span>IGST</span>
+                  </label>
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      step="0.5"
+                      disabled={!applyIgst}
+                      value={igstRate}
+                      onChange={(e) => setIgstRate(parseFloat(e.target.value) || 0)}
+                      className="w-14 text-center text-xs font-bold border border-slate-300 rounded p-1 disabled:bg-slate-100"
+                    />
+                    <span className="text-xs text-slate-500 font-bold">%</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
           {/* ============================================================== */}
-          {/* EXACT LAST SECTIONS STACKED: Terms & Conditions -> Our Services -> Bank Details & Signatory */}
+          {/* EXACT LAST SECTIONS STACKED: Note -> Terms & Conditions -> Our Services -> Bank Details & Signatory */}
           {/* ============================================================== */}
+
+          {/* Toggleable Note Section with Checkbox */}
+          <div className="bg-amber-50/70 p-5 rounded-2xl border border-amber-200 space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={includeNote}
+                  onChange={(e) => setIncludeNote(e.target.checked)}
+                  className="w-4 h-4 rounded text-teal-600 focus:ring-teal-500 cursor-pointer"
+                />
+                <span className="font-black text-xs text-slate-900 uppercase tracking-wide">
+                  Include Note in Quotation
+                </span>
+              </label>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${includeNote ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'}`}>
+                {includeNote ? 'Note Visible in Quotation' : 'Note Hidden in Final Format'}
+              </span>
+            </div>
+
+            {includeNote ? (
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={3}
+                placeholder="Enter notes..."
+                className="w-full text-xs font-medium text-slate-800 bg-white border border-amber-300 rounded-lg p-3 focus:outline-none focus:border-teal-500 leading-relaxed shadow-2xs"
+              />
+            ) : (
+              <div className="text-xs text-slate-500 italic p-2 bg-white/60 rounded-lg border border-slate-200">
+                Note is disabled and will be omitted completely from the preview, PDF, and DOCX exports.
+              </div>
+            )}
+          </div>
 
           {/* 7. Terms & Conditions (Directly Editable) */}
           <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-3">
@@ -2181,17 +2345,23 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
                         <td colSpan={tableLayout === 'with_images' ? 6 : 5} className="p-2 text-right">SUB TOTAL:</td>
                         <td className="p-2 text-right">₹{subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                       </tr>
-                      {applyTax && (
-                        <>
-                          <tr className="border-t border-slate-200 text-slate-700">
-                            <td colSpan={tableLayout === 'with_images' ? 6 : 5} className="p-1.5 text-right">CGST (9%):</td>
-                            <td className="p-1.5 text-right">₹{cgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                          </tr>
-                          <tr className="border-t border-slate-200 text-slate-700">
-                            <td colSpan={tableLayout === 'with_images' ? 6 : 5} className="p-1.5 text-right">SGST (9%):</td>
-                            <td className="p-1.5 text-right">₹{sgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                          </tr>
-                        </>
+                      {applyCgst && (
+                        <tr className="border-t border-slate-200 text-slate-700">
+                          <td colSpan={tableLayout === 'with_images' ? 6 : 5} className="p-1.5 text-right font-medium">CGST ({cgstRate}%):</td>
+                          <td className="p-1.5 text-right font-medium">₹{cgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                        </tr>
+                      )}
+                      {applySgst && (
+                        <tr className="border-t border-slate-200 text-slate-700">
+                          <td colSpan={tableLayout === 'with_images' ? 6 : 5} className="p-1.5 text-right font-medium">SGST ({sgstRate}%):</td>
+                          <td className="p-1.5 text-right font-medium">₹{sgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                        </tr>
+                      )}
+                      {applyIgst && (
+                        <tr className="border-t border-slate-200 text-slate-700">
+                          <td colSpan={tableLayout === 'with_images' ? 6 : 5} className="p-1.5 text-right font-medium">IGST ({igstRate}%):</td>
+                          <td className="p-1.5 text-right font-medium">₹{igstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                        </tr>
                       )}
                       <tr className="border-t-2 border-slate-900 font-black bg-teal-100 text-sm">
                         <td colSpan={tableLayout === 'with_images' ? 6 : 5} className="p-2 text-right">TOTAL:</td>
@@ -2223,6 +2393,14 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
                       Quotation No: {quotationNo} • Page 2
                     </span>
                   </div>
+
+                  {/* Toggleable Note in Preview (Completely disappears when off) */}
+                  {includeNote && notes && (
+                    <div className="text-xs bg-amber-50/80 p-3.5 rounded-lg border border-amber-300">
+                      <div className="font-black text-slate-900 text-xs mb-1">NOTE :</div>
+                      <div className="text-[11px] text-slate-800 whitespace-pre-wrap leading-relaxed">{notes}</div>
+                    </div>
+                  )}
 
                   {/* Terms & Conditions */}
                   <div className="text-xs space-y-2">

@@ -241,6 +241,7 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
   // 4. Content Blocks
   const [aboutUs, setAboutUs] = useState<string>(DEFAULT_ABOUT_US);
   const [notes, setNotes] = useState<string>(DEFAULT_NOTES);
+  const [includeNote, setIncludeNote] = useState<boolean>(true);
 
   // Terms & Conditions (Directly Editable)
   const [terms, setTerms] = useState<string[]>(TERMS_AND_CONDITIONS);
@@ -408,6 +409,7 @@ Recovery / Dirty Water Tank: 100 L`,
 
             if (snap && typeof snap === 'object') {
               if (snap.about_us) setAboutUs(snap.about_us);
+              if (snap.include_note !== undefined) setIncludeNote(Boolean(snap.include_note));
               if (snap.notes_text) setNotes(snap.notes_text);
               if (snap.quotation_title) {
                 setQuotationTitle(snap.quotation_title);
@@ -767,6 +769,7 @@ Recovery / Dirty Water Tank: 100 L`,
         columnHeaders,
         quotation_title: quotationTitle,
         about_us: aboutUs,
+        include_note: includeNote,
         notes_text: notes,
         subtotal,
         applyCgst,
@@ -801,7 +804,7 @@ Recovery / Dirty Water Tank: 100 L`,
         quotation_type: 'rental',
         quotation_date: toISODate(quotationDate),
         job_description: quotationTitle,
-        notes: notes,
+        notes: includeNote ? notes : '',
         terms_and_conditions: terms.join('\n'),
         signatory_name: signatoryName,
         signatory_designation: signatoryDesignation,
@@ -1778,17 +1781,37 @@ Recovery / Dirty Water Tank: 100 L`,
           {/* 1. NOTE -> 2. Advantages -> 3. Terms -> 4. Other Services -> 5. Company Details & Signatory (ON LEFT) */}
           {/* ============================================================== */}
 
-          {/* 1. NOTE */}
-          <div className="space-y-1.5 pt-4 border-t border-slate-200">
-            <label className="block text-xs font-black uppercase text-slate-900 tracking-wider">
-              NOTE :
-            </label>
-            <textarea
-              rows={4}
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              className="w-full text-xs font-bold text-slate-800 bg-slate-50 border border-slate-300 rounded-xl p-3 leading-relaxed focus:ring-1 focus:ring-amber-500 uppercase"
-            />
+          {/* 1. NOTE (Toggleable with Checkbox) */}
+          <div className="bg-amber-50/70 p-5 rounded-2xl border border-amber-200 space-y-2 mt-4">
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={includeNote}
+                  onChange={(e) => setIncludeNote(e.target.checked)}
+                  className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400 cursor-pointer"
+                />
+                <span className="font-black text-xs text-slate-900 uppercase tracking-wide">
+                  Include Note in Quotation
+                </span>
+              </label>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${includeNote ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'}`}>
+                {includeNote ? 'Note Visible in Quotation' : 'Note Hidden in Final Format'}
+              </span>
+            </div>
+
+            {includeNote ? (
+              <textarea
+                rows={4}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                className="w-full text-xs font-bold text-slate-800 bg-white border border-amber-300 rounded-xl p-3 leading-relaxed focus:ring-1 focus:ring-amber-500 uppercase shadow-2xs"
+              />
+            ) : (
+              <div className="text-xs text-slate-500 italic p-2 bg-white/60 rounded-lg border border-slate-200">
+                Note is disabled and will be omitted completely from the preview, PDF, and DOCX exports.
+              </div>
+            )}
           </div>
 
           {/* 2. Advantages of Renting from Kleanmax Pro */}
@@ -2189,7 +2212,10 @@ Recovery / Dirty Water Tank: 100 L`,
                   </tbody>
                 </table>
 
-                <div className="text-xs font-bold whitespace-pre-wrap">{notes}</div>
+                {/* Toggleable Note (completely disappears when unchecked) */}
+                {includeNote && notes && (
+                  <div className="text-xs font-bold whitespace-pre-wrap">{notes}</div>
+                )}
 
                 <div className="text-xs space-y-1">
                   <div className="font-bold">Advantages of Renting from Kleanmax Pro:</div>

@@ -27,19 +27,38 @@ export const KleanmaxSalesQuotation: React.FC<KleanmaxSalesQuotationProps> = ({
   const [machineName, setMachineName] = useState<string>('Karcher battery auto scrubber');
   const [qty, setQty] = useState<number>(1);
   const [rate, setRate] = useState<number>(248000);
-  const [taxPercent, setTaxPercent] = useState<number>(18);
+
+  // GST Settings (Independent CGST, SGST, IGST with checkboxes & editable rates)
+  const [applyCgst, setApplyCgst] = useState<boolean>(true);
+  const [cgstRate, setCgstRate] = useState<number>(9);
+  const [applySgst, setApplySgst] = useState<boolean>(true);
+  const [sgstRate, setSgstRate] = useState<number>(9);
+  const [applyIgst, setApplyIgst] = useState<boolean>(false);
+  const [igstRate, setIgstRate] = useState<number>(18);
+
+  // Toggleable Note
+  const DEFAULT_SALES_NOTE = `NOTE :
+1. Warranty: 1 Year comprehensive manufacturer warranty on machine against manufacturing defects.
+2. Delivery: Within 3 to 5 business days after receipt of confirmed purchase order.
+3. Free on-site operator training and installation provided by our technical team.`;
+  const [notes, setNotes] = useState<string>(DEFAULT_SALES_NOTE);
+  const [includeNote, setIncludeNote] = useState<boolean>(true);
 
   const [saving, setSaving] = useState(false);
   const [savedQuoteId, setSavedQuoteId] = useState<string | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
-  // Financial Calculations
+  // Financial Calculations (Independent CGST, SGST, IGST)
   const subtotal = Number(qty || 0) * Number(rate || 0);
-  const cgstRate = taxPercent / 2;
-  const sgstRate = taxPercent / 2;
-  const cgstAmount = (subtotal * cgstRate) / 100;
-  const sgstAmount = (subtotal * sgstRate) / 100;
-  const totalAmount = subtotal + cgstAmount + sgstAmount;
+  const activeCgstRate = applyCgst ? Number(cgstRate || 0) : 0;
+  const activeSgstRate = applySgst ? Number(sgstRate || 0) : 0;
+  const activeIgstRate = applyIgst ? Number(igstRate || 0) : 0;
+  const cgstAmount = applyCgst ? (subtotal * activeCgstRate) / 100 : 0;
+  const sgstAmount = applySgst ? (subtotal * activeSgstRate) / 100 : 0;
+  const igstAmount = applyIgst ? (subtotal * activeIgstRate) / 100 : 0;
+  const totalTax = cgstAmount + sgstAmount + igstAmount;
+  const totalAmount = subtotal + totalTax;
+  const combinedTaxRate = (applyCgst ? activeCgstRate : 0) + (applySgst ? activeSgstRate : 0) + (applyIgst ? activeIgstRate : 0);
 
   // Save to database
   const handleSaveToDatabase = async () => {
@@ -76,13 +95,42 @@ export const KleanmaxSalesQuotation: React.FC<KleanmaxSalesQuotationProps> = ({
           applied_rate: rate,
           line_total: subtotal,
           taxable_value: subtotal,
-          tax_rate: taxPercent,
+          tax_rate: combinedTaxRate,
           cgst_amount: cgstAmount,
           sgst_amount: sgstAmount,
+          igst_amount: igstAmount,
           discount_type: 'none',
           discount_value: 0,
         },
       ];
+
+      const snapshot = {
+        machineName,
+        qty,
+        rate,
+        subtotal,
+        applyCgst,
+        cgstRate: activeCgstRate,
+        cgstAmount,
+        cgst: cgstAmount,
+        applySgst,
+        sgstRate: activeSgstRate,
+        sgstAmount,
+        sgst: sgstAmount,
+        applyIgst,
+        igstRate: activeIgstRate,
+        igstAmount,
+        igst: igstAmount,
+        totalTax,
+        totalAmount,
+        finalTotal: totalAmount,
+        include_note: includeNote,
+        notes_text: notes,
+        customerName,
+        customerLocation,
+        quotationNo,
+        quotationDate,
+      };
 
       // 3. Create quotation
       const payload = {
@@ -92,9 +140,21 @@ export const KleanmaxSalesQuotation: React.FC<KleanmaxSalesQuotationProps> = ({
         quotation_date: quotationDate,
         customer_ref: quotationNo,
         job_description: 'Sales Quotation for Karcher Battery Auto Scrubber & Cleaning Equipment',
+        notes: includeNote ? notes : '',
         items: quotationItems,
         sections: [],
-        tax_rate: taxPercent,
+        subtotal: subtotal,
+        taxable_amount: subtotal,
+        cgst_rate: activeCgstRate,
+        cgst_amount: cgstAmount,
+        sgst_rate: activeSgstRate,
+        sgst_amount: sgstAmount,
+        igst_rate: activeIgstRate,
+        igst_amount: igstAmount,
+        total_tax: totalTax,
+        final_amount: totalAmount,
+        tax_rate: combinedTaxRate,
+        snapshot_json: JSON.stringify(snapshot),
         discount_type: 'none',
         discount_value: 0,
         freight_charges: 0,
@@ -391,25 +451,41 @@ export const KleanmaxSalesQuotation: React.FC<KleanmaxSalesQuotationProps> = ({
                   </td>
                 </tr>
 
-                {/* CGST 9% */}
-                <tr className="text-xs">
-                  <td colSpan={5} className="p-2 text-right text-slate-600">
-                    CGST {cgstRate}%
-                  </td>
-                  <td className="p-2 text-right font-bold text-slate-800">
-                    ₹ {cgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                  </td>
-                </tr>
+                {/* CGST */}
+                {applyCgst && (
+                  <tr className="text-xs">
+                    <td colSpan={5} className="p-2 text-right text-slate-600 font-medium">
+                      CGST ({cgstRate}%)
+                    </td>
+                    <td className="p-2 text-right font-bold text-slate-800">
+                      ₹ {cgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </td>
+                  </tr>
+                )}
 
-                {/* SGST 9% */}
-                <tr className="text-xs">
-                  <td colSpan={5} className="p-2 text-right text-slate-600">
-                    SGST {sgstRate}%
-                  </td>
-                  <td className="p-2 text-right font-bold text-slate-800">
-                    ₹ {sgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                  </td>
-                </tr>
+                {/* SGST */}
+                {applySgst && (
+                  <tr className="text-xs">
+                    <td colSpan={5} className="p-2 text-right text-slate-600 font-medium">
+                      SGST ({sgstRate}%)
+                    </td>
+                    <td className="p-2 text-right font-bold text-slate-800">
+                      ₹ {sgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </td>
+                  </tr>
+                )}
+
+                {/* IGST */}
+                {applyIgst && (
+                  <tr className="text-xs">
+                    <td colSpan={5} className="p-2 text-right text-slate-600 font-medium">
+                      IGST ({igstRate}%)
+                    </td>
+                    <td className="p-2 text-right font-bold text-slate-800">
+                      ₹ {igstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </td>
+                  </tr>
+                )}
 
                 {/* Grand Total Row */}
                 <tr className="bg-slate-900 text-white font-black text-sm border-t-2 border-slate-900">
@@ -422,6 +498,119 @@ export const KleanmaxSalesQuotation: React.FC<KleanmaxSalesQuotationProps> = ({
                 </tr>
               </tbody>
             </table>
+          </div>
+
+          {/* GST Controls (Kleanmax Pro style with checkboxes and editable rates) */}
+          <div className="bg-slate-50 rounded-xl p-3 border border-slate-200 space-y-2 mt-3">
+            <div className="text-[11px] font-black uppercase text-slate-700 tracking-wider">
+              GST Calculation Settings (Independent Checkboxes):
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {/* CGST */}
+              <div className="flex items-center justify-between gap-2 p-1.5 bg-white rounded-lg border border-slate-200">
+                <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={applyCgst}
+                    onChange={(e) => setApplyCgst(e.target.checked)}
+                    className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400 cursor-pointer"
+                  />
+                  <span>CGST</span>
+                </label>
+                <div className="flex items-center gap-1">
+                  <input
+                    type="number"
+                    step="0.5"
+                    disabled={!applyCgst}
+                    value={cgstRate}
+                    onChange={(e) => setCgstRate(parseFloat(e.target.value) || 0)}
+                    className="w-14 text-center text-xs font-bold border border-slate-300 rounded p-1 disabled:bg-slate-100"
+                  />
+                  <span className="text-xs text-slate-500 font-bold">%</span>
+                </div>
+              </div>
+
+              {/* SGST */}
+              <div className="flex items-center justify-between gap-2 p-1.5 bg-white rounded-lg border border-slate-200">
+                <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={applySgst}
+                    onChange={(e) => setApplySgst(e.target.checked)}
+                    className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400 cursor-pointer"
+                  />
+                  <span>SGST</span>
+                </label>
+                <div className="flex items-center gap-1">
+                  <input
+                    type="number"
+                    step="0.5"
+                    disabled={!applySgst}
+                    value={sgstRate}
+                    onChange={(e) => setSgstRate(parseFloat(e.target.value) || 0)}
+                    className="w-14 text-center text-xs font-bold border border-slate-300 rounded p-1 disabled:bg-slate-100"
+                  />
+                  <span className="text-xs text-slate-500 font-bold">%</span>
+                </div>
+              </div>
+
+              {/* IGST */}
+              <div className="flex items-center justify-between gap-2 p-1.5 bg-white rounded-lg border border-slate-200">
+                <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={applyIgst}
+                    onChange={(e) => setApplyIgst(e.target.checked)}
+                    className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400 cursor-pointer"
+                  />
+                  <span>IGST</span>
+                </label>
+                <div className="flex items-center gap-1">
+                  <input
+                    type="number"
+                    step="0.5"
+                    disabled={!applyIgst}
+                    value={igstRate}
+                    onChange={(e) => setIgstRate(parseFloat(e.target.value) || 0)}
+                    className="w-14 text-center text-xs font-bold border border-slate-300 rounded p-1 disabled:bg-slate-100"
+                  />
+                  <span className="text-xs text-slate-500 font-bold">%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Toggleable Note Section with Checkbox */}
+          <div className="bg-amber-50/70 p-4 rounded-xl border border-amber-200 space-y-2 mt-3">
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={includeNote}
+                  onChange={(e) => setIncludeNote(e.target.checked)}
+                  className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400 cursor-pointer"
+                />
+                <span className="font-black text-xs text-slate-900 uppercase tracking-wide">
+                  Include Note in Quotation
+                </span>
+              </label>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${includeNote ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'}`}>
+                {includeNote ? 'Note Visible in Quotation' : 'Note Hidden in Final Format'}
+              </span>
+            </div>
+
+            {includeNote ? (
+              <textarea
+                rows={3}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                className="w-full text-xs font-bold text-slate-800 bg-white border border-amber-300 rounded-lg p-2.5 leading-relaxed focus:outline-none focus:border-amber-500 shadow-2xs"
+              />
+            ) : (
+              <div className="text-xs text-slate-500 italic p-2 bg-white/60 rounded-lg border border-slate-200">
+                Note is disabled and will be omitted completely from final quotation format.
+              </div>
+            )}
           </div>
         </div>
 
