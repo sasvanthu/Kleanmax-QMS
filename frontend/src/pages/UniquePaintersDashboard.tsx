@@ -13,7 +13,8 @@ import {
   TrendingUp,
   Clock,
   Download,
-  Edit
+  Edit,
+  ChevronRight
 } from 'lucide-react';
 
 interface UniquePaintersDashboardProps {
@@ -58,43 +59,37 @@ export const UniquePaintersDashboard: React.FC<UniquePaintersDashboardProps> = (
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-8 font-sans">
       {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-6">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
+        <div className="space-y-1">
           <button
             onClick={() => onNavigate('dashboard')}
-            className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-xl transition-all mb-3 cursor-pointer"
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors mb-1 cursor-pointer"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Back to All Companies</span>
+            <span>All Companies</span>
           </button>
-          <div className="flex items-center gap-2">
-            <span className="bg-purple-600 text-white font-black text-xs px-3 py-1 rounded-full uppercase tracking-wider shadow-xs">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+              {company?.company_name || 'Unique Painters'}
+            </h1>
+            <span className="bg-purple-600 text-white font-black text-[11px] px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-2xs">
               Surface Coating & Painting
             </span>
-            <span className="bg-purple-100 text-purple-900 text-xs font-bold px-2.5 py-1 rounded-full">
-              Prefix: {company?.quotation_prefix || 'UNP'}
-            </span>
             {company?.phone1 && (
-              <span className="text-xs font-mono font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+              <span className="text-[11px] font-mono font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
                 Contact: {company.phone1}
               </span>
             )}
           </div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight mt-2 flex items-center gap-2.5">
-            <span>{company?.company_name || 'Unique Painters'}</span>
-          </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Industrial epoxy floor coatings, multi-coat interior/exterior painting & architectural robotic spray finishes.
-          </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={() => onNavigate('uniquepainters_generator')}
-            className="px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-black rounded-xl flex items-center gap-2 shadow-sm transition-all transform active:scale-95 cursor-pointer"
+            className="px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-black rounded-xl flex items-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            <span>+ New Quotation</span>
+            <span>New Quotation</span>
           </button>
           <button
             onClick={() => onNavigate('settings', { tab: 'uniquepainters' })}
@@ -151,62 +146,84 @@ export const UniquePaintersDashboard: React.FC<UniquePaintersDashboardProps> = (
         </div>
       </div>
 
-      {/* Core Action Hub (2 Big Executive Cards) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Core Action Hub */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {/* Card 1: Quotation Generator */}
-        <div
-          onClick={() => onNavigate('uniquepainters_generator')}
-          className="group relative bg-white rounded-3xl p-7 border-2 border-slate-200 hover:border-purple-400 shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col justify-between"
-        >
+        <div className="group relative bg-white rounded-2xl border-t-4 border-t-purple-600 border-x border-b border-slate-200 hover:border-purple-400/80 shadow-xs hover:shadow-xl transition-all duration-300 p-5 flex flex-col justify-between">
           <div>
-            <div className="w-12 h-12 rounded-2xl bg-purple-50 border border-purple-200 flex items-center justify-center text-purple-600 mb-5 group-hover:scale-110 transition-transform">
-              <Paintbrush className="w-6 h-6" />
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <h2 className="text-lg font-black text-slate-900 group-hover:text-purple-600 transition-colors">
+                  Generate Quotation
+                </h2>
+                <div className="flex items-center gap-1.5 mt-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-purple-600 shrink-0" />
+                  <span className="text-[11px] font-bold text-purple-800 uppercase tracking-wider">
+                    Painting & Epoxy Flooring Proposal
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => onNavigate('uniquepainters_generator')}
+                className="w-8 h-8 rounded-xl bg-slate-50 hover:bg-purple-100/70 border border-slate-200/80 text-slate-500 hover:text-purple-700 flex items-center justify-center shrink-0 transition-colors cursor-pointer shadow-2xs"
+                title="Open Painting Generator"
+              >
+                <ArrowRight className="w-4 h-4" />
+              </button>
             </div>
 
-            <h2 className="text-xl font-black text-slate-900 group-hover:text-purple-600 transition-colors">
-              Generate Quotation
-            </h2>
-            <p className="text-xs font-bold text-purple-700 mt-1 uppercase tracking-wider">
-              Painting & Epoxy Flooring
-            </p>
-            <p className="text-xs text-slate-600 mt-3 leading-relaxed">
-              Create detailed interior/exterior painting proposals, wall putty applications, and industrial floor epoxy estimates with authentic letterhead and multi-page preview.
-            </p>
-          </div>
+            <div className="border-t border-slate-100 my-4" />
 
-          <div className="mt-8 pt-4 border-t border-slate-100">
-            <button className="w-full py-3 px-4 bg-slate-900 group-hover:bg-purple-600 text-white font-black text-xs rounded-2xl flex items-center justify-center gap-2 transition-all">
-              <span>Open Painting Generator</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            <button
+              onClick={() => onNavigate('uniquepainters_generator')}
+              className="w-full text-left font-black text-xs text-white bg-purple-600 hover:bg-purple-700 px-3.5 py-2.5 rounded-xl transition-all flex items-center justify-between cursor-pointer shadow-xs active:scale-98 group/btn"
+            >
+              <div className="flex items-center gap-2">
+                <Paintbrush className="w-4 h-4 text-white shrink-0" />
+                <span>Open Painting Generator</span>
+              </div>
+              <ChevronRight className="w-3.5 h-3.5 text-white group-hover/btn:translate-x-0.5 transition-transform shrink-0" />
             </button>
           </div>
         </div>
 
         {/* Card 2: Past Records */}
-        <div
-          onClick={() => onNavigate('uniquepainters_quotes')}
-          className="group relative bg-white rounded-3xl p-7 border-2 border-slate-200 hover:border-purple-400 shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col justify-between"
-        >
+        <div className="group relative bg-white rounded-2xl border-t-4 border-t-purple-600 border-x border-b border-slate-200 hover:border-purple-400/80 shadow-xs hover:shadow-xl transition-all duration-300 p-5 flex flex-col justify-between">
           <div>
-            <div className="w-12 h-12 rounded-2xl bg-purple-50 border border-purple-200 flex items-center justify-center text-purple-600 mb-5 group-hover:scale-110 transition-transform">
-              <FileText className="w-6 h-6" />
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <h2 className="text-lg font-black text-slate-900 group-hover:text-purple-600 transition-colors">
+                  Past Records
+                </h2>
+                <div className="flex items-center gap-1.5 mt-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-purple-600 shrink-0" />
+                  <span className="text-[11px] font-bold text-purple-800 uppercase tracking-wider">
+                    Full Archive, Word (.docx) & PDF Export
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => onNavigate('uniquepainters_quotes')}
+                className="w-8 h-8 rounded-xl bg-slate-50 hover:bg-purple-100/70 border border-slate-200/80 text-slate-500 hover:text-purple-700 flex items-center justify-center shrink-0 transition-colors cursor-pointer shadow-2xs"
+                title="View Past Records"
+              >
+                <ArrowRight className="w-4 h-4" />
+              </button>
             </div>
 
-            <h2 className="text-xl font-black text-slate-900 group-hover:text-purple-600 transition-colors">
-              Past Records
-            </h2>
-            <p className="text-xs font-bold text-purple-700 mt-1 uppercase tracking-wider">
-              Full Archive, Word (.docx) & PDF
-            </p>
-            <p className="text-xs text-slate-600 mt-3 leading-relaxed">
-              Access the historical registry of Unique Painters surface coating quotations. Preview proposals, track client confirmations, and export instantly.
-            </p>
-          </div>
+            <div className="border-t border-slate-100 my-4" />
 
-          <div className="mt-8 pt-4 border-t border-slate-100">
-            <button className="w-full py-3 px-4 bg-slate-900 group-hover:bg-purple-600 text-white font-black text-xs rounded-2xl flex items-center justify-center gap-2 transition-all">
-              <span>View Past Records</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            <button
+              onClick={() => onNavigate('uniquepainters_quotes')}
+              className="w-full text-left font-bold text-xs text-slate-700 hover:text-slate-950 bg-slate-50 hover:bg-slate-100 border border-slate-200/80 hover:border-slate-300 px-3.5 py-2.5 rounded-xl transition-all flex items-center justify-between cursor-pointer active:scale-98 group/btn"
+            >
+              <div className="flex items-center gap-2">
+                <FileText className="w-3.5 h-3.5 text-slate-400 group-hover/btn:text-slate-700 shrink-0" />
+                <span>View Past Records & Exports</span>
+              </div>
+              <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover/btn:translate-x-0.5 transition-transform shrink-0" />
             </button>
           </div>
         </div>
@@ -214,12 +231,11 @@ export const UniquePaintersDashboard: React.FC<UniquePaintersDashboardProps> = (
 
       {/* Recent Quotations Quick Table */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="p-5 border-b border-slate-200 flex items-center justify-between">
+        <div className="p-4 sm:p-5 border-b border-slate-200 flex items-center justify-between">
           <div>
             <h3 className="font-extrabold text-sm uppercase tracking-wider text-slate-900">
               Recent Unique Painters Quotations
             </h3>
-            <p className="text-xs text-slate-500">Live feed of stored proposals in database</p>
           </div>
           <button
             onClick={() => onNavigate('uniquepainters_quotes')}
