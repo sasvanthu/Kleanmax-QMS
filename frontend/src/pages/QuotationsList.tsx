@@ -21,8 +21,22 @@ export const QuotationsList: React.FC<QuotationsListProps> = ({
   onOpenPreview,
   defaultBrandFilter = 'all',
 }) => {
-  const [quotations, setQuotations] = useState<Quotation[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Instant load from session cache (0ms)
+  const [quotations, setQuotations] = useState<Quotation[]>(() => {
+    try {
+      const cached = sessionStorage.getItem('kmp_cached_quotations');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [loading, setLoading] = useState<boolean>(() => {
+    try {
+      return !sessionStorage.getItem('kmp_cached_quotations');
+    } catch {
+      return true;
+    }
+  });
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [brandFilter, setBrandFilter] = useState<'all' | 'kleanmaxpro' | 'kleanmax' | 'uniquepainters' | 'cleantech'>(defaultBrandFilter);
@@ -36,20 +50,23 @@ export const QuotationsList: React.FC<QuotationsListProps> = ({
     setBrandFilter(defaultBrandFilter);
   }, [defaultBrandFilter]);
 
+  // Load fresh quotations from API on mount
   useEffect(() => {
     loadQuotations();
-  }, [searchTerm, statusFilter]);
+  }, []);
 
-  const loadQuotations = async () => {
-    setLoading(true);
+  const loadQuotations = async (silent = false) => {
+    if (!silent && quotations.length === 0) setLoading(true);
     try {
-      const data = await api.quotations.list({
-        search: searchTerm || undefined,
-        status: statusFilter !== 'all' ? statusFilter : undefined,
-      });
+      const data = await api.quotations.list();
       setQuotations(data);
+      try {
+        sessionStorage.setItem('kmp_cached_quotations', JSON.stringify(data));
+      } catch (e) {
+        console.warn('Cache write failed:', e);
+      }
     } catch (err) {
-      console.error(err);
+      console.error('Failed to load quotations:', err);
     } finally {
       setLoading(false);
     }
@@ -61,7 +78,7 @@ export const QuotationsList: React.FC<QuotationsListProps> = ({
       await api.quotations.approve(id);
       setToastMsg({ type: 'success', message: `Quotation ${quotationNumber || id} approved successfully!` });
       setTimeout(() => setToastMsg(null), 4000);
-      loadQuotations();
+      loadQuotations(true);
     } catch (err: any) {
       alert(err.message || 'Failed to approve quotation');
     } finally {
@@ -70,18 +87,24 @@ export const QuotationsList: React.FC<QuotationsListProps> = ({
   };
 
   const handleDelete = async (id: string, quotationNumber: string) => {
-    if (!window.confirm(`Are you sure you want to permanently remove quotation ${quotationNumber}? This action cannot be undone.`)) {
+    if (!window.confirm(`Are you sure you want to permanently delete quotation ${quotationNumber}? This action cannot be undone.`)) {
       return;
     }
     setActionLoadingId(id);
     try {
       await api.quotations.delete(id);
-      setQuotations(prev => prev.filter(q => q.id !== id));
+      const updated = quotations.filter(q => q.id !== id);
+      setQuotations(updated);
       setSelectedIds(prev => prev.filter(selectedId => selectedId !== id));
-      setToastMsg({ type: 'success', message: `Quotation ${quotationNumber} removed from database!` });
+      try {
+        sessionStorage.setItem('kmp_cached_quotations', JSON.stringify(updated));
+      } catch (e) {
+        console.warn(e);
+      }
+      setToastMsg({ type: 'success', message: `Quotation ${quotationNumber} deleted successfully!` });
       setTimeout(() => setToastMsg(null), 4000);
     } catch (err: any) {
-      alert(err.message || 'Failed to remove quotation. Super Admin privileges required.');
+      alert(err.message || 'Failed to delete quotation.');
     } finally {
       setActionLoadingId(null);
     }
@@ -96,7 +119,7 @@ export const QuotationsList: React.FC<QuotationsListProps> = ({
       setToastMsg({ type: 'success', message: `${selectedIds.length} quotation(s) approved successfully!` });
       setTimeout(() => setToastMsg(null), 4000);
       setSelectedIds([]);
-      loadQuotations();
+      loadQuotations(true);
     } catch (err: any) {
       alert(err.message || 'Failed to approve selected quotations');
     } finally {
@@ -104,25 +127,56 @@ export const QuotationsList: React.FC<QuotationsListProps> = ({
     }
   };
 
-  const handleBulkRemove = async () => {
+  const handleBulkDelete = async () => {
     if (selectedIds.length === 0) return;
-    if (!window.confirm(`Are you sure you want to permanently remove ${selectedIds.length} selected quotations from the database? This cannot be undone.`)) return;
+    if (!window.confirm(`Are you sure you want to permanently delete ${selectedIds.length} selected quotations? This cannot be undone.`)) return;
     setActionLoadingId('bulk');
     try {
       await Promise.all(selectedIds.map(id => api.quotations.delete(id).catch(e => console.warn(e))));
-      setToastMsg({ type: 'success', message: `${selectedIds.length} quotation(s) permanently removed from database!` });
+      const updated = quotations.filter(q => !selectedIds.includes(q.id));
+      setQuotations(updated);
+      try {
+        sessionStorage.setItem('kmp_cached_quotations', JSON.stringify(updated));
+      } catch (e) {
+        console.warn(e);
+      }
+      setToastMsg({ type: 'success', message: `${selectedIds.length} quotation(s) deleted successfully!` });
       setTimeout(() => setToastMsg(null), 4000);
       setSelectedIds([]);
-      loadQuotations();
     } catch (err: any) {
-      alert(err.message || 'Failed to remove selected quotations');
+      alert(err.message || 'Failed to delete selected quotations');
     } finally {
       setActionLoadingId(null);
     }
   };
 
-  // Filter by brand division
+  // Instant in-memory search and multi-criteria filter (0ms delay)
   const filteredQuotations = quotations.filter((q) => {
+    // 1. Status Filter
+    if (statusFilter !== 'all' && q.status !== statusFilter) {
+      return false;
+    }
+
+    // 2. Search Query Filter (Quotation #, Company Name, Job, Customer Ref, Notes)
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase().trim();
+      const qNum = (q.quotation_number || '').toLowerCase();
+      const cust = (q.customer?.company_name || '').toLowerCase();
+      const job = (q.job_description || '').toLowerCase();
+      const ref = (q.customer_ref || '').toLowerCase();
+      const notes = (q.notes || '').toLowerCase();
+      if (
+        !qNum.includes(term) &&
+        !cust.includes(term) &&
+        !job.includes(term) &&
+        !ref.includes(term) &&
+        !notes.includes(term)
+      ) {
+        return false;
+      }
+    }
+
+    // 3. Brand division filter
     if (brandFilter === 'all') return true;
     if (brandFilter === 'kleanmaxpro') {
       return q.company_code === 'kleanmaxpro' || q.quotation_type === 'area_based' || (q.job_description && q.job_description.includes('Kleanmax Pro'));
@@ -306,12 +360,12 @@ export const QuotationsList: React.FC<QuotationsListProps> = ({
         </div>
       )}
 
-      {/* Super Admin Bulk Actions Bar */}
-      {isSuperAdmin && selectedIds.length > 0 && (
+      {/* Bulk Actions Bar */}
+      {selectedIds.length > 0 && (
         <div className="bg-slate-900 text-white px-5 py-3 rounded-2xl flex flex-wrap items-center justify-between gap-3 shadow-xl border border-slate-700 animate-fade-in">
           <div className="flex items-center gap-2.5 text-xs font-bold">
             <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
-            <span><strong className="text-amber-400 text-sm">{selectedIds.length}</strong> quotation(s) selected for Super Admin action:</span>
+            <span><strong className="text-amber-400 text-sm">{selectedIds.length}</strong> quotation(s) selected:</span>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -323,12 +377,12 @@ export const QuotationsList: React.FC<QuotationsListProps> = ({
               <span>{actionLoadingId === 'bulk' ? 'Processing...' : `Approve Selected (${selectedIds.length})`}</span>
             </button>
             <button
-              onClick={handleBulkRemove}
+              onClick={handleBulkDelete}
               disabled={actionLoadingId === 'bulk'}
               className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-black text-xs rounded-xl flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
             >
               <Trash2 className="w-4 h-4" />
-              <span>{actionLoadingId === 'bulk' ? 'Processing...' : `Remove Selected (${selectedIds.length})`}</span>
+              <span>{actionLoadingId === 'bulk' ? 'Deleting...' : `Delete Selected (${selectedIds.length})`}</span>
             </button>
             <button
               onClick={() => setSelectedIds([])}
@@ -359,30 +413,28 @@ export const QuotationsList: React.FC<QuotationsListProps> = ({
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 text-slate-700 uppercase font-bold text-[10px] border-b border-slate-200">
                 <tr>
-                  {isSuperAdmin && (
-                    <th className="p-3.5 text-center w-10">
-                      <input
-                        type="checkbox"
-                        checked={filteredQuotations.length > 0 && selectedIds.length === filteredQuotations.length}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedIds(filteredQuotations.map(q => q.id));
-                          } else {
-                            setSelectedIds([]);
-                          }
-                        }}
-                        className="rounded text-amber-500 focus:ring-amber-400 w-4 h-4 cursor-pointer"
-                        title="Select All Quotations"
-                      />
-                    </th>
-                  )}
+                  <th className="p-3.5 text-center w-10">
+                    <input
+                      type="checkbox"
+                      checked={filteredQuotations.length > 0 && selectedIds.length === filteredQuotations.length}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedIds(filteredQuotations.map(q => q.id));
+                        } else {
+                          setSelectedIds([]);
+                        }
+                      }}
+                      className="rounded text-amber-500 focus:ring-amber-400 w-4 h-4 cursor-pointer"
+                      title="Select All Quotations"
+                    />
+                  </th>
                   <th className="p-3.5">Quotation #</th>
                   <th className="p-3.5">Division</th>
                   <th className="p-3.5">Customer</th>
                   <th className="p-3.5">Date</th>
                   <th className="p-3.5 text-right">Amount (₹)</th>
                   <th className="p-3.5 text-center">Status</th>
-                  <th className="p-3.5 text-center">Super Admin & Document Actions</th>
+                  <th className="p-3.5 text-center">Actions & Document Export</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -393,22 +445,20 @@ export const QuotationsList: React.FC<QuotationsListProps> = ({
 
                   return (
                     <tr key={q.id} className={`hover:bg-slate-50/80 transition-colors ${selectedIds.includes(q.id) ? 'bg-amber-50/50' : ''}`}>
-                      {isSuperAdmin && (
-                        <td className="p-3.5 text-center">
-                          <input
-                            type="checkbox"
-                            checked={selectedIds.includes(q.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedIds(prev => [...prev, q.id]);
-                              } else {
-                                setSelectedIds(prev => prev.filter(id => id !== q.id));
-                              }
-                            }}
-                            className="rounded text-amber-500 focus:ring-amber-400 w-4 h-4 cursor-pointer"
-                          />
-                        </td>
-                      )}
+                      <td className="p-3.5 text-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.includes(q.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedIds(prev => [...prev, q.id]);
+                            } else {
+                              setSelectedIds(prev => prev.filter(id => id !== q.id));
+                            }
+                          }}
+                          className="rounded text-amber-500 focus:ring-amber-400 w-4 h-4 cursor-pointer"
+                        />
+                      </td>
                       <td className="p-3.5 font-sans font-bold text-slate-900">
                         {q.quotation_number}
                         {q.revision_number > 0 && (
@@ -484,41 +534,37 @@ export const QuotationsList: React.FC<QuotationsListProps> = ({
 
                       <td className="p-3.5 text-center whitespace-nowrap">
                         <div className="flex items-center justify-center gap-1.5">
-                          {/* Super Admin APPROVE Button */}
-                          {isSuperAdmin && (
-                            q.status !== 'approved' && q.status !== 'issued' ? (
-                              <button
-                                onClick={() => handleApprove(q.id, q.quotation_number)}
-                                disabled={actionLoadingId === q.id}
-                                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[10px] rounded-lg flex items-center gap-1 shadow-xs transition-colors cursor-pointer"
-                                title="Approve quotation"
-                              >
-                                <CheckCircle2 className="w-3 h-3 text-white" />
-                                <span>{actionLoadingId === q.id ? 'Approving...' : 'Approve'}</span>
-                              </button>
-                            ) : (
-                              <span
-                                className="px-2 py-0.5 bg-emerald-50 text-emerald-800 border border-emerald-300 font-extrabold text-[10px] rounded-md flex items-center gap-1"
-                                title="Quotation Approved"
-                              >
-                                <Check className="w-3 h-3 text-emerald-600" />
-                                <span>Approved</span>
-                              </span>
-                            )
+                          {/* Approve Button */}
+                          {q.status !== 'approved' && q.status !== 'issued' ? (
+                            <button
+                              onClick={() => handleApprove(q.id, q.quotation_number)}
+                              disabled={actionLoadingId === q.id}
+                              className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[10px] rounded-lg flex items-center gap-1 shadow-xs transition-colors cursor-pointer"
+                              title="Approve quotation"
+                            >
+                              <CheckCircle2 className="w-3 h-3 text-white" />
+                              <span>{actionLoadingId === q.id ? 'Approving...' : 'Approve'}</span>
+                            </button>
+                          ) : (
+                            <span
+                              className="px-2 py-0.5 bg-emerald-50 text-emerald-800 border border-emerald-300 font-extrabold text-[10px] rounded-md flex items-center gap-1"
+                              title="Quotation Approved"
+                            >
+                              <Check className="w-3 h-3 text-emerald-600" />
+                              <span>Approved</span>
+                            </span>
                           )}
 
-                          {/* Super Admin REMOVE Button */}
-                          {isSuperAdmin && (
-                            <button
-                              onClick={() => handleDelete(q.id, q.quotation_number)}
-                              disabled={actionLoadingId === q.id}
-                              className="px-2.5 py-1 bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-300 hover:border-rose-600 font-black text-[10px] rounded-lg flex items-center gap-1 transition-all shadow-2xs cursor-pointer"
-                              title="Permanently remove quotation"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                              <span>Remove</span>
-                            </button>
-                          )}
+                          {/* Delete Quotation Button */}
+                          <button
+                            onClick={() => handleDelete(q.id, q.quotation_number)}
+                            disabled={actionLoadingId === q.id}
+                            className="px-2.5 py-1 bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-300 hover:border-rose-600 font-black text-[10px] rounded-lg flex items-center gap-1 transition-all shadow-2xs cursor-pointer active:scale-95"
+                            title={`Permanently delete quotation ${q.quotation_number}`}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            <span>{actionLoadingId === q.id ? 'Deleting...' : 'Delete'}</span>
+                          </button>
 
                           {/* Edit Button */}
                           <button

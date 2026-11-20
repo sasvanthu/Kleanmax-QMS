@@ -223,3 +223,57 @@ class QuotationResponse(BaseModel):
     
     created_at: datetime
     updated_at: datetime
+
+
+class QuotationListItemResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    company_code: Optional[str] = "kleanmaxpro"
+    quotation_number: str
+    revision_number: int = 0
+    parent_quotation_id: Optional[str] = None
+    customer_id: str
+    quotation_type: str = "area_based"
+    status: str = "draft"
+    quotation_date: date
+    validity_date: Optional[date] = None
+    customer_ref: Optional[str] = None
+    job_description: Optional[str] = None
+    payment_terms: Optional[str] = None
+    delivery_terms: Optional[str] = None
+    warranty_terms: Optional[str] = None
+    
+    subtotal: Decimal = Decimal("0.00")
+    discount_type: str = "none"
+    discount_value: Decimal = Decimal("0.00")
+    total_discount: Decimal = Decimal("0.00")
+    freight_charges: Decimal = Decimal("0.00")
+    packing_charges: Decimal = Decimal("0.00")
+    other_charges: Decimal = Decimal("0.00")
+    taxable_amount: Decimal = Decimal("0.00")
+    is_interstate: bool = False
+    cgst_rate: Decimal = Decimal("9.00")
+    cgst_amount: Decimal = Decimal("0.00")
+    sgst_rate: Decimal = Decimal("9.00")
+    sgst_amount: Decimal = Decimal("0.00")
+    igst_rate: Decimal = Decimal("0.00")
+    igst_amount: Decimal = Decimal("0.00")
+    total_tax: Decimal = Decimal("0.00")
+    rounding_adjustment: Decimal = Decimal("0.00")
+    final_amount: Decimal = Decimal("0.00")
+    amount_in_words: Optional[str] = None
+    image_url: Optional[str] = None
+    signatory_name: Optional[str] = None
+    signatory_designation: Optional[str] = None
+    signatory_phone: Optional[str] = None
+    
+    prepared_by_id: Optional[str] = None
+    prepared_by_name: Optional[str] = None
+    approved_by_id: Optional[str] = None
+    approved_by_name: Optional[str] = None
+    approved_at: Optional[datetime] = None
+    issued_at: Optional[datetime] = None
+    
+    customer: Optional[CustomerResponse] = None
+    created_at: datetime
+    updated_at: datetime

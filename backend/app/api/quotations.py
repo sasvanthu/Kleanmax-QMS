@@ -3,17 +3,17 @@ import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from fastapi.responses import HTMLResponse
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload, defer
 from sqlalchemy import or_
 from typing import List, Optional
 from datetime import date
 from backend.app.core.database import get_db
 from backend.app.core.security import get_current_user, get_optional_current_user, require_roles
 from backend.app.models.all_models import (
-    Quotation, Customer, Profile, CompanySetting, QuotationSection, QuotationItem
+    Quotation, Customer, Profile, CompanySetting, QuotationSection, QuotationItem, QuotationRevision
 )
 from backend.app.schemas.quotation import (
-    QuotationCreate, QuotationUpdate, QuotationResponse,
+    QuotationCreate, QuotationUpdate, QuotationResponse, QuotationListItemResponse,
     RevisionCreateRequest, QuotationSectionSchema, QuotationItemSchema
 )
 from backend.app.services.calculator import (
@@ -93,7 +93,7 @@ def get_next_quotation_number_endpoint(
     }
 
 
-@router.get("", response_model=List[QuotationResponse])
+@router.get("", response_model=List[QuotationListItemResponse])
 def get_quotations(
     search: Optional[str] = Query(None, description="Search quotation number, customer name, notes"),
     status: Optional[str] = Query(None, description="Filter by status: draft, pending_approval, approved, issued, revised, cancelled"),
@@ -101,12 +101,23 @@ def get_quotations(
     customer_id: Optional[str] = Query(None),
     from_date: Optional[date] = Query(None),
     to_date: Optional[date] = Query(None),
-    limit: int = Query(50, ge=1, le=200),
+    limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
     current_user: Profile = Depends(get_current_user)
 ):
-    query = db.query(Quotation).join(Customer)
+    query = (
+        db.query(Quotation)
+        .outerjoin(Customer, Quotation.customer_id == Customer.id)
+        .options(
+            joinedload(Quotation.customer),
+            joinedload(Quotation.prepared_by),
+            joinedload(Quotation.approved_by),
+            defer(Quotation.snapshot_json),
+            defer(Quotation.terms_and_conditions),
+            defer(Quotation.notes),
+        )
+    )
 
     if search:
         search_pattern = f"%{search.strip()}%"
@@ -116,13 +127,14 @@ def get_quotations(
                 Customer.company_name.ilike(search_pattern),
                 Quotation.notes.ilike(search_pattern),
                 Quotation.customer_ref.ilike(search_pattern),
+                Quotation.job_description.ilike(search_pattern),
             )
         )
 
-    if status:
+    if status and status != 'all':
         query = query.filter(Quotation.status == status)
 
-    if company_code:
+    if company_code and company_code != 'all':
         query = query.filter(Quotation.company_code == company_code)
 
     if customer_id:
@@ -139,7 +151,7 @@ def get_quotations(
     # Populate helper fields for response
     results = []
     for q in quotations:
-        res = QuotationResponse.model_validate(q)
+        res = QuotationListItemResponse.model_validate(q)
         res.prepared_by_name = q.prepared_by.full_name if q.prepared_by else None
         res.approved_by_name = q.approved_by.full_name if q.approved_by else None
         results.append(res)
@@ -363,16 +375,22 @@ def download_quotation_docx(
 def delete_quotation_endpoint(
     id: str,
     db: Session = Depends(get_db),
-    current_user: Profile = Depends(require_roles(["admin", "super_admin"]))
+    current_user: Profile = Depends(get_current_user)
 ):
-    """Only Super Admin can delete a quotation."""
+    """Delete a quotation and all its associated items, sections, and revisions."""
     quotation = db.query(Quotation).filter(Quotation.id == id).first()
     if not quotation:
         raise HTTPException(status_code=404, detail="Quotation not found")
 
-    # Clean up associated items and sections
-    db.query(QuotationItem).filter(QuotationItem.quotation_id == id).delete()
-    db.query(QuotationSection).filter(QuotationSection.quotation_id == id).delete()
+    # Safely clear parent/previous references to this quotation
+    db.query(Quotation).filter(Quotation.parent_quotation_id == id).update({"parent_quotation_id": None}, synchronize_session=False)
+    db.query(QuotationRevision).filter(QuotationRevision.previous_quotation_id == id).update({"previous_quotation_id": None}, synchronize_session=False)
+
+    # Clean up associated items, sections, and revisions
+    db.query(QuotationItem).filter(QuotationItem.quotation_id == id).delete(synchronize_session=False)
+    db.query(QuotationSection).filter(QuotationSection.quotation_id == id).delete(synchronize_session=False)
+    db.query(QuotationRevision).filter(QuotationRevision.quotation_id == id).delete(synchronize_session=False)
+    
     db.delete(quotation)
     db.commit()
 
