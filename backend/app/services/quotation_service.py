@@ -256,6 +256,7 @@ def create_quotation(
             override_at=datetime.utcnow() if sec_calc.rate_source == "manual_override" else None,
             discount_percent=sec_calc.discount_percent,
             line_total=sec_calc.line_total,
+            image_url=getattr(sec_input, 'image_url', None),
             notes=sec_input.notes,
         )
         db.add(section_row)
@@ -559,6 +560,7 @@ def update_quotation(
                 override_at=datetime.utcnow() if sec_calc.rate_source == "manual_override" else None,
                 discount_percent=sec_calc.discount_percent,
                 line_total=sec_calc.line_total,
+                image_url=getattr(sec_input, 'image_url', None),
                 notes=sec_input.notes,
             )
             db.add(s_row)

@@ -55,6 +55,7 @@ def migrate_database():
             ("brand_color", "VARCHAR(20) DEFAULT '#FED10C'"),
             ("signatory_name", "VARCHAR(255) DEFAULT 'Mr. Manikandan Balamurugan'"),
             ("signatory_designation", "VARCHAR(255) DEFAULT 'Sales and Service Head'"),
+            ("signatory_phone", "VARCHAR(50) DEFAULT '+91 73388 82036'"),
             ("default_payment_terms", "TEXT"),
             ("default_delivery_terms", "TEXT"),
             ("default_warranty_terms", "TEXT"),
@@ -73,6 +74,19 @@ def migrate_database():
             ("warranty_terms", "TEXT"),
             ("signatory_name", "VARCHAR(255) DEFAULT 'Mr. Manikandan Balamurugan'"),
             ("signatory_designation", "VARCHAR(255) DEFAULT 'Sales and Service Head'"),
+            ("signatory_phone", "VARCHAR(50) DEFAULT '+91 73388 82036'"),
+        ],
+        "quotation_sections": [
+            ("image_url", "TEXT"),
+            ("notes", "TEXT"),
+        ],
+        "quotation_items": [
+            ("image_url", "TEXT"),
+            ("notes", "TEXT"),
+        ],
+        "profiles": [
+            ("company_code", "VARCHAR(50)"),
+            ("phone", "VARCHAR(50)"),
         ],
         "customers": [
             ("billing_address_line2", "VARCHAR(255)"),
