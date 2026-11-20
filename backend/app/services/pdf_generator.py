@@ -1,4 +1,6 @@
 import os
+import io
+import json
 import base64
 import logging
 import tempfile
@@ -38,8 +40,48 @@ def format_date_filter(d, fmt='%d/%m/%Y'):
     except Exception:
         return str(d)
 
+def resolve_image_to_data_uri(img_ref: Optional[str]) -> Optional[str]:
+    """Convert any image reference (local path, static file, or remote URL) to an inline base64 data URI."""
+    if not img_ref:
+        return None
+    s = str(img_ref).strip()
+    if not s or s.lower() == "none":
+        return None
+    if s.startswith("data:image"):
+        return s
+    
+    # 1. Check local static directory
+    clean_path = s.lstrip("/\\")
+    local_p = STATIC_DIR / clean_path
+    if local_p.exists() and local_p.is_file():
+        ext = local_p.suffix.lower().replace(".", "")
+        if ext == "jpg": ext = "jpeg"
+        try:
+            with open(local_p, "rb") as f:
+                b64 = base64.b64encode(f.read()).decode("utf-8")
+                return f"data:image/{ext};base64,{b64}"
+        except Exception as e:
+            logger.warning(f"Error reading local image {local_p}: {e}")
+
+    # 2. Check if it's an HTTP / Supabase Storage URL
+    if s.startswith("http://") or s.startswith("https://"):
+        try:
+            import urllib.request
+            req = urllib.request.Request(s, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                data = resp.read()
+                content_type = resp.headers.get_content_type() or "image/png"
+                b64 = base64.b64encode(data).decode("utf-8")
+                return f"data:{content_type};base64,{b64}"
+        except Exception as e:
+            logger.warning(f"Error fetching remote image {s}: {e}")
+            return s  # Return original URL as fallback
+
+    return None
+
 jinja_env.filters['currency'] = format_currency_filter
 jinja_env.filters['format_date'] = format_date_filter
+jinja_env.filters['to_data_uri'] = resolve_image_to_data_uri
 
 
 def get_file_base64(filename: str) -> Optional[str]:
@@ -108,6 +150,42 @@ def render_quotation_html(
         tax_val = 0.0
         final_amount_val = float(snapshot.get('finalTotal') or snapshot.get('totalAmount') or subtotal_val)
 
+    # Ensure items have resolved data URIs for images
+    source_items = items or []
+    if (not source_items) and snapshot.get('items'):
+        source_items = snapshot['items']
+
+    processed_items = []
+    for itm in source_items:
+        itm_img = None
+        if isinstance(itm, dict):
+            itm_img = itm.get('image_url')
+            name = itm.get('item_name') or ''
+        else:
+            itm_img = getattr(itm, 'image_url', None)
+            name = getattr(itm, 'item_name', '') or ''
+        
+        # If no explicit image_url, detect product machine image by name
+        if not itm_img and name:
+            nm = name.upper()
+            if 'KARCHER' in nm or 'SCRUBBER' in nm:
+                itm_img = "/karcher_scrubber.png"
+            elif 'RB-800' in nm or '800' in nm:
+                itm_img = "/products/rb800.png"
+            elif 'RB-650' in nm or '650' in nm:
+                itm_img = "/products/rb650.png"
+            elif 'BD-50' in nm or 'BD50' in nm:
+                itm_img = "/products/bd5050.png"
+
+        resolved_uri = resolve_image_to_data_uri(itm_img)
+        if isinstance(itm, dict):
+            itm_dict = dict(itm)
+            itm_dict['resolved_image_uri'] = resolved_uri
+            processed_items.append(itm_dict)
+        else:
+            setattr(itm, 'resolved_image_uri', resolved_uri)
+            processed_items.append(itm)
+
     html_content = template.render(
         snapshot=snapshot,
         subtotal_val=subtotal_val,
@@ -119,7 +197,7 @@ def render_quotation_html(
         company=company,
         customer=customer,
         sections=sections,
-        items=items,
+        items=processed_items,
         company_code=company_code,
         logo_base64=header_b64,
         header_base64=header_b64,

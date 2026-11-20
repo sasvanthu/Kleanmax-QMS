@@ -889,6 +889,7 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
         tax_rate: combinedTaxRate,
         discount_type: 'none',
         discount_value: 0,
+        image_url: items.find(it => !it.is_header && it.image_url)?.image_url || null,
         snapshot_json: snapshot,
         client_name: customerName,
         client_address: addressLine1,

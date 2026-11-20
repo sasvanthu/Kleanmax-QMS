@@ -101,11 +101,14 @@ export const KleanmaxSalesQuotation: React.FC<KleanmaxSalesQuotationProps> = ({
           igst_amount: igstAmount,
           discount_type: 'none',
           discount_value: 0,
+          image_url: '/karcher_scrubber.png',
         },
       ];
 
       const snapshot = {
         machineName,
+        machine_image: '/karcher_scrubber.png',
+        image_url: '/karcher_scrubber.png',
         qty,
         rate,
         subtotal,
@@ -140,6 +143,7 @@ export const KleanmaxSalesQuotation: React.FC<KleanmaxSalesQuotationProps> = ({
         quotation_date: quotationDate,
         customer_ref: quotationNo,
         job_description: 'Sales Quotation for Karcher Battery Auto Scrubber & Cleaning Equipment',
+        image_url: '/karcher_scrubber.png',
         notes: includeNote ? notes : '',
         items: quotationItems,
         sections: [],
@@ -206,7 +210,7 @@ export const KleanmaxSalesQuotation: React.FC<KleanmaxSalesQuotationProps> = ({
       qId = await handleSaveToDatabase();
     }
     if (qId) {
-      const printWindow = window.open(`/api/quotations/${qId}/html`, '_blank');
+      const printWindow = window.open(api.quotations.getHtmlUrl(qId), '_blank');
       if (printWindow) {
         printWindow.onload = () => printWindow.print();
       }

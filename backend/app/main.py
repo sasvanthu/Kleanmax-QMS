@@ -41,12 +41,30 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount static files
+# Mount static files and subdirectories for direct URL access
 STATIC_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+for sub in ["headers", "products", "unique_painters", "kleanmax"]:
+    subdir = STATIC_DIR / sub
+    if subdir.exists():
+        app.mount(f"/{sub}", StaticFiles(directory=str(subdir)), name=f"static_{sub}")
 
 # Include API Router
 app.include_router(api_router, prefix=settings.API_V1_STR)
+
+
+@app.get("/{filename}.png")
+@app.get("/{filename}.jpg")
+@app.get("/{filename}.jpeg")
+def get_root_static_image(filename: str):
+    from fastapi.responses import FileResponse
+    from fastapi import HTTPException
+    for ext in [".png", ".jpg", ".jpeg"]:
+        p = STATIC_DIR / f"{filename}{ext}"
+        if p.exists():
+            media = "image/png" if ext == ".png" else "image/jpeg"
+            return FileResponse(p, media_type=media)
+    raise HTTPException(status_code=404, detail="Image not found")
 
 
 @app.get("/api/health", tags=["Health"])

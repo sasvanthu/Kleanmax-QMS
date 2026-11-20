@@ -793,8 +793,8 @@ Recovery / Dirty Water Tank: 100 L`,
         sigPhone: signatoryPhone,
       };
 
-      // Use first item with an uploaded (supabase) image_url as quotation-level image
-      const firstUploadedImage = items.find(it => it.image_url && it.image_url.startsWith('http'))?.image_url || null;
+      // Use first item with an image_url as quotation-level image
+      const firstUploadedImage = items.find(it => it.image_url)?.image_url || null;
 
       // Quotation creation payload
       const payload = {

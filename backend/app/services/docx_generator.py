@@ -29,12 +29,17 @@ import logging
 logger = logging.getLogger(__name__)
 
 def _load_image_stream(img_ref: str):
-    """Load image from local path or remote URL (e.g. Supabase storage public URL)."""
+    """Load image from local path, base64 data URI, or remote URL (e.g. Supabase storage public URL)."""
     if not img_ref:
         return None
     try:
         s = str(img_ref).strip()
-        if s.startswith("http://") or s.startswith("https://"):
+        if s.startswith("data:image"):
+            import base64
+            parts = s.split(",", 1)
+            if len(parts) > 1:
+                return io.BytesIO(base64.b64decode(parts[1]))
+        elif s.startswith("http://") or s.startswith("https://"):
             req = urllib.request.Request(
                 s,
                 headers={"User-Agent": "Mozilla/5.0"}
@@ -48,6 +53,10 @@ def _load_image_stream(img_ref: str):
                 p = STATIC_DIR / s.lstrip("/\\")
             if p.exists():
                 with open(p, "rb") as f:
+                    return io.BytesIO(f.read())
+            fallback_p = STATIC_DIR / Path(s).name
+            if fallback_p.exists():
+                with open(fallback_p, "rb") as f:
                     return io.BytesIO(f.read())
     except Exception as e:
         logger.warning(f"Could not load image {img_ref}: {e}")
@@ -1293,7 +1302,20 @@ def generate_quotation_docx_bytes(
     if company_code == 'uniquepainters':
         return _generate_uniquepainters_docx(quotation, company, customer, sections=sections_list, items=items_list)
 
-    if company_code == 'kleanmax':
+    is_km_cleaning_proposal = (
+        company_code == 'kleanmax'
+        and getattr(quotation, 'quotation_type', '') not in ['item_based', 'repair_service', 'rental', 'sales']
+        and (not items_list or len(items_list) == 0)
+        and (not snapshot.get('items') or len(snapshot.get('items')) == 0)
+        and not snapshot.get('machineName')
+        and (
+            'WILSTON' in getattr(quotation, 'job_description', '').upper()
+            or 'CLEANING' in getattr(quotation, 'job_description', '').upper()
+            or snapshot.get('scopeTitle')
+            or snapshot.get('cleanableSqft')
+        )
+    )
+    if is_km_cleaning_proposal:
         return _generate_kleanmax_docx(quotation, company, customer, sections=sections_list, items=items_list)
 
     # Brand color mapping
@@ -1369,17 +1391,17 @@ def generate_quotation_docx_bytes(
     r_to_name.bold = True
     r_to_name.font.size = Pt(10.5)
 
-    if customer and customer.contact_person:
+    if customer and getattr(customer, 'contact_person', None):
         r_attn = p_to.add_run(f"ATTN: {customer.contact_person}\n")
         r_attn.font.size = Pt(9)
-    if customer and customer.phone:
+    if customer and getattr(customer, 'phone', None):
         r_ph = p_to.add_run(f"Contact: {customer.phone}\n")
         r_ph.font.size = Pt(9)
-    if customer and customer.gstin:
+    if customer and getattr(customer, 'gstin', None):
         r_gst = p_to.add_run(f"GSTIN: {customer.gstin}\n")
         r_gst.font.size = Pt(9)
-    if customer and customer.billing_address_line1:
-        addr = f"{customer.billing_address_line1}, {customer.billing_city or ''} - {customer.billing_pincode or ''}"
+    if customer and getattr(customer, 'billing_address_line1', None):
+        addr = f"{customer.billing_address_line1}, {getattr(customer, 'billing_city', '') or ''} - {getattr(customer, 'billing_pincode', '') or ''}"
         r_addr = p_to.add_run(f"Address: {addr}")
         r_addr.font.size = Pt(8.5)
 
@@ -1483,8 +1505,13 @@ def generate_quotation_docx_bytes(
 
             # Embed machine or uploaded image if available
             img_to_embed = None
-            if idx == 1 and getattr(quotation, 'image_url', None):
+            itm_img_val = getattr(itm, 'image_url', None) or (itm.get('image_url') if isinstance(itm, dict) else None)
+            if itm_img_val:
+                img_to_embed = itm_img_val
+            elif idx == 1 and getattr(quotation, 'image_url', None):
                 img_to_embed = quotation.image_url
+            elif 'KARCHER' in itm.item_name.upper() or 'SCRUBBER' in itm.item_name.upper():
+                img_to_embed = str(STATIC_DIR / "karcher_scrubber.png")
             elif 'RB-800' in itm.item_name.upper() or '800' in itm.item_name:
                 img_to_embed = str(STATIC_DIR / "products" / "rb800.png")
             elif 'RB-650' in itm.item_name.upper() or '650' in itm.item_name:

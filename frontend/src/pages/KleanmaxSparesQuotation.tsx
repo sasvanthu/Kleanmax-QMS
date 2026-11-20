@@ -269,7 +269,7 @@ export const KleanmaxSparesQuotation: React.FC<KleanmaxSparesQuotationProps> = (
       qId = await handleSaveToDatabase();
     }
     if (qId) {
-      const printWindow = window.open(`/api/quotations/${qId}/html`, '_blank');
+      const printWindow = window.open(api.quotations.getHtmlUrl(qId), '_blank');
       if (printWindow) {
         printWindow.onload = () => printWindow.print();
       }

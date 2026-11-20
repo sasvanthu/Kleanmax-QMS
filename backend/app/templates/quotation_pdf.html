@@ -990,7 +990,7 @@
         </div>
         </div>
     </div>
-{% elif company_code == 'kleanmax' %}
+{% elif company_code == 'kleanmax' and quotation.quotation_type not in ['item_based', 'repair_service', 'rental', 'sales'] and (not snapshot.machineName) and (not items or items|length == 0) and (not snapshot.items or snapshot.items|length == 0) and ('CLEANING' in quotation.job_description|default('')|upper or snapshot.scopeTitle or snapshot.cleanableSqft) %}
     <!-- ================= KLEANMAX PAGE 1: COVER PAGE ================= -->
     <div class="page km-page" style="height: 297mm; position: relative; box-sizing: border-box; overflow: hidden; background: #ffffff;">
         <!-- Top Section: Logo (left) and WWW.KLEANMAX.COM Box (right) -->
@@ -1304,7 +1304,7 @@
     </div>
 
     <!-- 5. Items / Spares / Services Table or Dynamic Word Scope -->
-    {% if company_code == 'kleanmax' and ('CLEANING' in quotation.job_description|default('')|upper or quotation.notes) %}
+    {% if company_code == 'kleanmax' and quotation.quotation_type not in ['item_based', 'repair_service', 'rental', 'sales'] and (not items or items|length == 0) and (not snapshot.items or snapshot.items|length == 0) and ('WILSTON' in quotation.job_description|default('')|upper or 'POWER PLANT' in quotation.job_description|default('')|upper or snapshot.cleanableSqft) %}
     <!-- DYNAMIC WORD-PROCESSOR SCOPE OF WORK (CONTINUOUS NATURAL FLOW) -->
     <div style="margin: 15px 0; font-size: 8.5pt; line-height: 1.55; color: #1e293b;">
         {% set scope_lines = quotation.notes.split('\n') if quotation.notes else [] %}
@@ -1374,8 +1374,9 @@
                     <td class="text-center">{{ loop.index }}</td>
                     <td>
                         <div style="font-weight: 700; color: #0f172a; font-size: 9pt;">{{ item.item_name }}</div>
-                        {% if (item.image_url or quotation.image_url) and loop.first %}
-                        <div style="margin: 8px 0;"><img src="{{ item.image_url or quotation.image_url }}" style="max-height: 140px; max-width: 220px; width: auto; height: auto; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px; background: #ffffff; display: block;" alt="Uploaded Product Photo" /></div>
+                        {% set itm_img = item.resolved_image_uri or (item.image_url|to_data_uri) or (quotation.image_url|to_data_uri if loop.first else none) %}
+                        {% if itm_img %}
+                        <div style="margin: 8px 0;"><img src="{{ itm_img }}" style="max-height: 140px; max-width: 220px; width: auto; height: auto; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px; background: #ffffff; display: block;" alt="{{ item.item_name }}" /></div>
                         {% elif 'RB-800' in item.item_name|upper or '800' in item.item_name %}
                             {% if rb800_base64 %}
                             <div style="margin: 8px 0;"><img src="data:image/png;base64,{{ rb800_base64 }}" style="max-height: 140px; max-width: 220px; width: auto; height: auto; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px; background: #ffffff; display: block;" alt="RB-800" /></div>
@@ -1384,9 +1385,9 @@
                             {% if rb650_base64 %}
                             <div style="margin: 8px 0;"><img src="data:image/png;base64,{{ rb650_base64 }}" style="max-height: 140px; max-width: 220px; width: auto; height: auto; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px; background: #ffffff; display: block;" alt="RB-650" /></div>
                             {% endif %}
-                        {% elif 'BD-50' in item.item_name|upper or 'BD50' in item.item_name|upper or 'KARCHER' in item.item_name|upper %}
-                            {% if bd5050_base64 or machine_base64 %}
-                            <div style="margin: 8px 0;"><img src="data:image/png;base64,{{ bd5050_base64 or machine_base64 }}" style="max-height: 140px; max-width: 220px; width: auto; height: auto; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px; background: #ffffff; display: block;" alt="Scrubber" /></div>
+                        {% elif 'BD-50' in item.item_name|upper or 'BD50' in item.item_name|upper or 'KARCHER' in item.item_name|upper or 'SCRUBBER' in item.item_name|upper %}
+                            {% if machine_base64 or bd5050_base64 %}
+                            <div style="margin: 8px 0;"><img src="data:image/png;base64,{{ machine_base64 or bd5050_base64 }}" style="max-height: 140px; max-width: 220px; width: auto; height: auto; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px; background: #ffffff; display: block;" alt="Scrubber" /></div>
                             {% endif %}
                         {% endif %}
                         {% if item.description and not item.description.startswith('HEADER:') %}
