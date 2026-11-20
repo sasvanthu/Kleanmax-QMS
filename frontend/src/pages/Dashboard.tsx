@@ -1,7 +1,6 @@
 import React from 'react';
 import { User } from '../services/types';
 import {
-  Sparkles,
   Building2,
   ArrowRight,
   ShieldCheck,
@@ -29,31 +28,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
 }) => {
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-10 font-sans">
-      {/* Merged Master Header */}
-      <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 text-white rounded-3xl p-6 sm:p-8 shadow-xl border border-slate-800 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-bl from-amber-500/20 via-sky-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
-
-        <div className="relative z-10 space-y-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 bg-[#FED10C] text-slate-950 px-3.5 py-1 rounded-full text-xs font-black uppercase tracking-wider shadow-xs">
-              <Sparkles className="w-3.5 h-3.5" />
-              Super Admin Console
-            </span>
-            <span className="inline-flex items-center gap-1.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-0.5 rounded-full text-[11px] font-bold">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              All 4 Companies Active
-            </span>
-          </div>
-
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight">
-            4 Companies & Master Enterprise Console
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-300 max-w-3xl leading-relaxed">
-            Consolidated overview and central administration across all 4 enterprise subsidiaries. Access any company portal below or configure master settings, customer directory, and global records.
-          </p>
-        </div>
-      </div>
-
       {/* SECTION 1: 4 SUBSIDIARY COMPANIES */}
       <div className="space-y-4">
         <div className="flex items-center justify-between border-b border-slate-200 pb-3">
