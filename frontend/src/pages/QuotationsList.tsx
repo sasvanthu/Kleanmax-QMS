@@ -15,6 +15,23 @@ interface QuotationsListProps {
   defaultBrandFilter?: 'all' | 'kleanmaxpro' | 'kleanmax' | 'uniquepainters' | 'cleantech';
 }
 
+export const getQuotationCompany = (q: Quotation): 'kleanmaxpro' | 'kleanmax' | 'uniquepainters' | 'cleantech' => {
+  const code = (q.company_code || '').toLowerCase().trim();
+  if (code === 'cleantech' || code === 'cts') return 'cleantech';
+  if (code === 'uniquepainters' || code === 'unp') return 'uniquepainters';
+  if (code === 'kleanmax' || code === 'klm') return 'kleanmax';
+  if (code === 'kleanmaxpro' || code === 'kmp') return 'kleanmaxpro';
+
+  // Fallback to quotation number prefix
+  const num = (q.quotation_number || '').toUpperCase().trim();
+  if (num.startsWith('CTS')) return 'cleantech';
+  if (num.startsWith('UNP')) return 'uniquepainters';
+  if (num.startsWith('KLM') || num.startsWith('KM/')) return 'kleanmax';
+  if (num.startsWith('KMP')) return 'kleanmaxpro';
+
+  return 'kleanmaxpro';
+};
+
 export const QuotationsList: React.FC<QuotationsListProps> = ({
   currentUser,
   onNavigate,
@@ -176,25 +193,12 @@ export const QuotationsList: React.FC<QuotationsListProps> = ({
       }
     }
 
-    // 3. Brand division filter
-    if (brandFilter === 'all') return true;
-    if (brandFilter === 'kleanmaxpro') {
-      return q.company_code === 'kleanmaxpro' || q.quotation_type === 'area_based' || (q.job_description && q.job_description.includes('Kleanmax Pro'));
-    }
-    if (brandFilter === 'kleanmax') {
-      return (
-        q.company_code === 'kleanmax' ||
-        q.quotation_type === 'repair_service' ||
-        q.quotation_type === 'item_based' ||
-        (q.customer_ref && q.customer_ref.startsWith('KM/')) ||
-        (q.job_description && (q.job_description.includes('Spares') || q.job_description.includes('Sales')))
-      );
-    }
-    if (brandFilter === 'uniquepainters') {
-      return q.company_code === 'uniquepainters' || (q.job_description && q.job_description.toLowerCase().includes('paint'));
-    }
-    if (brandFilter === 'cleantech') {
-      return q.company_code === 'cleantech' || (q.job_description && (q.job_description.toLowerCase().includes('solar') || q.job_description.toLowerCase().includes('facade') || q.job_description.toLowerCase().includes('amc')));
+    // 3. Brand division filter (Strict 1-to-1 matching)
+    if (brandFilter !== 'all') {
+      const comp = getQuotationCompany(q);
+      if (comp !== brandFilter) {
+        return false;
+      }
     }
     return true;
   });
@@ -469,23 +473,35 @@ export const QuotationsList: React.FC<QuotationsListProps> = ({
                       </td>
 
                       <td className="p-3.5">
-                        {q.company_code === 'cleantech' ? (
-                          <span className="bg-slate-100 text-slate-900 border border-slate-300 font-extrabold text-[10px] px-2 py-0.5 rounded">
-                            CLEANTECH
-                          </span>
-                        ) : q.company_code === 'uniquepainters' ? (
-                          <span className="bg-blue-50 text-[#1A5393] border border-blue-200 font-extrabold text-[10px] px-2 py-0.5 rounded">
-                            UNIQUE PAINTERS
-                          </span>
-                        ) : q.company_code === 'kleanmax' ? (
-                          <span className="bg-emerald-50 text-emerald-800 border border-emerald-300 font-extrabold text-[10px] px-2 py-0.5 rounded">
-                            KLEANMAX
-                          </span>
-                        ) : (
-                          <span className="bg-amber-100 text-amber-950 border border-amber-300 font-black text-[10px] px-2 py-0.5 rounded">
-                            KLEANMAX PRO
-                          </span>
-                        )}
+                        {(() => {
+                          const comp = getQuotationCompany(q);
+                          if (comp === 'cleantech') {
+                            return (
+                              <span className="bg-slate-100 text-slate-900 border border-slate-300 font-extrabold text-[10px] px-2 py-0.5 rounded">
+                                CLEANTECH
+                              </span>
+                            );
+                          }
+                          if (comp === 'uniquepainters') {
+                            return (
+                              <span className="bg-blue-50 text-[#1A5393] border border-blue-200 font-extrabold text-[10px] px-2 py-0.5 rounded">
+                                UNIQUE PAINTERS
+                              </span>
+                            );
+                          }
+                          if (comp === 'kleanmax') {
+                            return (
+                              <span className="bg-emerald-50 text-emerald-800 border border-emerald-300 font-extrabold text-[10px] px-2 py-0.5 rounded">
+                                KLEANMAX
+                              </span>
+                            );
+                          }
+                          return (
+                            <span className="bg-amber-100 text-amber-950 border border-amber-300 font-black text-[10px] px-2 py-0.5 rounded">
+                              KLEANMAX PRO
+                            </span>
+                          );
+                        })()}
                       </td>
 
                       <td className="p-3.5 font-bold text-slate-800">
