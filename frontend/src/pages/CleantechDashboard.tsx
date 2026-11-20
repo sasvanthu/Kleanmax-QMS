@@ -72,7 +72,7 @@ export const CleantechDashboard: React.FC<CleantechDashboardProps> = ({
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
               {company?.company_name || 'Cleantech Services'}
             </h1>
-            <span className="bg-teal-500 text-slate-950 font-black text-[11px] px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-2xs">
+            <span className="bg-slate-950 text-white font-black text-[11px] px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-2xs">
               Solar & Facility Care
             </span>
             {company?.gstin && (
@@ -86,7 +86,7 @@ export const CleantechDashboard: React.FC<CleantechDashboardProps> = ({
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={() => onNavigate('cleantech_generator')}
-            className="px-4 py-2.5 bg-teal-500 hover:bg-teal-600 text-slate-950 text-xs font-black rounded-xl flex items-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer"
+            className="px-4 py-2.5 bg-slate-950 hover:bg-black text-white text-xs font-black rounded-xl flex items-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>New Quotation</span>
@@ -95,7 +95,7 @@ export const CleantechDashboard: React.FC<CleantechDashboardProps> = ({
             onClick={() => onNavigate('settings', { tab: 'cleantech' })}
             className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all cursor-pointer"
           >
-            <Building2 className="w-4 h-4 text-teal-600" />
+            <Building2 className="w-4 h-4 text-slate-950" />
             <span>Settings</span>
           </button>
         </div>
@@ -104,7 +104,7 @@ export const CleantechDashboard: React.FC<CleantechDashboardProps> = ({
       {/* KPI Metric Strip */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-teal-50 flex items-center justify-center text-teal-600 shrink-0">
+          <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-950 shrink-0">
             <FileText className="w-6 h-6" />
           </div>
           <div>
@@ -149,16 +149,16 @@ export const CleantechDashboard: React.FC<CleantechDashboardProps> = ({
       {/* Core Action Hub */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {/* Card 1: Quotation Generator */}
-        <div className="group relative bg-white rounded-2xl border-t-4 border-t-teal-600 border-x border-b border-slate-200 hover:border-teal-400/80 shadow-xs hover:shadow-xl transition-all duration-300 p-5 flex flex-col justify-between">
+        <div className="group relative bg-white rounded-2xl border-t-4 border-t-slate-900 border-x border-b border-slate-200 hover:border-slate-800 shadow-xs hover:shadow-xl transition-all duration-300 p-5 flex flex-col justify-between">
           <div>
             <div className="flex items-start justify-between gap-2">
               <div>
-                <h2 className="text-lg font-black text-slate-900 group-hover:text-teal-600 transition-colors">
+                <h2 className="text-lg font-black text-slate-900 group-hover:text-black transition-colors">
                   Generate Quotation
                 </h2>
                 <div className="flex items-center gap-1.5 mt-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-teal-600 shrink-0" />
-                  <span className="text-[11px] font-bold text-teal-800 uppercase tracking-wider">
+                  <span className="w-1.5 h-1.5 rounded-full bg-slate-950 shrink-0" />
+                  <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
                     Solar, Facade & AMC Contracts Proposal
                   </span>
                 </div>
@@ -166,7 +166,7 @@ export const CleantechDashboard: React.FC<CleantechDashboardProps> = ({
               <button
                 type="button"
                 onClick={() => onNavigate('cleantech_generator')}
-                className="w-8 h-8 rounded-xl bg-slate-50 hover:bg-teal-100/70 border border-slate-200/80 text-slate-500 hover:text-teal-700 flex items-center justify-center shrink-0 transition-colors cursor-pointer shadow-2xs"
+                className="w-8 h-8 rounded-xl bg-slate-50 hover:bg-slate-200/80 border border-slate-200/80 text-slate-500 hover:text-slate-950 flex items-center justify-center shrink-0 transition-colors cursor-pointer shadow-2xs"
                 title="Open Cleantech Generator"
               >
                 <ArrowRight className="w-4 h-4" />
@@ -177,7 +177,7 @@ export const CleantechDashboard: React.FC<CleantechDashboardProps> = ({
 
             <button
               onClick={() => onNavigate('cleantech_generator')}
-              className="w-full text-left font-black text-xs text-white bg-teal-600 hover:bg-teal-700 px-3.5 py-2.5 rounded-xl transition-all flex items-center justify-between cursor-pointer shadow-xs active:scale-98 group/btn"
+              className="w-full text-left font-black text-xs text-white bg-slate-950 hover:bg-black px-3.5 py-2.5 rounded-xl transition-all flex items-center justify-between cursor-pointer shadow-xs active:scale-98 group/btn"
             >
               <div className="flex items-center gap-2">
                 <Sun className="w-4 h-4 text-white shrink-0" />
@@ -189,16 +189,16 @@ export const CleantechDashboard: React.FC<CleantechDashboardProps> = ({
         </div>
 
         {/* Card 2: Past Records */}
-        <div className="group relative bg-white rounded-2xl border-t-4 border-t-teal-600 border-x border-b border-slate-200 hover:border-teal-400/80 shadow-xs hover:shadow-xl transition-all duration-300 p-5 flex flex-col justify-between">
+        <div className="group relative bg-white rounded-2xl border-t-4 border-t-slate-900 border-x border-b border-slate-200 hover:border-slate-800 shadow-xs hover:shadow-xl transition-all duration-300 p-5 flex flex-col justify-between">
           <div>
             <div className="flex items-start justify-between gap-2">
               <div>
-                <h2 className="text-lg font-black text-slate-900 group-hover:text-teal-600 transition-colors">
+                <h2 className="text-lg font-black text-slate-900 group-hover:text-black transition-colors">
                   Past Records
                 </h2>
                 <div className="flex items-center gap-1.5 mt-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-teal-600 shrink-0" />
-                  <span className="text-[11px] font-bold text-teal-800 uppercase tracking-wider">
+                  <span className="w-1.5 h-1.5 rounded-full bg-slate-950 shrink-0" />
+                  <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
                     Full Archive, Word (.docx) & PDF Export
                   </span>
                 </div>
@@ -206,7 +206,7 @@ export const CleantechDashboard: React.FC<CleantechDashboardProps> = ({
               <button
                 type="button"
                 onClick={() => onNavigate('cleantech_quotes')}
-                className="w-8 h-8 rounded-xl bg-slate-50 hover:bg-teal-100/70 border border-slate-200/80 text-slate-500 hover:text-teal-700 flex items-center justify-center shrink-0 transition-colors cursor-pointer shadow-2xs"
+                className="w-8 h-8 rounded-xl bg-slate-50 hover:bg-slate-200/80 border border-slate-200/80 text-slate-500 hover:text-slate-950 flex items-center justify-center shrink-0 transition-colors cursor-pointer shadow-2xs"
                 title="View Past Records"
               >
                 <ArrowRight className="w-4 h-4" />
@@ -239,7 +239,7 @@ export const CleantechDashboard: React.FC<CleantechDashboardProps> = ({
           </div>
           <button
             onClick={() => onNavigate('cleantech_quotes')}
-            className="text-xs font-bold text-teal-600 hover:text-teal-700 cursor-pointer flex items-center gap-1"
+            className="text-xs font-bold text-slate-950 hover:text-black cursor-pointer flex items-center gap-1"
           >
             <span>View All Records</span>
             <ArrowRight className="w-3.5 h-3.5" />

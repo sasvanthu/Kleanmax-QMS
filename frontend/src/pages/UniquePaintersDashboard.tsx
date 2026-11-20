@@ -72,7 +72,7 @@ export const UniquePaintersDashboard: React.FC<UniquePaintersDashboardProps> = (
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
               {company?.company_name || 'Unique Painters'}
             </h1>
-            <span className="bg-purple-600 text-white font-black text-[11px] px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-2xs">
+            <span className="bg-[#1A5393] text-white font-black text-[11px] px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-2xs">
               Surface Coating & Painting
             </span>
             {company?.phone1 && (
@@ -86,7 +86,7 @@ export const UniquePaintersDashboard: React.FC<UniquePaintersDashboardProps> = (
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={() => onNavigate('uniquepainters_generator')}
-            className="px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-black rounded-xl flex items-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer"
+            className="px-4 py-2.5 bg-[#1A5393] hover:bg-[#154377] text-white text-xs font-black rounded-xl flex items-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>New Quotation</span>
@@ -95,7 +95,7 @@ export const UniquePaintersDashboard: React.FC<UniquePaintersDashboardProps> = (
             onClick={() => onNavigate('settings', { tab: 'uniquepainters' })}
             className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all cursor-pointer"
           >
-            <Building2 className="w-4 h-4 text-purple-600" />
+            <Building2 className="w-4 h-4 text-[#1A5393]" />
             <span>Settings</span>
           </button>
         </div>
@@ -104,7 +104,7 @@ export const UniquePaintersDashboard: React.FC<UniquePaintersDashboardProps> = (
       {/* KPI Metric Strip */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600 shrink-0">
+          <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-[#1A5393] shrink-0">
             <FileText className="w-6 h-6" />
           </div>
           <div>
@@ -149,16 +149,16 @@ export const UniquePaintersDashboard: React.FC<UniquePaintersDashboardProps> = (
       {/* Core Action Hub */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {/* Card 1: Quotation Generator */}
-        <div className="group relative bg-white rounded-2xl border-t-4 border-t-purple-600 border-x border-b border-slate-200 hover:border-purple-400/80 shadow-xs hover:shadow-xl transition-all duration-300 p-5 flex flex-col justify-between">
+        <div className="group relative bg-white rounded-2xl border-t-4 border-t-[#1A5393] border-x border-b border-slate-200 hover:border-[#1A5393]/80 shadow-xs hover:shadow-xl transition-all duration-300 p-5 flex flex-col justify-between">
           <div>
             <div className="flex items-start justify-between gap-2">
               <div>
-                <h2 className="text-lg font-black text-slate-900 group-hover:text-purple-600 transition-colors">
+                <h2 className="text-lg font-black text-slate-900 group-hover:text-[#1A5393] transition-colors">
                   Generate Quotation
                 </h2>
                 <div className="flex items-center gap-1.5 mt-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-purple-600 shrink-0" />
-                  <span className="text-[11px] font-bold text-purple-800 uppercase tracking-wider">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#1A5393] shrink-0" />
+                  <span className="text-[11px] font-bold text-[#1A5393] uppercase tracking-wider">
                     Painting & Epoxy Flooring Proposal
                   </span>
                 </div>
@@ -166,7 +166,7 @@ export const UniquePaintersDashboard: React.FC<UniquePaintersDashboardProps> = (
               <button
                 type="button"
                 onClick={() => onNavigate('uniquepainters_generator')}
-                className="w-8 h-8 rounded-xl bg-slate-50 hover:bg-purple-100/70 border border-slate-200/80 text-slate-500 hover:text-purple-700 flex items-center justify-center shrink-0 transition-colors cursor-pointer shadow-2xs"
+                className="w-8 h-8 rounded-xl bg-slate-50 hover:bg-blue-100/70 border border-slate-200/80 text-slate-500 hover:text-[#1A5393] flex items-center justify-center shrink-0 transition-colors cursor-pointer shadow-2xs"
                 title="Open Painting Generator"
               >
                 <ArrowRight className="w-4 h-4" />
@@ -177,7 +177,7 @@ export const UniquePaintersDashboard: React.FC<UniquePaintersDashboardProps> = (
 
             <button
               onClick={() => onNavigate('uniquepainters_generator')}
-              className="w-full text-left font-black text-xs text-white bg-purple-600 hover:bg-purple-700 px-3.5 py-2.5 rounded-xl transition-all flex items-center justify-between cursor-pointer shadow-xs active:scale-98 group/btn"
+              className="w-full text-left font-black text-xs text-white bg-[#1A5393] hover:bg-[#154377] px-3.5 py-2.5 rounded-xl transition-all flex items-center justify-between cursor-pointer shadow-xs active:scale-98 group/btn"
             >
               <div className="flex items-center gap-2">
                 <Paintbrush className="w-4 h-4 text-white shrink-0" />
@@ -189,16 +189,16 @@ export const UniquePaintersDashboard: React.FC<UniquePaintersDashboardProps> = (
         </div>
 
         {/* Card 2: Past Records */}
-        <div className="group relative bg-white rounded-2xl border-t-4 border-t-purple-600 border-x border-b border-slate-200 hover:border-purple-400/80 shadow-xs hover:shadow-xl transition-all duration-300 p-5 flex flex-col justify-between">
+        <div className="group relative bg-white rounded-2xl border-t-4 border-t-[#1A5393] border-x border-b border-slate-200 hover:border-[#1A5393]/80 shadow-xs hover:shadow-xl transition-all duration-300 p-5 flex flex-col justify-between">
           <div>
             <div className="flex items-start justify-between gap-2">
               <div>
-                <h2 className="text-lg font-black text-slate-900 group-hover:text-purple-600 transition-colors">
+                <h2 className="text-lg font-black text-slate-900 group-hover:text-[#1A5393] transition-colors">
                   Past Records
                 </h2>
                 <div className="flex items-center gap-1.5 mt-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-purple-600 shrink-0" />
-                  <span className="text-[11px] font-bold text-purple-800 uppercase tracking-wider">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#1A5393] shrink-0" />
+                  <span className="text-[11px] font-bold text-[#1A5393] uppercase tracking-wider">
                     Full Archive, Word (.docx) & PDF Export
                   </span>
                 </div>
@@ -206,7 +206,7 @@ export const UniquePaintersDashboard: React.FC<UniquePaintersDashboardProps> = (
               <button
                 type="button"
                 onClick={() => onNavigate('uniquepainters_quotes')}
-                className="w-8 h-8 rounded-xl bg-slate-50 hover:bg-purple-100/70 border border-slate-200/80 text-slate-500 hover:text-purple-700 flex items-center justify-center shrink-0 transition-colors cursor-pointer shadow-2xs"
+                className="w-8 h-8 rounded-xl bg-slate-50 hover:bg-blue-100/70 border border-slate-200/80 text-slate-500 hover:text-[#1A5393] flex items-center justify-center shrink-0 transition-colors cursor-pointer shadow-2xs"
                 title="View Past Records"
               >
                 <ArrowRight className="w-4 h-4" />
@@ -239,7 +239,7 @@ export const UniquePaintersDashboard: React.FC<UniquePaintersDashboardProps> = (
           </div>
           <button
             onClick={() => onNavigate('uniquepainters_quotes')}
-            className="text-xs font-bold text-purple-600 hover:text-purple-700 cursor-pointer flex items-center gap-1"
+            className="text-xs font-bold text-[#1A5393] hover:text-blue-800 cursor-pointer flex items-center gap-1"
           >
             <span>View All Records</span>
             <ArrowRight className="w-3.5 h-3.5" />

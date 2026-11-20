@@ -96,19 +96,19 @@ export const CompanySettings: React.FC<CompanySettingsProps> = ({
     kleanmax: {
       label: 'Kleanmax',
       tag: 'Spares & Sales',
-      color: 'border-sky-400 bg-sky-50 text-sky-900',
+      color: 'border-emerald-500 bg-emerald-50 text-emerald-950',
       dashPage: 'kleanmax_dash',
     },
     uniquepainters: {
       label: 'Unique Painters',
       tag: 'Coating & Epoxy',
-      color: 'border-purple-400 bg-purple-50 text-purple-900',
+      color: 'border-[#1A5393] bg-blue-50 text-[#1A5393]',
       dashPage: 'uniquepainters_dash',
     },
     cleantech: {
       label: 'Cleantech Services',
       tag: 'Solar & AMC',
-      color: 'border-emerald-400 bg-emerald-50 text-emerald-900',
+      color: 'border-slate-900 bg-slate-100 text-slate-900',
       dashPage: 'cleantech_dash',
     },
   };

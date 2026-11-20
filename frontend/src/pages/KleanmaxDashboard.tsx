@@ -72,7 +72,7 @@ export const KleanmaxDashboard: React.FC<KleanmaxDashboardProps> = ({
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
               {company?.company_name || 'Kleanmax'}
             </h1>
-            <span className="bg-sky-500 text-slate-950 font-black text-[11px] px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-2xs">
+            <span className="bg-emerald-600 text-white font-black text-[11px] px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-2xs">
               Cleaning & Machine Sales
             </span>
             {company?.gstin && (
@@ -86,7 +86,7 @@ export const KleanmaxDashboard: React.FC<KleanmaxDashboardProps> = ({
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={() => onNavigate('kleanmax_generator')}
-            className="px-4 py-2.5 bg-sky-500 hover:bg-sky-600 text-slate-950 text-xs font-black rounded-xl flex items-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer"
+            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-xl flex items-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>New Quotation</span>
@@ -95,7 +95,7 @@ export const KleanmaxDashboard: React.FC<KleanmaxDashboardProps> = ({
             onClick={() => onNavigate('settings', { tab: 'kleanmax' })}
             className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all cursor-pointer"
           >
-            <Building2 className="w-4 h-4 text-sky-600" />
+            <Building2 className="w-4 h-4 text-emerald-700" />
             <span>Settings</span>
           </button>
         </div>
@@ -104,7 +104,7 @@ export const KleanmaxDashboard: React.FC<KleanmaxDashboardProps> = ({
       {/* KPI Metric Strip */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-sky-50 flex items-center justify-center text-sky-600 shrink-0">
+          <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-700 shrink-0">
             <FileText className="w-6 h-6" />
           </div>
           <div>
@@ -149,16 +149,16 @@ export const KleanmaxDashboard: React.FC<KleanmaxDashboardProps> = ({
       {/* Core Action Hub */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {/* Card 1: Quotation Generator */}
-        <div className="group relative bg-white rounded-2xl border-t-4 border-t-sky-500 border-x border-b border-slate-200 hover:border-sky-400/80 shadow-xs hover:shadow-xl transition-all duration-300 p-5 flex flex-col justify-between">
+        <div className="group relative bg-white rounded-2xl border-t-4 border-t-emerald-600 border-x border-b border-slate-200 hover:border-emerald-500/80 shadow-xs hover:shadow-xl transition-all duration-300 p-5 flex flex-col justify-between">
           <div>
             <div className="flex items-start justify-between gap-2">
               <div>
-                <h2 className="text-lg font-black text-slate-900 group-hover:text-sky-600 transition-colors">
+                <h2 className="text-lg font-black text-slate-900 group-hover:text-emerald-700 transition-colors">
                   Generate Quotation
                 </h2>
                 <div className="flex items-center gap-1.5 mt-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-sky-500 shrink-0" />
-                  <span className="text-[11px] font-bold text-sky-800 uppercase tracking-wider">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0" />
+                  <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider">
                     Cleaning Service & Machine Spares
                   </span>
                 </div>
@@ -166,7 +166,7 @@ export const KleanmaxDashboard: React.FC<KleanmaxDashboardProps> = ({
               <button
                 type="button"
                 onClick={() => onNavigate('kleanmax_generator')}
-                className="w-8 h-8 rounded-xl bg-slate-50 hover:bg-sky-100/70 border border-slate-200/80 text-slate-500 hover:text-sky-700 flex items-center justify-center shrink-0 transition-colors cursor-pointer shadow-2xs"
+                className="w-8 h-8 rounded-xl bg-slate-50 hover:bg-emerald-100/70 border border-slate-200/80 text-slate-500 hover:text-emerald-800 flex items-center justify-center shrink-0 transition-colors cursor-pointer shadow-2xs"
                 title="Open Kleanmax Generator"
               >
                 <ArrowRight className="w-4 h-4" />
@@ -178,40 +178,40 @@ export const KleanmaxDashboard: React.FC<KleanmaxDashboardProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <button
                 onClick={() => onNavigate('kleanmax_generator')}
-                className="w-full text-left font-black text-xs text-slate-950 bg-sky-400 hover:bg-sky-500 px-3.5 py-2.5 rounded-xl transition-all flex items-center justify-between cursor-pointer shadow-xs active:scale-98 group/btn"
+                className="w-full text-left font-black text-xs text-white bg-emerald-600 hover:bg-emerald-700 px-3.5 py-2.5 rounded-xl transition-all flex items-center justify-between cursor-pointer shadow-xs active:scale-98 group/btn"
               >
                 <div className="flex items-center gap-2">
-                  <Plus className="w-4 h-4 text-slate-950 shrink-0" />
+                  <Plus className="w-4 h-4 text-white shrink-0" />
                   <span>Cleaning Proposal</span>
                 </div>
-                <ChevronRight className="w-3.5 h-3.5 text-slate-900 group-hover/btn:translate-x-0.5 transition-transform shrink-0" />
+                <ChevronRight className="w-3.5 h-3.5 text-white group-hover/btn:translate-x-0.5 transition-transform shrink-0" />
               </button>
 
               <button
                 onClick={() => onNavigate('kleanmax_sales')}
-                className="w-full text-left font-bold text-xs text-sky-950 bg-sky-50 hover:bg-sky-100 border border-sky-200/80 hover:border-sky-300 px-3.5 py-2.5 rounded-xl transition-all flex items-center justify-between cursor-pointer active:scale-98 group/btn"
+                className="w-full text-left font-bold text-xs text-emerald-950 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 hover:border-emerald-300 px-3.5 py-2.5 rounded-xl transition-all flex items-center justify-between cursor-pointer active:scale-98 group/btn"
               >
                 <div className="flex items-center gap-2">
-                  <Plus className="w-4 h-4 text-sky-600 shrink-0" />
+                  <Plus className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
                   <span>Sales Quotation</span>
                 </div>
-                <ChevronRight className="w-3.5 h-3.5 text-sky-600 group-hover/btn:translate-x-0.5 transition-transform shrink-0" />
+                <ChevronRight className="w-3.5 h-3.5 text-emerald-700 group-hover/btn:translate-x-0.5 transition-transform shrink-0" />
               </button>
             </div>
           </div>
         </div>
 
         {/* Card 2: Past Records */}
-        <div className="group relative bg-white rounded-2xl border-t-4 border-t-sky-500 border-x border-b border-slate-200 hover:border-sky-400/80 shadow-xs hover:shadow-xl transition-all duration-300 p-5 flex flex-col justify-between">
+        <div className="group relative bg-white rounded-2xl border-t-4 border-t-emerald-600 border-x border-b border-slate-200 hover:border-emerald-500/80 shadow-xs hover:shadow-xl transition-all duration-300 p-5 flex flex-col justify-between">
           <div>
             <div className="flex items-start justify-between gap-2">
               <div>
-                <h2 className="text-lg font-black text-slate-900 group-hover:text-sky-600 transition-colors">
+                <h2 className="text-lg font-black text-slate-900 group-hover:text-emerald-700 transition-colors">
                   Past Records
                 </h2>
                 <div className="flex items-center gap-1.5 mt-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-sky-500 shrink-0" />
-                  <span className="text-[11px] font-bold text-sky-800 uppercase tracking-wider">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0" />
+                  <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider">
                     Full Archive, Word (.docx) & PDF Export
                   </span>
                 </div>
@@ -219,7 +219,7 @@ export const KleanmaxDashboard: React.FC<KleanmaxDashboardProps> = ({
               <button
                 type="button"
                 onClick={() => onNavigate('kleanmax_quotes')}
-                className="w-8 h-8 rounded-xl bg-slate-50 hover:bg-sky-100/70 border border-slate-200/80 text-slate-500 hover:text-sky-700 flex items-center justify-center shrink-0 transition-colors cursor-pointer shadow-2xs"
+                className="w-8 h-8 rounded-xl bg-slate-50 hover:bg-emerald-100/70 border border-slate-200/80 text-slate-500 hover:text-emerald-800 flex items-center justify-center shrink-0 transition-colors cursor-pointer shadow-2xs"
                 title="View Past Records"
               >
                 <ArrowRight className="w-4 h-4" />
@@ -252,7 +252,7 @@ export const KleanmaxDashboard: React.FC<KleanmaxDashboardProps> = ({
           </div>
           <button
             onClick={() => onNavigate('kleanmax_quotes')}
-            className="text-xs font-bold text-sky-600 hover:text-sky-700 cursor-pointer flex items-center gap-1"
+            className="text-xs font-bold text-emerald-700 hover:text-emerald-800 cursor-pointer flex items-center gap-1"
           >
             <span>View All Records</span>
             <ArrowRight className="w-3.5 h-3.5" />

@@ -116,20 +116,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
 
           {/* Card 2: Kleanmax */}
-          <div className="group relative bg-white rounded-2xl border-t-4 border-t-sky-500 border-x border-b border-slate-200 hover:border-sky-400/80 shadow-xs hover:shadow-xl transition-all duration-300 p-5 flex flex-col justify-between">
+          <div className="group relative bg-white rounded-2xl border-t-4 border-t-emerald-600 border-x border-b border-slate-200 hover:border-emerald-500/80 shadow-xs hover:shadow-xl transition-all duration-300 p-5 flex flex-col justify-between">
             <div>
               {/* Header: Company Name & Direct Hub Link */}
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <h3
                     onClick={() => onNavigate('kleanmax_dash')}
-                    className="text-lg font-black text-slate-900 hover:text-sky-600 transition-colors cursor-pointer tracking-tight truncate"
+                    className="text-lg font-black text-slate-900 hover:text-emerald-700 transition-colors cursor-pointer tracking-tight truncate"
                   >
                     Kleanmax
                   </h3>
                   <div className="flex items-center gap-1.5 mt-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-sky-500 shrink-0" />
-                    <span className="text-[11px] font-bold text-sky-800 uppercase tracking-wider truncate">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0" />
+                    <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider truncate">
                       Cleaning & Spares Sales
                     </span>
                   </div>
@@ -137,7 +137,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <button
                   type="button"
                   onClick={() => onNavigate('kleanmax_dash')}
-                  className="w-8 h-8 rounded-xl bg-slate-50 hover:bg-sky-100/70 border border-slate-200/80 text-slate-500 hover:text-sky-700 flex items-center justify-center shrink-0 transition-colors cursor-pointer shadow-2xs"
+                  className="w-8 h-8 rounded-xl bg-slate-50 hover:bg-emerald-100/70 border border-slate-200/80 text-slate-500 hover:text-emerald-800 flex items-center justify-center shrink-0 transition-colors cursor-pointer shadow-2xs"
                   title="Open Kleanmax Hub"
                 >
                   <ArrowRight className="w-4 h-4" />
@@ -152,25 +152,25 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <button
                   type="button"
                   onClick={() => onNavigate('kleanmax_generator')}
-                  className="w-full text-left font-black text-xs text-slate-950 bg-sky-400 hover:bg-sky-500 px-3.5 py-2.5 rounded-xl transition-all flex items-center justify-between cursor-pointer shadow-xs active:scale-98 group/btn"
+                  className="w-full text-left font-black text-xs text-white bg-emerald-600 hover:bg-emerald-700 px-3.5 py-2.5 rounded-xl transition-all flex items-center justify-between cursor-pointer shadow-xs active:scale-98 group/btn"
                 >
                   <div className="flex items-center gap-2 min-w-0">
-                    <Plus className="w-4 h-4 text-slate-950 shrink-0" />
+                    <Plus className="w-4 h-4 text-white shrink-0" />
                     <span className="truncate">Cleaning Proposal</span>
                   </div>
-                  <ChevronRight className="w-3.5 h-3.5 text-slate-900 group-hover/btn:translate-x-0.5 transition-transform shrink-0" />
+                  <ChevronRight className="w-3.5 h-3.5 text-white group-hover/btn:translate-x-0.5 transition-transform shrink-0" />
                 </button>
 
                 <button
                   type="button"
                   onClick={() => onNavigate('kleanmax_sales')}
-                  className="w-full text-left font-bold text-xs text-sky-950 bg-sky-50 hover:bg-sky-100 border border-sky-200/80 hover:border-sky-300 px-3.5 py-2.5 rounded-xl transition-all flex items-center justify-between cursor-pointer active:scale-98 group/btn"
+                  className="w-full text-left font-bold text-xs text-emerald-950 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 hover:border-emerald-300 px-3.5 py-2.5 rounded-xl transition-all flex items-center justify-between cursor-pointer active:scale-98 group/btn"
                 >
                   <div className="flex items-center gap-2 min-w-0">
-                    <Plus className="w-3.5 h-3.5 text-sky-600 shrink-0" />
+                    <Plus className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
                     <span className="truncate">Sales Quotation</span>
                   </div>
-                  <ChevronRight className="w-3.5 h-3.5 text-sky-600 group-hover/btn:translate-x-0.5 transition-transform shrink-0" />
+                  <ChevronRight className="w-3.5 h-3.5 text-emerald-700 group-hover/btn:translate-x-0.5 transition-transform shrink-0" />
                 </button>
 
                 <button
@@ -189,20 +189,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
 
           {/* Card 3: Unique Painters */}
-          <div className="group relative bg-white rounded-2xl border-t-4 border-t-purple-600 border-x border-b border-slate-200 hover:border-purple-400/80 shadow-xs hover:shadow-xl transition-all duration-300 p-5 flex flex-col justify-between">
+          <div className="group relative bg-white rounded-2xl border-t-4 border-t-[#1A5393] border-x border-b border-slate-200 hover:border-[#1A5393]/80 shadow-xs hover:shadow-xl transition-all duration-300 p-5 flex flex-col justify-between">
             <div>
               {/* Header: Company Name & Direct Hub Link */}
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <h3
                     onClick={() => onNavigate('uniquepainters_dash')}
-                    className="text-lg font-black text-slate-900 hover:text-purple-600 transition-colors cursor-pointer tracking-tight truncate"
+                    className="text-lg font-black text-slate-900 hover:text-[#1A5393] transition-colors cursor-pointer tracking-tight truncate"
                   >
                     Unique Painters
                   </h3>
                   <div className="flex items-center gap-1.5 mt-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-purple-600 shrink-0" />
-                    <span className="text-[11px] font-bold text-purple-800 uppercase tracking-wider truncate">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#1A5393] shrink-0" />
+                    <span className="text-[11px] font-bold text-[#1A5393] uppercase tracking-wider truncate">
                       Surface & Coating
                     </span>
                   </div>
@@ -210,7 +210,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <button
                   type="button"
                   onClick={() => onNavigate('uniquepainters_dash')}
-                  className="w-8 h-8 rounded-xl bg-slate-50 hover:bg-purple-100/70 border border-slate-200/80 text-slate-500 hover:text-purple-700 flex items-center justify-center shrink-0 transition-colors cursor-pointer shadow-2xs"
+                  className="w-8 h-8 rounded-xl bg-slate-50 hover:bg-blue-100/70 border border-slate-200/80 text-slate-500 hover:text-[#1A5393] flex items-center justify-center shrink-0 transition-colors cursor-pointer shadow-2xs"
                   title="Open Unique Painters Hub"
                 >
                   <ArrowRight className="w-4 h-4" />
@@ -225,7 +225,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <button
                   type="button"
                   onClick={() => onNavigate('uniquepainters_generator')}
-                  className="w-full text-left font-black text-xs text-white bg-purple-600 hover:bg-purple-700 px-3.5 py-2.5 rounded-xl transition-all flex items-center justify-between cursor-pointer shadow-xs active:scale-98 group/btn"
+                  className="w-full text-left font-black text-xs text-white bg-[#1A5393] hover:bg-[#154377] px-3.5 py-2.5 rounded-xl transition-all flex items-center justify-between cursor-pointer shadow-xs active:scale-98 group/btn"
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <Plus className="w-4 h-4 text-white shrink-0" />
@@ -262,20 +262,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
 
           {/* Card 4: Cleantech Services */}
-          <div className="group relative bg-white rounded-2xl border-t-4 border-t-teal-600 border-x border-b border-slate-200 hover:border-teal-400/80 shadow-xs hover:shadow-xl transition-all duration-300 p-5 flex flex-col justify-between">
+          <div className="group relative bg-white rounded-2xl border-t-4 border-t-slate-900 border-x border-b border-slate-200 hover:border-slate-800 shadow-xs hover:shadow-xl transition-all duration-300 p-5 flex flex-col justify-between">
             <div>
               {/* Header: Company Name & Direct Hub Link */}
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <h3
                     onClick={() => onNavigate('cleantech_dash')}
-                    className="text-lg font-black text-slate-900 hover:text-teal-600 transition-colors cursor-pointer tracking-tight truncate"
+                    className="text-lg font-black text-slate-900 hover:text-black transition-colors cursor-pointer tracking-tight truncate"
                   >
                     Cleantech Services
                   </h3>
                   <div className="flex items-center gap-1.5 mt-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-teal-600 shrink-0" />
-                    <span className="text-[11px] font-bold text-teal-800 uppercase tracking-wider truncate">
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-950 shrink-0" />
+                    <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider truncate">
                       Solar & Facility Care
                     </span>
                   </div>
@@ -283,7 +283,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <button
                   type="button"
                   onClick={() => onNavigate('cleantech_dash')}
-                  className="w-8 h-8 rounded-xl bg-slate-50 hover:bg-teal-100/70 border border-slate-200/80 text-slate-500 hover:text-teal-700 flex items-center justify-center shrink-0 transition-colors cursor-pointer shadow-2xs"
+                  className="w-8 h-8 rounded-xl bg-slate-50 hover:bg-slate-200/80 border border-slate-200/80 text-slate-500 hover:text-slate-950 flex items-center justify-center shrink-0 transition-colors cursor-pointer shadow-2xs"
                   title="Open Cleantech Services Hub"
                 >
                   <ArrowRight className="w-4 h-4" />
@@ -298,7 +298,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <button
                   type="button"
                   onClick={() => onNavigate('cleantech_generator')}
-                  className="w-full text-left font-black text-xs text-white bg-teal-600 hover:bg-teal-700 px-3.5 py-2.5 rounded-xl transition-all flex items-center justify-between cursor-pointer shadow-xs active:scale-98 group/btn"
+                  className="w-full text-left font-black text-xs text-white bg-slate-950 hover:bg-black px-3.5 py-2.5 rounded-xl transition-all flex items-center justify-between cursor-pointer shadow-xs active:scale-98 group/btn"
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <Plus className="w-4 h-4 text-white shrink-0" />

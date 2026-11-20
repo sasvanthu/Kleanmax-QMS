@@ -253,9 +253,9 @@ export const Navbar: React.FC<NavbarProps> = ({
             <div className="relative flex items-center">
               <div className={`flex items-center rounded-xl transition-all border ${
                 isKlmActive
-                  ? 'bg-sky-500 text-slate-950 border-sky-600 font-black shadow-xs'
+                  ? 'bg-emerald-600 text-white border-emerald-700 font-black shadow-xs'
                   : activeDropdown === 'kleanmax'
-                  ? 'bg-sky-100 text-sky-950 border-sky-300'
+                  ? 'bg-emerald-100 text-emerald-950 border-emerald-300'
                   : 'bg-white text-slate-700 hover:text-slate-950 hover:bg-slate-100 border-slate-200'
               }`}>
                 <button
@@ -264,7 +264,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   className="flex items-center gap-1.5 px-2.5 py-2 text-xs font-bold cursor-pointer"
                   title="Open Kleanmax Hub"
                 >
-                  <span className="w-2 h-2 rounded-full bg-sky-400" />
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
                   <span className="hidden sm:inline">Kleanmax</span>
                   <span className="sm:hidden">KLM</span>
                 </button>
@@ -284,15 +284,15 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               {activeDropdown === 'kleanmax' && (
                 <div className="absolute left-0 top-full mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-slate-200 p-2 z-50 animate-fade-in space-y-1">
-                  <div className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-sky-600 border-b border-slate-100">
+                  <div className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-emerald-700 border-b border-slate-100">
                     Kleanmax
                   </div>
 
                   <button
                     onClick={() => handleSubOptionClick('kleanmax_generator')}
-                    className="w-full text-left px-3 py-2 text-xs font-bold text-slate-800 hover:bg-sky-50 rounded-xl flex items-center gap-2.5 transition-colors cursor-pointer"
+                    className="w-full text-left px-3 py-2 text-xs font-bold text-slate-800 hover:bg-emerald-50 rounded-xl flex items-center gap-2.5 transition-colors cursor-pointer"
                   >
-                    <Plus className="w-4 h-4 text-sky-600 shrink-0" />
+                    <Plus className="w-4 h-4 text-emerald-700 shrink-0" />
                     <div>
                       <div className="font-extrabold text-slate-900">Generate Quotation</div>
                       <div className="text-[10px] text-slate-500 font-normal">Cleaning service & spare parts proposal</div>
@@ -301,9 +301,9 @@ export const Navbar: React.FC<NavbarProps> = ({
 
                   <button
                     onClick={() => handleSubOptionClick('kleanmax_quotes')}
-                    className="w-full text-left px-3 py-2 text-xs font-bold text-slate-800 hover:bg-sky-50 rounded-xl flex items-center gap-2.5 transition-colors cursor-pointer"
+                    className="w-full text-left px-3 py-2 text-xs font-bold text-slate-800 hover:bg-emerald-50 rounded-xl flex items-center gap-2.5 transition-colors cursor-pointer"
                   >
-                    <FileText className="w-4 h-4 text-sky-600 shrink-0" />
+                    <FileText className="w-4 h-4 text-emerald-700 shrink-0" />
                     <div>
                       <div className="font-extrabold text-slate-900">Past Records</div>
                       <div className="text-[10px] text-slate-500 font-normal">View preview, Word (.docx) & PDF</div>
@@ -319,9 +319,9 @@ export const Navbar: React.FC<NavbarProps> = ({
             <div className="relative flex items-center">
               <div className={`flex items-center rounded-xl transition-all border ${
                 isUnpActive
-                  ? 'bg-purple-600 text-white border-purple-700 font-black shadow-xs'
+                  ? 'bg-[#1A5393] text-white border-[#154377] font-black shadow-xs'
                   : activeDropdown === 'uniquepainters'
-                  ? 'bg-purple-100 text-purple-950 border-purple-300'
+                  ? 'bg-blue-100 text-blue-950 border-blue-300'
                   : 'bg-white text-slate-700 hover:text-slate-950 hover:bg-slate-100 border-slate-200'
               }`}>
                 <button
@@ -330,7 +330,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   className="flex items-center gap-1.5 px-2.5 py-2 text-xs font-bold cursor-pointer"
                   title="Open Unique Painters Hub"
                 >
-                  <span className="w-2 h-2 rounded-full bg-purple-400" />
+                  <span className="w-2 h-2 rounded-full bg-[#1A5393]" />
                   <span className="hidden sm:inline">Unique Painters</span>
                   <span className="sm:hidden">UNP</span>
                 </button>
@@ -350,15 +350,15 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               {activeDropdown === 'uniquepainters' && (
                 <div className="absolute left-0 sm:left-auto sm:right-0 md:left-0 top-full mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-slate-200 p-2 z-50 animate-fade-in space-y-1">
-                  <div className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-purple-600 border-b border-slate-100">
+                  <div className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-[#1A5393] border-b border-slate-100">
                     Unique Painters
                   </div>
 
                   <button
                     onClick={() => handleSubOptionClick('uniquepainters_generator')}
-                    className="w-full text-left px-3 py-2 text-xs font-bold text-slate-800 hover:bg-purple-50 rounded-xl flex items-center gap-2.5 transition-colors cursor-pointer"
+                    className="w-full text-left px-3 py-2 text-xs font-bold text-slate-800 hover:bg-blue-50 rounded-xl flex items-center gap-2.5 transition-colors cursor-pointer"
                   >
-                    <Plus className="w-4 h-4 text-purple-600 shrink-0" />
+                    <Plus className="w-4 h-4 text-[#1A5393] shrink-0" />
                     <div>
                       <div className="font-extrabold text-slate-900">Generate Quotation</div>
                       <div className="text-[10px] text-slate-500 font-normal">Surface coating & painting proposal</div>
@@ -367,9 +367,9 @@ export const Navbar: React.FC<NavbarProps> = ({
 
                   <button
                     onClick={() => handleSubOptionClick('uniquepainters_quotes')}
-                    className="w-full text-left px-3 py-2 text-xs font-bold text-slate-800 hover:bg-purple-50 rounded-xl flex items-center gap-2.5 transition-colors cursor-pointer"
+                    className="w-full text-left px-3 py-2 text-xs font-bold text-slate-800 hover:bg-blue-50 rounded-xl flex items-center gap-2.5 transition-colors cursor-pointer"
                   >
-                    <FileText className="w-4 h-4 text-purple-600 shrink-0" />
+                    <FileText className="w-4 h-4 text-[#1A5393] shrink-0" />
                     <div>
                       <div className="font-extrabold text-slate-900">Past Records</div>
                       <div className="text-[10px] text-slate-500 font-normal">View preview, Word (.docx) & PDF</div>
@@ -385,9 +385,9 @@ export const Navbar: React.FC<NavbarProps> = ({
             <div className="relative flex items-center">
               <div className={`flex items-center rounded-xl transition-all border ${
                 isCtsActive
-                  ? 'bg-teal-500 text-slate-950 border-teal-600 font-black shadow-xs'
+                  ? 'bg-slate-950 text-white border-black font-black shadow-xs'
                   : activeDropdown === 'cleantech'
-                  ? 'bg-teal-100 text-teal-950 border-teal-300'
+                  ? 'bg-slate-200 text-slate-950 border-slate-300'
                   : 'bg-white text-slate-700 hover:text-slate-950 hover:bg-slate-100 border-slate-200'
               }`}>
                 <button
@@ -396,7 +396,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   className="flex items-center gap-1.5 px-2.5 py-2 text-xs font-bold cursor-pointer"
                   title="Open Cleantech Services Hub"
                 >
-                  <span className="w-2 h-2 rounded-full bg-teal-400" />
+                  <span className="w-2 h-2 rounded-full bg-slate-950" />
                   <span className="hidden sm:inline">Cleantech Services</span>
                   <span className="sm:hidden">CTS</span>
                 </button>
@@ -416,15 +416,15 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               {activeDropdown === 'cleantech' && (
                 <div className="absolute right-0 md:left-0 top-full mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-slate-200 p-2 z-50 animate-fade-in space-y-1">
-                  <div className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-teal-700 border-b border-slate-100">
+                  <div className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-slate-950 border-b border-slate-100">
                     Cleantech Services
                   </div>
 
                   <button
                     onClick={() => handleSubOptionClick('cleantech_generator')}
-                    className="w-full text-left px-3 py-2 text-xs font-bold text-slate-800 hover:bg-teal-50 rounded-xl flex items-center gap-2.5 transition-colors cursor-pointer"
+                    className="w-full text-left px-3 py-2 text-xs font-bold text-slate-800 hover:bg-slate-100 rounded-xl flex items-center gap-2.5 transition-colors cursor-pointer"
                   >
-                    <Plus className="w-4 h-4 text-teal-600 shrink-0" />
+                    <Plus className="w-4 h-4 text-slate-950 shrink-0" />
                     <div>
                       <div className="font-extrabold text-slate-900">Generate Quotation</div>
                       <div className="text-[10px] text-slate-500 font-normal">Solar panels, facade & scheduled AMC</div>
@@ -433,9 +433,9 @@ export const Navbar: React.FC<NavbarProps> = ({
 
                   <button
                     onClick={() => handleSubOptionClick('cleantech_quotes')}
-                    className="w-full text-left px-3 py-2 text-xs font-bold text-slate-800 hover:bg-teal-50 rounded-xl flex items-center gap-2.5 transition-colors cursor-pointer"
+                    className="w-full text-left px-3 py-2 text-xs font-bold text-slate-800 hover:bg-slate-100 rounded-xl flex items-center gap-2.5 transition-colors cursor-pointer"
                   >
-                    <FileText className="w-4 h-4 text-teal-600 shrink-0" />
+                    <FileText className="w-4 h-4 text-slate-950 shrink-0" />
                     <div>
                       <div className="font-extrabold text-slate-900">Past Records</div>
                       <div className="text-[10px] text-slate-500 font-normal">View preview, Word (.docx) & PDF</div>

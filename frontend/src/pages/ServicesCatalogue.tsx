@@ -10,10 +10,10 @@ interface ServicesCatalogueProps {
 
 const COMPANIES = [
   { code: 'all', name: 'All Companies', badge: 'bg-slate-900 text-white' },
-  { code: 'kleanmaxpro', name: '⚡ Kleanmax Pro', badge: 'bg-amber-400 text-slate-950' },
-  { code: 'kleanmax', name: '🔧 Kleanmax', badge: 'bg-sky-400 text-slate-950' },
-  { code: 'uniquepainters', name: '🎨 Unique Painters', badge: 'bg-purple-600 text-white' },
-  { code: 'cleantech', name: '🌿 Cleantech Services', badge: 'bg-teal-500 text-slate-950' },
+  { code: 'kleanmaxpro', name: 'Klean Max Pro', badge: 'bg-amber-400 text-slate-950' },
+  { code: 'kleanmax', name: 'Kleanmax', badge: 'bg-emerald-600 text-white' },
+  { code: 'uniquepainters', name: 'Unique Painters', badge: 'bg-[#1A5393] text-white' },
+  { code: 'cleantech', name: 'Cleantech Services', badge: 'bg-slate-950 text-white' },
 ];
 
 export const ServicesCatalogue: React.FC<ServicesCatalogueProps> = ({ currentUser }) => {

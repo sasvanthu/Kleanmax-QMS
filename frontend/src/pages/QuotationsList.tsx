@@ -233,7 +233,7 @@ export const QuotationsList: React.FC<QuotationsListProps> = ({
                 onClick={() => setBrandFilter('kleanmax')}
                 className={`px-3 py-1 text-xs font-black rounded-md transition-all ${
                   brandFilter === 'kleanmax'
-                    ? 'bg-sky-500 text-slate-950 shadow-xs'
+                    ? 'bg-emerald-600 text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -243,7 +243,7 @@ export const QuotationsList: React.FC<QuotationsListProps> = ({
                 onClick={() => setBrandFilter('uniquepainters')}
                 className={`px-3 py-1 text-xs font-black rounded-md transition-all ${
                   brandFilter === 'uniquepainters'
-                    ? 'bg-purple-600 text-white shadow-xs'
+                    ? 'bg-[#1A5393] text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -253,7 +253,7 @@ export const QuotationsList: React.FC<QuotationsListProps> = ({
                 onClick={() => setBrandFilter('cleantech')}
                 className={`px-3 py-1 text-xs font-black rounded-md transition-all ${
                   brandFilter === 'cleantech'
-                    ? 'bg-emerald-600 text-white shadow-xs'
+                    ? 'bg-slate-950 text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -420,15 +420,15 @@ export const QuotationsList: React.FC<QuotationsListProps> = ({
 
                       <td className="p-3.5">
                         {q.company_code === 'cleantech' ? (
-                          <span className="bg-teal-50 text-teal-800 border border-teal-300 font-extrabold text-[10px] px-2 py-0.5 rounded">
+                          <span className="bg-slate-100 text-slate-900 border border-slate-300 font-extrabold text-[10px] px-2 py-0.5 rounded">
                             CLEANTECH
                           </span>
                         ) : q.company_code === 'uniquepainters' ? (
-                          <span className="bg-purple-50 text-purple-800 border border-purple-300 font-extrabold text-[10px] px-2 py-0.5 rounded">
+                          <span className="bg-blue-50 text-[#1A5393] border border-blue-200 font-extrabold text-[10px] px-2 py-0.5 rounded">
                             UNIQUE PAINTERS
                           </span>
                         ) : q.company_code === 'kleanmax' ? (
-                          <span className="bg-sky-50 text-sky-800 border border-sky-300 font-extrabold text-[10px] px-2 py-0.5 rounded">
+                          <span className="bg-emerald-50 text-emerald-800 border border-emerald-300 font-extrabold text-[10px] px-2 py-0.5 rounded">
                             KLEANMAX
                           </span>
                         ) : (
