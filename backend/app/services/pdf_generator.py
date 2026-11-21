@@ -131,6 +131,15 @@ def render_quotation_html(
             except Exception:
                 snapshot = {}
 
+    # Check for custom Page 2 graphic (optional image replacement for Kleanmax proposal)
+    custom_p2 = snapshot.get("page2Image") or snapshot.get("customPage2Image") or getattr(quotation, "page2_image_url", None)
+    if custom_p2:
+        resolved_p2 = resolve_image_to_data_uri(custom_p2)
+        if resolved_p2 and resolved_p2.startswith("data:image"):
+            parts = resolved_p2.split(",", 1)
+            if len(parts) > 1:
+                km_team_page_b64 = parts[1]
+
     # Prioritize values from snapshot rows if present to ensure 100% exact parity with editor display
     if snapshot.get('rows') and isinstance(snapshot['rows'], list) and len(snapshot['rows']) > 0:
         row_sum = sum(float(r.get('amount') or 0) for r in snapshot['rows'])

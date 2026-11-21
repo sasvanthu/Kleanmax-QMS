@@ -4,8 +4,10 @@ import { api } from '../services/api';
 import {
   FileText, Download, Eye, Save, Sparkles, RefreshCw, Edit3, Building, Trash2,
   CheckCircle2, ArrowLeft, Search, Check, ShieldCheck,
-  Lock, X, Layers, Plus, Eraser, FileCode, AlignLeft, Printer
+  Lock, X, Layers, Plus, Eraser, FileCode, AlignLeft, Printer,
+  Upload, Image as ImageIcon, RotateCcw
 } from 'lucide-react';
+import { uploadImageToSupabase } from '../services/supabase';
 
 export interface KleanmaxGeneratorProps {
   currentUser: User | null;
@@ -141,6 +143,11 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
   const [loadingEdit, setLoadingEdit] = useState<boolean>(!!quotationId);
   const [inPagePreviewOpen, setInPagePreviewOpen] = useState(false);
 
+  // Optional Page 2 Custom Graphic State
+  const DEFAULT_PAGE2_IMAGE = '/kleanmax/kleanmax_team_page.jpeg';
+  const [customPage2Image, setCustomPage2Image] = useState<string | null>(null);
+  const [uploadingPage2, setUploadingPage2] = useState<boolean>(false);
+
   // Financial Calculations (Independent CGST, SGST, IGST)
   const subtotal = Number(projectValue || 0);
   const activeCgstRate = applyCgst ? Number(cgstRate || 0) : 0;
@@ -186,6 +193,36 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
         setProjectValue(Math.round(sqft * val));
       }
     }
+  };
+
+  const handlePage2ImageUpload = async (file: File) => {
+    setUploadingPage2(true);
+    try {
+      let url: string;
+      try {
+        url = await uploadImageToSupabase(file, 'kleanmax');
+      } catch (e) {
+        url = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      }
+      setCustomPage2Image(url);
+      setSuccessMessage('Page 2 image updated successfully!');
+      setTimeout(() => setSuccessMessage(''), 4000);
+    } catch (err: any) {
+      alert(err.message || 'Failed to update Page 2 image');
+    } finally {
+      setUploadingPage2(false);
+    }
+  };
+
+  const handleResetPage2Image = () => {
+    setCustomPage2Image(null);
+    setSuccessMessage('Page 2 reset to default graphic.');
+    setTimeout(() => setSuccessMessage(''), 4000);
   };
 
   useEffect(() => {
@@ -263,6 +300,9 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
                 setApplyIgst(Boolean(snap.applyIgst));
                 if (snap.igstRate !== undefined) setIgstRate(Number(snap.igstRate));
               }
+              if (snap.page2Image || snap.customPage2Image || (q as any).page2_image_url) {
+                setCustomPage2Image(snap.page2Image || snap.customPage2Image || (q as any).page2_image_url);
+              }
             }
 
             if (q.customer) {
@@ -338,6 +378,7 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
       job_description: docTitle.trim() || 'Commercial Cleaning Proposal',
       quotation_date: toISODate(quotationDate),
       status: 'APPROVED',
+      page2_image_url: customPage2Image || null,
       client_name: customerName.trim() || 'SRI CHANDAAN LOGISTICS',
       client_address: [addressLine1, addressLine2].filter(Boolean).join(', ') || 'Chennai',
       client_gstin: clientGstin.trim(),
@@ -393,6 +434,8 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
         bankAccountNo,
         bankBranch,
         bankIfsc,
+        page2Image: customPage2Image || null,
+        customPage2Image: customPage2Image || null,
         terms,
         satisfactionGoal,
       }),
@@ -865,11 +908,60 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
         </div>
 
         {/* ----------------------------------------------------------------------- */}
-        {/* PAGE 2: ABOUT US & TEAM SUPPORT (Exact Reference Graphic)              */}
+        {/* PAGE 2: ABOUT US & TEAM SUPPORT (Exact Reference Graphic / Optional Custom) */}
         {/* ----------------------------------------------------------------------- */}
         <div className="bg-white rounded-2xl shadow-xl border border-slate-300 overflow-hidden relative">
+          {/* Top Control Bar for Optional Page 2 Image Upload */}
+          <div className="bg-slate-900 text-white p-3 px-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-700">
+            <div className="flex items-center gap-2">
+              <ImageIcon className="w-4 h-4 text-lime-400" />
+              <span className="text-xs font-bold text-slate-200">
+                Page 2 Graphic (Default: Klean Max Team & About Us)
+              </span>
+              {customPage2Image ? (
+                <span className="text-[10px] bg-lime-500/20 text-lime-300 border border-lime-500/40 font-extrabold px-2 py-0.5 rounded-full">
+                  Custom Image Active
+                </span>
+              ) : (
+                <span className="text-[10px] bg-slate-800 text-slate-400 font-bold px-2 py-0.5 rounded-full">
+                  Original Default Graphic
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <label className="cursor-pointer px-3.5 py-1.5 bg-lime-500 hover:bg-lime-600 text-slate-950 font-black text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all active:scale-95">
+                <Upload className="w-3.5 h-3.5 text-slate-950" />
+                <span>{uploadingPage2 ? 'Uploading...' : (customPage2Image ? 'Replace Image' : 'Upload New Image')}</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploadingPage2}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handlePage2ImageUpload(file);
+                    e.target.value = '';
+                  }}
+                />
+              </label>
+
+              {customPage2Image && (
+                <button
+                  type="button"
+                  onClick={handleResetPage2Image}
+                  className="px-3 py-1.5 bg-slate-800 hover:bg-rose-950/70 text-slate-300 hover:text-rose-300 font-bold text-xs rounded-xl border border-slate-700 flex items-center gap-1.5 transition-colors cursor-pointer"
+                  title="Reset to default reference graphic"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 text-rose-400" />
+                  <span>Reset to Default</span>
+                </button>
+              )}
+            </div>
+          </div>
+
           <img
-            src="/kleanmax/kleanmax_team_page.jpeg"
+            src={customPage2Image || DEFAULT_PAGE2_IMAGE}
             alt="About Us & Team Support"
             className="w-full h-auto block object-cover"
           />
@@ -1314,7 +1406,7 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
 
               {/* Preview Page 2 */}
               <div className="bg-white shadow-md rounded-2xl max-w-3xl mx-auto border border-slate-200 overflow-hidden relative">
-                <img src="/kleanmax/kleanmax_team_page.jpeg" alt="About Us" className="w-full h-auto block" />
+                <img src={customPage2Image || DEFAULT_PAGE2_IMAGE} alt="About Us & Team Support" className="w-full h-auto block" />
                 <div className="absolute bottom-2 right-4 text-[10px] text-slate-400 font-bold bg-white/80 px-2 py-0.5 rounded">
                   Page 2 of 4
                 </div>

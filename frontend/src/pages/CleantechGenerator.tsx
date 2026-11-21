@@ -2370,30 +2370,6 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
                       </tr>
                     </tbody>
                   </table>
-                  <div className="text-right text-[10px] text-slate-400 font-bold">Page 1 of 2</div>
-                </div>
-              </div>
-
-              {/* PAGE BREAK INDICATOR */}
-              <div className="flex items-center justify-center gap-3 my-2">
-                <div className="h-px bg-slate-300 w-24"></div>
-                <span className="text-[11px] font-black uppercase tracking-wider text-slate-500 bg-slate-200 px-3 py-1 rounded-full shadow-2xs">
-                  Page 2 (Terms & Conditions, Bank Details, Signatures)
-                </span>
-                <div className="h-px bg-slate-300 w-24"></div>
-              </div>
-
-              {/* PAGE 2 A4 SHEET (Flush Edge-to-Edge Footer) */}
-              <div className="bg-white shadow-md rounded-2xl max-w-3xl mx-auto border border-slate-200 overflow-hidden">
-                <div className="p-6 md:p-8 space-y-6">
-                  <div className="flex justify-between items-center border-b-2 border-slate-900 pb-2">
-                    <span className="font-black text-sm text-slate-900 uppercase">
-                      {companyName}
-                    </span>
-                    <span className="text-xs font-sans font-bold text-slate-600">
-                      Quotation No: {quotationNo} • Page 2
-                    </span>
-                  </div>
 
                   {/* Toggleable Note in Preview (Completely disappears when off) */}
                   {includeNote && notes && (

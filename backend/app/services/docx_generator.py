@@ -1009,10 +1009,19 @@ def _generate_kleanmax_docx(
     p_p2.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p_p2.paragraph_format.space_before = Pt(0)
     p_p2.paragraph_format.space_after = Pt(0)
-    team_path = STATIC_DIR / "kleanmax" / "kleanmax_team_page.jpeg"
-    if team_path.exists():
-        r = p_p2.add_run()
-        r.add_picture(str(team_path), width=Inches(7.07))
+    custom_p2 = snapshot.get("page2Image") or snapshot.get("customPage2Image") or getattr(quotation, "page2_image_url", None)
+    stream_p2 = _load_image_stream(custom_p2) if custom_p2 else None
+    if stream_p2:
+        try:
+            r = p_p2.add_run()
+            r.add_picture(stream_p2, width=Inches(7.07))
+        except Exception as err:
+            logger.warning(f"Error embedding custom page 2 picture in docx: {err}")
+    else:
+        team_path = STATIC_DIR / "kleanmax" / "kleanmax_team_page.jpeg"
+        if team_path.exists():
+            r = p_p2.add_run()
+            r.add_picture(str(team_path), width=Inches(7.07))
 
     # ===== PAGE 3: SCOPE & PROJECT VALUE =====
     doc.add_page_break()

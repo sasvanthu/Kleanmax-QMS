@@ -81,8 +81,39 @@
             box-sizing: border-box;
         }
 
-        /* Page 2 Body with Mandatory Page Break */
-        .page-2-body, .unp-page-2-body {
+        /* Continuous Body Flow for Quotations */
+        .continuous-doc-sheet {
+            width: 210mm;
+            min-height: 297mm;
+            background: #ffffff;
+            margin: 0 auto;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        @media screen {
+            .continuous-doc-sheet {
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+                border-radius: 4px;
+                margin-bottom: 24px;
+            }
+        }
+
+        @media print {
+            .continuous-doc-sheet {
+                box-shadow: none !important;
+                margin: 0 !important;
+                width: 100% !important;
+                min-height: auto !important;
+            }
+        }
+
+        .page-2-body {
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        .unp-page-2-body {
             page-break-before: always;
             break-before: page;
             padding: 12mm 14mm 14mm 14mm;
@@ -990,7 +1021,7 @@
         </div>
         </div>
     </div>
-{% elif company_code == 'kleanmax' and quotation.quotation_type not in ['item_based', 'repair_service', 'rental', 'sales'] and (not snapshot.machineName) and (not items or items|length == 0) and (not snapshot.items or snapshot.items|length == 0) and ('CLEANING' in quotation.job_description|default('')|upper or snapshot.scopeTitle or snapshot.cleanableSqft) %}
+{% elif company_code == 'kleanmax' and quotation.quotation_type not in ['item_based', 'repair_service', 'rental', 'sales'] and (not snapshot.machineName) and (not items or items|length == 0) and (not snapshot.get('items') or snapshot.get('items')|length == 0) and ('CLEANING' in quotation.job_description|default('')|upper or snapshot.scopeTitle or snapshot.cleanableSqft) %}
     <!-- ================= KLEANMAX PAGE 1: COVER PAGE ================= -->
     <div class="page km-page" style="height: 297mm; position: relative; box-sizing: border-box; overflow: hidden; background: #ffffff;">
         <!-- Top Section: Logo (left) and WWW.KLEANMAX.COM Box (right) -->
@@ -1215,7 +1246,7 @@
         </div>
     </div>
 {% else %}
-
+    <div class="continuous-doc-sheet">
         <!-- 1. Top Letterhead Banner (100% Edge-to-Edge) -->
     <div class="banner-container">
         {% if header_base64 or banner_base64 %}
@@ -1304,7 +1335,7 @@
     </div>
 
     <!-- 5. Items / Spares / Services Table or Dynamic Word Scope -->
-    {% if company_code == 'kleanmax' and quotation.quotation_type not in ['item_based', 'repair_service', 'rental', 'sales'] and (not items or items|length == 0) and (not snapshot.items or snapshot.items|length == 0) and ('WILSTON' in quotation.job_description|default('')|upper or 'POWER PLANT' in quotation.job_description|default('')|upper or snapshot.cleanableSqft) %}
+    {% if company_code == 'kleanmax' and quotation.quotation_type not in ['item_based', 'repair_service', 'rental', 'sales'] and (not items or items|length == 0) and (not snapshot.get('items') or snapshot.get('items')|length == 0) and ('WILSTON' in quotation.job_description|default('')|upper or 'POWER PLANT' in quotation.job_description|default('')|upper or snapshot.cleanableSqft) %}
     <!-- DYNAMIC WORD-PROCESSOR SCOPE OF WORK (CONTINUOUS NATURAL FLOW) -->
     <div style="margin: 15px 0; font-size: 8.5pt; line-height: 1.55; color: #1e293b;">
         {% set scope_lines = quotation.notes.split('\n') if quotation.notes else [] %}
@@ -1507,20 +1538,7 @@
     </table>
     {% endif %}
 
-    </div> <!-- End Page 1 Body Content -->
-
-    <!-- ================= PAGE 2: TERMS & CONDITIONS + BANK DETAILS ================= -->
-    <div class="page-2-body">
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0f172a; padding-bottom: 4px; margin-bottom: 14px;">
-            <div style="font-weight: 900; font-size: 10.5pt; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px;">
-                {{ company.company_name or 'KLEAN MAX PRO' }}
-            </div>
-            <div style="font-size: 8pt; font-weight: 700; color: #64748b;">
-                Quotation No: {{ quotation.quotation_number }} • Page 2
-            </div>
-        </div>
-
-        <!-- 6. Fixed After-Table Content -->
+    <!-- 6. Fixed After-Table Content (Continuous Natural Flow) -->
     {% if 'RENTAL' in quotation.job_description|default('')|upper or quotation.quotation_type == 'rental' %}
     <!-- Rental Quotation After-Table -->
     {% set show_rental_note = (snapshot.include_note if (snapshot and snapshot.include_note is defined) else (quotation.notes is not none and quotation.notes|length > 0)) %}
@@ -1733,7 +1751,7 @@
     </div>
     {% endif %}
 
-    </div> <!-- End Page 2 Body Content -->
+    </div> <!-- End Page Body Content -->
 
     {% if footer_base64 %}
     <div style="width: 100%; margin: 12px 0 0 0; padding: 0; line-height: 0; display: block;">
@@ -1744,6 +1762,7 @@
         Contact :- {{ company.phone or '7338882036 / 9710148218' }} -- Email :- {{ company.email or 'info@kleanmaxpro.com' }} -- Website :- {{ company.website or 'www.kleanmaxpro.com' }}
     </div>
     {% endif %}
+    </div> <!-- End continuous-doc-sheet -->
 
 {% endif %}
 </body>
