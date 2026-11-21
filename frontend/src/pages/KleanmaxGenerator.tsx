@@ -693,51 +693,7 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* 2. QUICK HELPER TOOLS BAR (Presets & Scope Helpers)                       */}
-      {/* ========================================================================= */}
-      <div className="bg-gradient-to-r from-slate-900 via-lime-950 to-slate-900 text-white p-4 rounded-2xl shadow-md flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-lime-400" />
-          <span className="text-xs font-black uppercase tracking-wider text-lime-300">
-            Kleanmax Proposal Presets & Tools:
-          </span>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={insertChandaanTemplate}
-            className="px-3 py-1.5 bg-lime-500/20 hover:bg-lime-500/30 text-lime-200 border border-lime-400/30 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all"
-          >
-            <FileCode className="w-3.5 h-3.5 text-lime-400" />
-            <span>Load Sri Chandaan Logistics Scope</span>
-          </button>
 
-          <button
-            type="button"
-            onClick={clearToBlankBox}
-            className="px-3 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-400/30 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all"
-          >
-            <Eraser className="w-3.5 h-3.5 text-rose-400" />
-            <span>Clear to Empty Content Box</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() =>
-              appendScopeSection('HIGH-PRESSURE JET WASHING & FACADE CLEANING', [
-                'Heavy-duty high pressure jet wash for concrete and exterior wall surfaces.',
-                'Remove moss, mold, grime, algae and industrial residue.',
-                'Exterior glass wash with streak-free glass chemical and squeegee.',
-              ])
-            }
-            className="px-3 py-1.5 bg-sky-500/20 hover:bg-sky-500/30 text-sky-200 border border-sky-400/30 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all"
-          >
-            <Plus className="w-3.5 h-3.5 text-sky-400" />
-            <span>+ Add Jet Wash Scope</span>
-          </button>
-        </div>
-      </div>
 
       {/* ========================================================================= */}
       {/* 3. AUTHENTIC 4-PAGE A4 EDITOR CANVAS                                      */}
