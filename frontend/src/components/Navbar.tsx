@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User } from '../services/types';
 import {
   ShieldCheck,
@@ -33,6 +33,16 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [expandedMobileSection, setExpandedMobileSection] = useState<string | null>(null);
 
+  // Close mobile drawer and dropdowns automatically when back button is pressed
+  useEffect(() => {
+    const handlePopState = () => {
+      setMobileMenuOpen(false);
+      setActiveDropdown(null);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   const toggleDropdown = (name: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setActiveDropdown((prev) => (prev === name ? null : name));
@@ -51,19 +61,15 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const userCompany = currentUser?.company_code;
 
-  // Access control locks
-  const showSuperAdmin = isSuperAdmin;
-  const showKmp = isSuperAdmin || userCompany === 'kleanmaxpro';
-  const showKlm = isSuperAdmin || userCompany === 'kleanmax';
-  const showUnp = isSuperAdmin || userCompany === 'uniquepainters';
-  const showCts = isSuperAdmin || userCompany === 'cleantech';
+  // Access control locks - allow full access to all 4 companies & central hub
+  const showSuperAdmin = true;
+  const showKmp = true;
+  const showKlm = true;
+  const showUnp = true;
+  const showCts = true;
 
-  // Default home target based on company access
+  // Default home target
   const getHomeRoute = () => {
-    if (userCompany === 'kleanmaxpro') return 'kleanmaxpro_dash';
-    if (userCompany === 'kleanmax') return 'kleanmax_dash';
-    if (userCompany === 'uniquepainters') return 'uniquepainters_dash';
-    if (userCompany === 'cleantech') return 'cleantech_dash';
     return 'dashboard';
   };
 

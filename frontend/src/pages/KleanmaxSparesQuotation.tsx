@@ -305,21 +305,36 @@ export const KleanmaxSparesQuotation: React.FC<KleanmaxSparesQuotationProps> = (
     <div className="space-y-6 max-w-5xl mx-auto pb-16">
       {/* Top Banner & Action Deck */}
       <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-2xl p-6 shadow-md border border-slate-700 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className="bg-[#FED10C] text-slate-950 px-2.5 py-0.5 rounded text-[11px] font-black uppercase tracking-wider">
-              Kleanmax Division
-            </span>
-            <span className="text-xs text-slate-300 font-bold">
-              Spares & Maintenance Template
-            </span>
+        <div className="flex items-start gap-3">
+          <button
+            onClick={() => {
+              if (window.history.length > 1) {
+                window.history.back();
+              } else {
+                onNavigate('kleanmax_dash');
+              }
+            }}
+            className="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl border border-slate-700 transition-colors mt-0.5"
+            title="Back to Previous Page"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+          <div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="bg-[#FED10C] text-slate-950 px-2.5 py-0.5 rounded text-[11px] font-black uppercase tracking-wider">
+                Kleanmax Division
+              </span>
+              <span className="text-xs text-slate-300 font-bold">
+                Spares & Maintenance Template
+              </span>
+            </div>
+            <h1 className="text-2xl font-black text-white tracking-tight">
+              Automated Spares and Service Quotation
+            </h1>
+            <p className="text-xs text-slate-400 mt-1">
+              Top logo, fixed 'About Us', fixed terms & bank details are automated. Employees only need to enter quantities.
+            </p>
           </div>
-          <h1 className="text-2xl font-black text-white tracking-tight">
-            Automated Spares and Service Quotation
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Top logo, fixed 'About Us', fixed terms & bank details are automated. Employees only need to enter quantities.
-          </p>
         </div>
 
         {/* 1-Click Action Buttons */}

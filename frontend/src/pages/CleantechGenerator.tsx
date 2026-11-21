@@ -1010,9 +1010,15 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
       <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex flex-wrap items-center justify-between gap-4 sticky top-16 z-20">
         <div className="flex items-center gap-2">
           <button
-            onClick={() => onNavigate('cleantech_quotes')}
+            onClick={() => {
+              if (window.history.length > 1) {
+                window.history.back();
+              } else {
+                onNavigate('cleantech_dash');
+              }
+            }}
             className="p-2 hover:bg-slate-100 rounded-xl text-slate-600 transition-colors"
-            title="View Past Quotations"
+            title="Back to Previous Page"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>

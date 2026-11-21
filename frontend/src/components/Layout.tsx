@@ -25,7 +25,7 @@ export const Layout: React.FC<LayoutProps> = ({
         onNavigate={onNavigate}
         onLogout={onLogout}
       />
-      <main className="flex-1 p-4 md:p-8 max-w-7xl mx-auto w-full">
+      <main className="flex-1 p-4 md:p-8 max-w-7xl mx-auto w-full min-w-0 max-w-full overflow-x-auto">
         {children}
       </main>
     </div>

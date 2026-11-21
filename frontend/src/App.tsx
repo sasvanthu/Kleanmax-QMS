@@ -35,25 +35,6 @@ export const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<string>(() => {
     const user = api.auth.getStoredUser();
     if (!user) return 'login';
-
-    const userCompany = user.company_code;
-    const isSuperAdmin = user.role === 'admin' || userCompany === 'all' || !userCompany;
-
-    if (!isSuperAdmin) {
-      if (userCompany === 'kleanmaxpro' && !initialRoute.page.startsWith('kleanmaxpro') && initialRoute.page !== 'quotation_detail') {
-        return 'kleanmaxpro_dash';
-      }
-      if (userCompany === 'kleanmax' && !initialRoute.page.startsWith('kleanmax') && initialRoute.page !== 'quotation_detail') {
-        return 'kleanmax_dash';
-      }
-      if (userCompany === 'uniquepainters' && !initialRoute.page.startsWith('uniquepainters') && initialRoute.page !== 'quotation_detail') {
-        return 'uniquepainters_dash';
-      }
-      if (userCompany === 'cleantech' && !initialRoute.page.startsWith('cleantech') && initialRoute.page !== 'quotation_detail') {
-        return 'cleantech_dash';
-      }
-    }
-
     return initialRoute.page || 'dashboard';
   });
   const [pageParams, setPageParams] = useState<any>(() => initialRoute.params || {});
@@ -64,20 +45,26 @@ export const App: React.FC = () => {
 
   // Synchronize browser history and popstate (Back/Forward navigation)
   useEffect(() => {
-    const onPopState = () => {
-      const route = pathToPage(window.location.pathname, window.location.search);
-      setCurrentPage(route.page);
-      setPageParams(route.params);
+    const onPopState = (e: PopStateEvent) => {
+      // If modal was open, close it cleanly on back navigation
+      setPreviewModalOpen(false);
+      setPreviewQuotationId(null);
+
+      if (e.state && e.state.page) {
+        setCurrentPage(e.state.page);
+        setPageParams(e.state.params || {});
+      } else {
+        const route = pathToPage(window.location.pathname, window.location.search);
+        setCurrentPage(route.page);
+        setPageParams(route.params);
+      }
     };
 
     window.addEventListener('popstate', onPopState);
 
-    // Initial URL sync
+    // Initial URL sync and history state registration
     const targetUrl = pageToPath(currentPage, pageParams);
-    const currentUrl = window.location.pathname + window.location.search;
-    if (currentUrl !== targetUrl && (currentUrl === '/' || currentUrl === '' || currentUrl === '/dashboard')) {
-      window.history.replaceState({ page: currentPage, params: pageParams }, '', targetUrl);
-    }
+    window.history.replaceState({ page: currentPage, params: pageParams }, '', targetUrl);
 
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
@@ -110,39 +97,11 @@ export const App: React.FC = () => {
     setPageParams({});
   };
 
-  // Navigation with Role-Based Access Control Lock and Real URL routing
+  // Navigation with Real URL routing and full multi-company access
   const handleNavigate = (page: string, params: any = {}) => {
     if (!currentUser) return;
 
-    const userCompany = currentUser.company_code;
-    const isSuperAdmin = currentUser.role === 'admin' || userCompany === 'all' || !userCompany;
-
-    let targetPage = page;
-    if (!isSuperAdmin) {
-      // Company Staff Lock
-      if (userCompany === 'kleanmaxpro') {
-        const allowed = page.startsWith('kleanmaxpro') || page === 'quotation_detail' || page === 'services' || (page === 'quotation_edit' && (!params.company_code || params.company_code === 'kleanmaxpro')) || (page === 'settings' && params.tab === 'kleanmaxpro');
-        if (!allowed) {
-          targetPage = 'kleanmaxpro_dash';
-        }
-      } else if (userCompany === 'kleanmax') {
-        const allowed = page.startsWith('kleanmax') || page === 'quotation_detail' || (page === 'quotation_edit' && (!params.company_code || params.company_code === 'kleanmax')) || (page === 'settings' && params.tab === 'kleanmax');
-        if (!allowed) {
-          targetPage = 'kleanmax_dash';
-        }
-      } else if (userCompany === 'uniquepainters') {
-        const allowed = page.startsWith('uniquepainters') || page === 'quotation_detail' || (page === 'quotation_edit' && (!params.company_code || params.company_code === 'uniquepainters')) || (page === 'settings' && params.tab === 'uniquepainters');
-        if (!allowed) {
-          targetPage = 'uniquepainters_dash';
-        }
-      } else if (userCompany === 'cleantech') {
-        const allowed = page.startsWith('cleantech') || page === 'quotation_detail' || (page === 'quotation_edit' && (!params.company_code || params.company_code === 'cleantech')) || (page === 'settings' && params.tab === 'cleantech');
-        if (!allowed) {
-          targetPage = 'cleantech_dash';
-        }
-      }
-    }
-
+    const targetPage = page;
     const targetUrl = pageToPath(targetPage, params);
     const currentUrl = window.location.pathname + window.location.search;
     if (currentUrl !== targetUrl) {
