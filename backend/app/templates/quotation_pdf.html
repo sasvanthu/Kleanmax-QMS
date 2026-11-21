@@ -1091,7 +1091,16 @@
         </div>
     </div>
 
-    <!-- ================= KLEANMAX PAGE 2: SCOPE & PROJECT VALUE ================= -->
+    <!-- ================= KLEANMAX PAGE 2: ABOUT US & TEAM ================= -->
+    <div class="page km-page" style="height: 297mm; page-break-before: always; break-before: page; position: relative; box-sizing: border-box; overflow: hidden; padding: 0; margin: 0; background: #ffffff;">
+        {% if km_team_page_base64 %}
+        <img src="data:image/jpeg;base64,{{ km_team_page_base64 }}" style="width: 100%; height: 297mm; object-fit: fill; display: block; margin: 0; padding: 0;" alt="About Us & Team Support" />
+        {% else %}
+        <img src="/kleanmax/kleanmax_team_page.jpeg" style="width: 100%; height: 297mm; object-fit: fill; display: block; margin: 0; padding: 0;" alt="About Us & Team Support" />
+        {% endif %}
+    </div>
+
+    <!-- ================= KLEANMAX PAGE 3: SCOPE & PROJECT VALUE ================= -->
     <div class="page km-page" style="min-height: 297mm; height: 297mm; page-break-before: always; break-before: page; position: relative; box-sizing: border-box; padding: 20mm 20mm 20mm 20mm; background: #ffffff;">
         <!-- Header: DEEP CLEANING SERVICE : -->
         <div style="border-bottom: 1.5px solid #000000; padding-bottom: 4px; margin-bottom: 14px;">
@@ -1191,7 +1200,7 @@
         </div>
     </div>
 
-    <!-- ================= KLEANMAX PAGE 3: BANK DETAILS, TERMS & THANK YOU ================= -->
+    <!-- ================= KLEANMAX PAGE 4: BANK DETAILS, TERMS & THANK YOU ================= -->
     <div class="page km-page" style="min-height: 297mm; height: 297mm; page-break-before: always; break-before: page; position: relative; box-sizing: border-box; padding: 22mm 22mm 22mm 22mm; background: #ffffff; font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif;">
         <!-- Company's Bank Details -->
         <div style="margin-bottom: 24px;">

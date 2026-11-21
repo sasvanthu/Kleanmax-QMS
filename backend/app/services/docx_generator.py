@@ -842,7 +842,7 @@ def _generate_kleanmax_docx(
     sections: list = None,
     items: list = None
 ) -> bytes:
-    """Generates the authentic 3-page Klean Max Commercial Cleaning Proposal Word Document."""
+    """Generates the authentic 4-page Klean Max Commercial Cleaning Proposal Word Document."""
     doc = docx.Document()
     
     # 0. A4 Dimensions & Margins
@@ -1003,7 +1003,27 @@ def _generate_kleanmax_docx(
     r.font.size = Pt(10.5)
     r.font.color.rgb = RGBColor(0, 0, 0)
 
-    # ===== PAGE 2: SCOPE & PROJECT VALUE =====
+    # ===== PAGE 2: ABOUT US & TEAM SUPPORT =====
+    doc.add_page_break()
+    p_p2 = doc.add_paragraph()
+    p_p2.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p_p2.paragraph_format.space_before = Pt(0)
+    p_p2.paragraph_format.space_after = Pt(0)
+    custom_p2 = snapshot.get("page2Image") or snapshot.get("customPage2Image") or getattr(quotation, "page2_image_url", None)
+    stream_p2 = _load_image_stream(custom_p2) if custom_p2 else None
+    if stream_p2:
+        try:
+            r = p_p2.add_run()
+            r.add_picture(stream_p2, width=Inches(7.07))
+        except Exception as err:
+            logger.warning(f"Error embedding custom page 2 picture in docx: {err}")
+    else:
+        team_path = STATIC_DIR / "kleanmax" / "kleanmax_team_page.jpeg"
+        if team_path.exists():
+            r = p_p2.add_run()
+            r.add_picture(str(team_path), width=Inches(7.07))
+
+    # ===== PAGE 3: SCOPE & PROJECT VALUE =====
     doc.add_page_break()
     p_s_hdr = doc.add_paragraph()
     p_s_hdr.paragraph_format.space_before = Pt(0)
@@ -1166,7 +1186,7 @@ def _generate_kleanmax_docx(
             r.font.size = Pt(8.5)
             r.font.color.rgb = RGBColor(15, 23, 42)
 
-    # ===== PAGE 3: BANK DETAILS, TERMS & THANK YOU =====
+    # ===== PAGE 4: BANK DETAILS, TERMS & THANK YOU =====
     doc.add_page_break()
     p_bk_hdr = doc.add_paragraph()
     p_bk_hdr.paragraph_format.space_before = Pt(0)
@@ -1298,8 +1318,8 @@ def generate_quotation_docx_bytes(
         and (not snapshot.get('items') or len(snapshot.get('items')) == 0)
         and not snapshot.get('machineName')
         and (
-            'WILSTON' in getattr(quotation, 'job_description', '').upper()
-            or 'CLEANING' in getattr(quotation, 'job_description', '').upper()
+            'WILSTON' in (getattr(quotation, 'job_description', '') or '').upper()
+            or 'CLEANING' in (getattr(quotation, 'job_description', '') or '').upper()
             or snapshot.get('scopeTitle')
             or snapshot.get('cleanableSqft')
         )
