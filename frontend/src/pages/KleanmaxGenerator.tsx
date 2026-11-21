@@ -860,74 +860,11 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
               <span>INFO@KLEANMAX.COM</span>
             </div>
           </div>
-          <div className="absolute bottom-1 right-3 text-[10px] text-slate-600 font-bold">Page 1 of 4</div>
+          <div className="absolute bottom-1 right-3 text-[10px] text-slate-600 font-bold">Page 1 of 3</div>
         </div>
 
         {/* ----------------------------------------------------------------------- */}
-        {/* PAGE 2: ABOUT US & TEAM SUPPORT (Exact Reference Graphic / Optional Custom) */}
-        {/* ----------------------------------------------------------------------- */}
-        <div className="bg-white rounded-2xl shadow-xl border border-slate-300 overflow-hidden relative">
-          {/* Top Control Bar for Optional Page 2 Image Upload */}
-          <div className="bg-slate-900 text-white p-3 px-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-700">
-            <div className="flex items-center gap-2">
-              <ImageIcon className="w-4 h-4 text-lime-400" />
-              <span className="text-xs font-bold text-slate-200">
-                Page 2 Graphic (Default: Klean Max Team & About Us)
-              </span>
-              {customPage2Image ? (
-                <span className="text-[10px] bg-lime-500/20 text-lime-300 border border-lime-500/40 font-extrabold px-2 py-0.5 rounded-full">
-                  Custom Image Active
-                </span>
-              ) : (
-                <span className="text-[10px] bg-slate-800 text-slate-400 font-bold px-2 py-0.5 rounded-full">
-                  Original Default Graphic
-                </span>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2">
-              <label className="cursor-pointer px-3.5 py-1.5 bg-lime-500 hover:bg-lime-600 text-slate-950 font-black text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all active:scale-95">
-                <Upload className="w-3.5 h-3.5 text-slate-950" />
-                <span>{uploadingPage2 ? 'Uploading...' : (customPage2Image ? 'Replace Image' : 'Upload New Image')}</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  disabled={uploadingPage2}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) handlePage2ImageUpload(file);
-                    e.target.value = '';
-                  }}
-                />
-              </label>
-
-              {customPage2Image && (
-                <button
-                  type="button"
-                  onClick={handleResetPage2Image}
-                  className="px-3 py-1.5 bg-slate-800 hover:bg-rose-950/70 text-slate-300 hover:text-rose-300 font-bold text-xs rounded-xl border border-slate-700 flex items-center gap-1.5 transition-colors cursor-pointer"
-                  title="Reset to default reference graphic"
-                >
-                  <RotateCcw className="w-3.5 h-3.5 text-rose-400" />
-                  <span>Reset to Default</span>
-                </button>
-              )}
-            </div>
-          </div>
-
-          <img
-            src={customPage2Image || DEFAULT_PAGE2_IMAGE}
-            alt="About Us & Team Support"
-            className="w-full h-auto block object-cover"
-          />
-          <div className="absolute bottom-2 right-4 text-[11px] text-slate-400 font-bold bg-white/80 px-2 py-0.5 rounded">
-            Page 2 of 4
-          </div>
-        </div>
-
-        {/* ----------------------------------------------------------------------- */}
-        {/* PAGE 3: SCOPE OF WORK & PROJECT VALUE (Content Filling Text Box)        */}
+        {/* PAGE 2: SCOPE OF WORK & PROJECT VALUE (Content Filling Text Box)        */}
         {/* ----------------------------------------------------------------------- */}
         <div className="bg-white rounded-2xl shadow-xl border border-slate-300 p-10 md:p-12 space-y-6 relative" style={{ minHeight: '920px' }}>
           {/* Header */}
@@ -1146,11 +1083,11 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
             </div>
           </div>
 
-          <div className="text-right text-[11px] text-slate-400 font-bold pt-4">Page 3 of 4</div>
+          <div className="text-right text-[11px] text-slate-400 font-bold pt-4">Page 2 of 3</div>
         </div>
 
         {/* ----------------------------------------------------------------------- */}
-        {/* PAGE 4: BANK DETAILS, TERMS & CONDITIONS, THANK YOU                     */}
+        {/* PAGE 3: BANK DETAILS, TERMS & CONDITIONS, THANK YOU                     */}
         {/* ----------------------------------------------------------------------- */}
         <div className="bg-white rounded-2xl shadow-xl border border-slate-300 p-10 md:p-12 space-y-8 relative" style={{ minHeight: '920px' }}>
           {/* Company's Bank Details */}
@@ -1268,7 +1205,7 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
             </div>
           </div>
 
-          <div className="text-right text-[11px] text-slate-400 font-bold">Page 4 of 4</div>
+          <div className="text-right text-[11px] text-slate-400 font-bold">Page 3 of 3</div>
         </div>
 
       </div>
@@ -1357,18 +1294,10 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
                     <span>INFO@KLEANMAX.COM</span>
                   </div>
                 </div>
-                <div className="absolute bottom-1 right-3 text-[9px] text-slate-600 font-bold">Page 1 of 4</div>
+                <div className="absolute bottom-1 right-3 text-[9px] text-slate-600 font-bold">Page 1 of 3</div>
               </div>
 
               {/* Preview Page 2 */}
-              <div className="bg-white shadow-md rounded-2xl max-w-3xl mx-auto border border-slate-200 overflow-hidden relative">
-                <img src={customPage2Image || DEFAULT_PAGE2_IMAGE} alt="About Us & Team Support" className="w-full h-auto block" />
-                <div className="absolute bottom-2 right-4 text-[10px] text-slate-400 font-bold bg-white/80 px-2 py-0.5 rounded">
-                  Page 2 of 4
-                </div>
-              </div>
-
-              {/* Preview Page 3 */}
               <div className="bg-white p-8 shadow-md rounded-2xl max-w-3xl mx-auto border border-slate-200 space-y-6 relative" style={{ minHeight: '800px' }}>
                 <div className="font-black text-xl text-black underline uppercase border-b border-black pb-1">
                   {scopeTitle}
@@ -1406,10 +1335,10 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
                     </div>
                   )}
                 </div>
-                <div className="text-right text-[10px] text-slate-400 font-bold pt-4">Page 3 of 4</div>
+                <div className="text-right text-[10px] text-slate-400 font-bold pt-4">Page 2 of 3</div>
               </div>
 
-              {/* Preview Page 4 */}
+              {/* Preview Page 3 */}
               <div className="bg-white p-8 shadow-md rounded-2xl max-w-3xl mx-auto border border-slate-200 space-y-6 relative" style={{ minHeight: '800px' }}>
                 <div className="space-y-2">
                   <div className="font-black text-base text-black underline">Company's Bank Details:</div>
@@ -1434,7 +1363,7 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
                 <div className="text-center font-black text-2xl tracking-widest text-black uppercase pt-8">
                   T H A N K &nbsp; Y O U...
                 </div>
-                <div className="text-right text-[10px] text-slate-400 font-bold pt-6">Page 4 of 4</div>
+                <div className="text-right text-[10px] text-slate-400 font-bold pt-6">Page 3 of 3</div>
               </div>
             </div>
           </div>
