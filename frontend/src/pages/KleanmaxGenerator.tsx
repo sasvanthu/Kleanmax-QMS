@@ -111,6 +111,26 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
   const [applyIgst, setApplyIgst] = useState<boolean>(false);
   const [igstRate, setIgstRate] = useState<number>(18);
 
+  const handleToggleCgst = (checked: boolean) => {
+    setApplyCgst(checked);
+    setApplySgst(checked);
+    if (checked) setApplyIgst(false);
+  };
+
+  const handleToggleSgst = (checked: boolean) => {
+    setApplyCgst(checked);
+    setApplySgst(checked);
+    if (checked) setApplyIgst(false);
+  };
+
+  const handleToggleIgst = (checked: boolean) => {
+    setApplyIgst(checked);
+    if (checked) {
+      setApplyCgst(false);
+      setApplySgst(false);
+    }
+  };
+
   // Toggleable Note
   const DEFAULT_KLEANMAX_NOTE = `NOTE :
 1. Boom lift / Scissor lift if required will be charged extra at actuals.
@@ -968,7 +988,7 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
                     <input
                       type="checkbox"
                       checked={applyCgst}
-                      onChange={(e) => setApplyCgst(e.target.checked)}
+                      onChange={(e) => handleToggleCgst(e.target.checked)}
                       className="w-4 h-4 rounded text-lime-600 focus:ring-lime-500 cursor-pointer"
                     />
                     <span>CGST</span>
@@ -992,7 +1012,7 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
                     <input
                       type="checkbox"
                       checked={applySgst}
-                      onChange={(e) => setApplySgst(e.target.checked)}
+                      onChange={(e) => handleToggleSgst(e.target.checked)}
                       className="w-4 h-4 rounded text-lime-600 focus:ring-lime-500 cursor-pointer"
                     />
                     <span>SGST</span>
@@ -1016,7 +1036,7 @@ export const KleanmaxGenerator: React.FC<KleanmaxGeneratorProps> = ({
                     <input
                       type="checkbox"
                       checked={applyIgst}
-                      onChange={(e) => setApplyIgst(e.target.checked)}
+                      onChange={(e) => handleToggleIgst(e.target.checked)}
                       className="w-4 h-4 rounded text-lime-600 focus:ring-lime-500 cursor-pointer"
                     />
                     <span>IGST</span>

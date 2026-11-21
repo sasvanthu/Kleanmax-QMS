@@ -201,6 +201,26 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
   const [applyIgst, setApplyIgst] = useState<boolean>(false);
   const [igstRate, setIgstRate] = useState<number>(18);
 
+  const handleToggleCgst = (checked: boolean) => {
+    setApplyCgst(checked);
+    setApplySgst(checked);
+    if (checked) setApplyIgst(false);
+  };
+
+  const handleToggleSgst = (checked: boolean) => {
+    setApplyCgst(checked);
+    setApplySgst(checked);
+    if (checked) setApplyIgst(false);
+  };
+
+  const handleToggleIgst = (checked: boolean) => {
+    setApplyIgst(checked);
+    if (checked) {
+      setApplyCgst(false);
+      setApplySgst(false);
+    }
+  };
+
   // 6. Machineries and consumables List (Editable)
   const [machineries, setMachineries] = useState<string[]>(DEFAULT_MACHINERIES);
   const [newMachineryInput, setNewMachineryInput] = useState<string>('');
@@ -1290,7 +1310,7 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
                           <input
                             type="checkbox"
                             checked={applyCgst}
-                            onChange={(e) => setApplyCgst(e.target.checked)}
+                            onChange={(e) => handleToggleCgst(e.target.checked)}
                             className="rounded text-purple-600 focus:ring-purple-500 w-4 h-4 cursor-pointer"
                           />
                           <span>CGST</span>
@@ -1321,7 +1341,7 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
                           <input
                             type="checkbox"
                             checked={applySgst}
-                            onChange={(e) => setApplySgst(e.target.checked)}
+                            onChange={(e) => handleToggleSgst(e.target.checked)}
                             className="rounded text-purple-600 focus:ring-purple-500 w-4 h-4 cursor-pointer"
                           />
                           <span>SGST</span>
@@ -1352,7 +1372,7 @@ export const UniquePaintersGenerator: React.FC<UniquePaintersGeneratorProps> = (
                           <input
                             type="checkbox"
                             checked={applyIgst}
-                            onChange={(e) => setApplyIgst(e.target.checked)}
+                            onChange={(e) => handleToggleIgst(e.target.checked)}
                             className="rounded text-purple-600 focus:ring-purple-500 w-4 h-4 cursor-pointer"
                           />
                           <span>IGST</span>

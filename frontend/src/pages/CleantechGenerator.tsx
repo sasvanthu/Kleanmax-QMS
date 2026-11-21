@@ -30,11 +30,10 @@ export interface CleantechItem {
 
 const HEADING_OPTIONS = [
   'SERVICE QUOTATION',
-  'DAY RENTAL QUOTATION',
-  'SPARES AND SERVICE QUOTATION',
-  'SOLAR PANEL CLEANING PROPOSAL',
-  'FACADE CLEANING QUOTATION',
-  'AMC CONTRACT QUOTATION',
+  'SALES QUOTATION',
+  'AMC QUOTATION',
+  'CAMC QUOTATION',
+  'HOUSEKEEPING PRODUCT QUOTATION',
 ];
 
 const DEFAULT_WHY_CHOOSE_US = [
@@ -307,6 +306,26 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
   const [sgstRate, setSgstRate] = useState<number>(9);
   const [applyIgst, setApplyIgst] = useState<boolean>(false);
   const [igstRate, setIgstRate] = useState<number>(18);
+
+  const handleToggleCgst = (checked: boolean) => {
+    setApplyCgst(checked);
+    setApplySgst(checked);
+    if (checked) setApplyIgst(false);
+  };
+
+  const handleToggleSgst = (checked: boolean) => {
+    setApplyCgst(checked);
+    setApplySgst(checked);
+    if (checked) setApplyIgst(false);
+  };
+
+  const handleToggleIgst = (checked: boolean) => {
+    setApplyIgst(checked);
+    if (checked) {
+      setApplyCgst(false);
+      setApplySgst(false);
+    }
+  };
 
   // Toggleable Note
   const DEFAULT_CLEANTECH_NOTE = `NOTE :
@@ -1802,7 +1821,7 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
                     <input
                       type="checkbox"
                       checked={applyCgst}
-                      onChange={(e) => setApplyCgst(e.target.checked)}
+                      onChange={(e) => handleToggleCgst(e.target.checked)}
                       className="w-4 h-4 rounded text-teal-600 focus:ring-teal-500 cursor-pointer"
                     />
                     <span>CGST</span>
@@ -1826,7 +1845,7 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
                     <input
                       type="checkbox"
                       checked={applySgst}
-                      onChange={(e) => setApplySgst(e.target.checked)}
+                      onChange={(e) => handleToggleSgst(e.target.checked)}
                       className="w-4 h-4 rounded text-teal-600 focus:ring-teal-500 cursor-pointer"
                     />
                     <span>SGST</span>
@@ -1850,7 +1869,7 @@ export const CleantechGenerator: React.FC<CleantechGeneratorProps> = ({
                     <input
                       type="checkbox"
                       checked={applyIgst}
-                      onChange={(e) => setApplyIgst(e.target.checked)}
+                      onChange={(e) => handleToggleIgst(e.target.checked)}
                       className="w-4 h-4 rounded text-teal-600 focus:ring-teal-500 cursor-pointer"
                     />
                     <span>IGST</span>

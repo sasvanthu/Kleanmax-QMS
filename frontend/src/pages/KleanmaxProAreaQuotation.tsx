@@ -253,9 +253,9 @@ export const KleanmaxProAreaQuotation: React.FC<KleanmaxProAreaQuotationProps> =
   const [bankAccountNo, setBankAccountNo] = useState<string>('027505010327');
   const [bankBranch, setBankBranch] = useState<string>('PORUR');
   const [bankIfsc, setBankIfsc] = useState<string>('ICIC0000275');
-  const [signatoryName, setSignatoryName] = useState<string>('Mr. Manikandan Balamurugan');
-  const [signatoryDesignation, setSignatoryDesignation] = useState<string>('Sales and Service Head');
-  const [signatoryPhone, setSignatoryPhone] = useState<string>('+91 73388 82036');
+  const [signatoryName, setSignatoryName] = useState<string>('Praveena');
+  const [signatoryDesignation, setSignatoryDesignation] = useState<string>('Sales Executive');
+  const [signatoryPhone, setSignatoryPhone] = useState<string>('8122282034');
   const [editCompanyDetails, setEditCompanyDetails] = useState<boolean>(false);
 
   // 4b. Table Column Headings (Directly Editable)
@@ -324,6 +324,26 @@ Recovery / Dirty Water Tank: 100 L`,
   const [sgstRate, setSgstRate] = useState<number>(9);
   const [applyIgst, setApplyIgst] = useState<boolean>(false);
   const [igstRate, setIgstRate] = useState<number>(18);
+
+  const handleToggleCgst = (checked: boolean) => {
+    setApplyCgst(checked);
+    setApplySgst(checked);
+    if (checked) setApplyIgst(false);
+  };
+
+  const handleToggleSgst = (checked: boolean) => {
+    setApplyCgst(checked);
+    setApplySgst(checked);
+    if (checked) setApplyIgst(false);
+  };
+
+  const handleToggleIgst = (checked: boolean) => {
+    setApplyIgst(checked);
+    if (checked) {
+      setApplyCgst(false);
+      setApplySgst(false);
+    }
+  };
 
   // 6. Product Search Bar State (Pre-populated with Kleanmax Pro products)
   const [productSearchQuery, setProductSearchQuery] = useState<string>('');
@@ -1707,7 +1727,7 @@ Recovery / Dirty Water Tank: 100 L`,
                     <input
                       type="checkbox"
                       checked={applyCgst}
-                      onChange={(e) => setApplyCgst(e.target.checked)}
+                      onChange={(e) => handleToggleCgst(e.target.checked)}
                       className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400 cursor-pointer"
                     />
                     <span>CGST</span>
@@ -1731,7 +1751,7 @@ Recovery / Dirty Water Tank: 100 L`,
                     <input
                       type="checkbox"
                       checked={applySgst}
-                      onChange={(e) => setApplySgst(e.target.checked)}
+                      onChange={(e) => handleToggleSgst(e.target.checked)}
                       className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400 cursor-pointer"
                     />
                     <span>SGST</span>
@@ -1755,7 +1775,7 @@ Recovery / Dirty Water Tank: 100 L`,
                     <input
                       type="checkbox"
                       checked={applyIgst}
-                      onChange={(e) => setApplyIgst(e.target.checked)}
+                      onChange={(e) => handleToggleIgst(e.target.checked)}
                       className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400 cursor-pointer"
                     />
                     <span>IGST</span>
@@ -2033,7 +2053,7 @@ Recovery / Dirty Water Tank: 100 L`,
                     value={signatoryName}
                     onChange={(e) => setSignatoryName(e.target.value)}
                     className="w-full text-sm font-black text-white bg-slate-800/90 border border-slate-700 focus:border-amber-400 rounded-lg px-2.5 py-1.5 focus:outline-none"
-                    placeholder="Signatory Name (e.g. Mr. Manikandan Balamurugan)"
+                    placeholder="Signatory Name (e.g. Praveena)"
                     title="Click to edit signatory name"
                   />
                 </div>
@@ -2044,7 +2064,7 @@ Recovery / Dirty Water Tank: 100 L`,
                     value={signatoryDesignation}
                     onChange={(e) => setSignatoryDesignation(e.target.value)}
                     className="w-full text-xs font-bold text-amber-400 bg-slate-800/90 border border-slate-700 focus:border-amber-400 rounded-lg px-2.5 py-1.5 focus:outline-none"
-                    placeholder="Designation / Position (e.g. Sales and Service Head)"
+                    placeholder="Designation / Position (e.g. Sales Executive)"
                     title="Click to edit signatory designation"
                   />
                 </div>
@@ -2055,7 +2075,7 @@ Recovery / Dirty Water Tank: 100 L`,
                     value={signatoryPhone}
                     onChange={(e) => setSignatoryPhone(e.target.value)}
                     className="w-full text-xs font-semibold text-slate-300 bg-slate-800/90 border border-slate-700 focus:border-amber-400 rounded-lg px-2.5 py-1.5 focus:outline-none"
-                    placeholder="Phone Number (e.g. +91 73388 82036)"
+                    placeholder="Phone Number (e.g. 8122282034)"
                     title="Click to edit signatory phone number"
                   />
                 </div>

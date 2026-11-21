@@ -1801,9 +1801,9 @@ def generate_quotation_docx_bytes(
     r_for.bold = True
     r_for.font.size = Pt(8.5)
 
-    sig_name = snapshot.get('signatoryName') or getattr(quotation, 'signatory_name', None) or getattr(company, 'signatory_name', None) or "Mr. Manikandan Balamurugan"
-    sig_desig = snapshot.get('signatoryDesignation') or getattr(quotation, 'signatory_designation', None) or getattr(company, 'signatory_designation', None) or "Sales and Service Head"
-    phone = snapshot.get('signatoryPhone') or snapshot.get('sigPhone') or getattr(quotation, 'signatory_phone', None) or getattr(company, 'signatory_phone', None) or getattr(company, 'phone1', None) or getattr(company, 'phone2', None) or "+91 73388 82036"
+    sig_name = snapshot.get('signatoryName') or getattr(quotation, 'signatory_name', None) or getattr(company, 'signatory_name', None) or "Praveena"
+    sig_desig = snapshot.get('signatoryDesignation') or getattr(quotation, 'signatory_designation', None) or getattr(company, 'signatory_designation', None) or "Sales Executive"
+    phone = snapshot.get('signatoryPhone') or snapshot.get('sigPhone') or getattr(quotation, 'signatory_phone', None) or getattr(company, 'signatory_phone', None) or getattr(company, 'phone1', None) or getattr(company, 'phone2', None) or "8122282034"
 
     r_sig = p_sign.add_run(f"{sig_name}\n")
     r_sig.bold = True

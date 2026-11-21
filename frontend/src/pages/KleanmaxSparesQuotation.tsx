@@ -71,6 +71,31 @@ export const KleanmaxSparesQuotation: React.FC<KleanmaxSparesQuotationProps> = (
   const [applyIgst, setApplyIgst] = useState<boolean>(false);
   const [igstRate, setIgstRate] = useState<number>(18);
 
+  const handleToggleCgst = (checked: boolean) => {
+    setApplyCgst(checked);
+    setApplySgst(checked);
+    if (checked) setApplyIgst(false);
+  };
+
+  const handleToggleSgst = (checked: boolean) => {
+    setApplyCgst(checked);
+    setApplySgst(checked);
+    if (checked) setApplyIgst(false);
+  };
+
+  const handleToggleIgst = (checked: boolean) => {
+    setApplyIgst(checked);
+    if (checked) {
+      setApplyCgst(false);
+      setApplySgst(false);
+    }
+  };
+
+  // Signatory & Contact Info (Editable)
+  const [signatoryName, setSignatoryName] = useState<string>('Praveena');
+  const [signatoryDesignation, setSignatoryDesignation] = useState<string>('Sales Executive');
+  const [signatoryPhone, setSignatoryPhone] = useState<string>('8122282034');
+
   // Toggleable Note
   const DEFAULT_SPARES_NOTE = `NOTE :
 1. All parts supplied are genuine OEM replacement components.
@@ -603,7 +628,7 @@ export const KleanmaxSparesQuotation: React.FC<KleanmaxSparesQuotationProps> = (
                   <input
                     type="checkbox"
                     checked={applyCgst}
-                    onChange={(e) => setApplyCgst(e.target.checked)}
+                    onChange={(e) => handleToggleCgst(e.target.checked)}
                     className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400 cursor-pointer"
                   />
                   <span>CGST</span>
@@ -627,7 +652,7 @@ export const KleanmaxSparesQuotation: React.FC<KleanmaxSparesQuotationProps> = (
                   <input
                     type="checkbox"
                     checked={applySgst}
-                    onChange={(e) => setApplySgst(e.target.checked)}
+                    onChange={(e) => handleToggleSgst(e.target.checked)}
                     className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400 cursor-pointer"
                   />
                   <span>SGST</span>
@@ -651,7 +676,7 @@ export const KleanmaxSparesQuotation: React.FC<KleanmaxSparesQuotationProps> = (
                   <input
                     type="checkbox"
                     checked={applyIgst}
-                    onChange={(e) => setApplyIgst(e.target.checked)}
+                    onChange={(e) => handleToggleIgst(e.target.checked)}
                     className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400 cursor-pointer"
                   />
                   <span>IGST</span>
@@ -757,16 +782,41 @@ export const KleanmaxSparesQuotation: React.FC<KleanmaxSparesQuotationProps> = (
 
             <div className="text-right">
               <div className="font-bold text-xs text-slate-700">For Klean max pro</div>
-              <div className="font-black text-sm text-slate-900 mt-4">Mr. Manikandan Balamurugan</div>
-              <div className="text-[11px] font-bold text-amber-700">Sales and Service Head</div>
-              <div className="text-[11px] text-slate-600">+91 7338882036</div>
+              <input
+                type="text"
+                value={signatoryName}
+                onChange={(e) => setSignatoryName(e.target.value)}
+                className="font-black text-sm text-slate-900 mt-2 text-right border-b border-transparent hover:border-slate-300 focus:border-amber-500 focus:outline-none bg-transparent"
+                placeholder="Praveena"
+                title="Click to edit signatory name"
+              />
+              <div>
+                <input
+                  type="text"
+                  value={signatoryDesignation}
+                  onChange={(e) => setSignatoryDesignation(e.target.value)}
+                  className="text-[11px] font-bold text-amber-700 text-right border-b border-transparent hover:border-slate-300 focus:border-amber-500 focus:outline-none bg-transparent"
+                  placeholder="Sales Executive"
+                  title="Click to edit designation"
+                />
+              </div>
+              <div>
+                <input
+                  type="text"
+                  value={signatoryPhone}
+                  onChange={(e) => setSignatoryPhone(e.target.value)}
+                  className="text-[11px] text-slate-600 text-right border-b border-transparent hover:border-slate-300 focus:border-amber-500 focus:outline-none bg-transparent"
+                  placeholder="8122282034"
+                  title="Click to edit phone"
+                />
+              </div>
               <div className="font-bold text-[11px] text-slate-800 uppercase mt-0.5">Authorised Signatory</div>
             </div>
           </div>
 
           {/* Fixed Footer */}
           <div className="border-t border-slate-300 pt-3 text-center text-[11px] font-black text-slate-800">
-            Contact :- 7338882036 / 9710148218 -- Website :- www.kleanmaxpro.com
+            Contact :- Praveena (Sales Executive) - 8122282034 / 7338882036 -- Website :- www.kleanmaxpro.com
           </div>
         </div>
       </div>

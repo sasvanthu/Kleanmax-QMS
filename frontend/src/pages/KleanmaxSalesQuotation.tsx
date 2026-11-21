@@ -36,6 +36,26 @@ export const KleanmaxSalesQuotation: React.FC<KleanmaxSalesQuotationProps> = ({
   const [applyIgst, setApplyIgst] = useState<boolean>(false);
   const [igstRate, setIgstRate] = useState<number>(18);
 
+  const handleToggleCgst = (checked: boolean) => {
+    setApplyCgst(checked);
+    setApplySgst(checked);
+    if (checked) setApplyIgst(false);
+  };
+
+  const handleToggleSgst = (checked: boolean) => {
+    setApplyCgst(checked);
+    setApplySgst(checked);
+    if (checked) setApplyIgst(false);
+  };
+
+  const handleToggleIgst = (checked: boolean) => {
+    setApplyIgst(checked);
+    if (checked) {
+      setApplyCgst(false);
+      setApplySgst(false);
+    }
+  };
+
   // Toggleable Note
   const DEFAULT_SALES_NOTE = `NOTE :
 1. Warranty: 1 Year comprehensive manufacturer warranty on machine against manufacturing defects.
@@ -516,7 +536,7 @@ export const KleanmaxSalesQuotation: React.FC<KleanmaxSalesQuotationProps> = ({
                   <input
                     type="checkbox"
                     checked={applyCgst}
-                    onChange={(e) => setApplyCgst(e.target.checked)}
+                    onChange={(e) => handleToggleCgst(e.target.checked)}
                     className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400 cursor-pointer"
                   />
                   <span>CGST</span>
@@ -540,7 +560,7 @@ export const KleanmaxSalesQuotation: React.FC<KleanmaxSalesQuotationProps> = ({
                   <input
                     type="checkbox"
                     checked={applySgst}
-                    onChange={(e) => setApplySgst(e.target.checked)}
+                    onChange={(e) => handleToggleSgst(e.target.checked)}
                     className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400 cursor-pointer"
                   />
                   <span>SGST</span>
@@ -564,7 +584,7 @@ export const KleanmaxSalesQuotation: React.FC<KleanmaxSalesQuotationProps> = ({
                   <input
                     type="checkbox"
                     checked={applyIgst}
-                    onChange={(e) => setApplyIgst(e.target.checked)}
+                    onChange={(e) => handleToggleIgst(e.target.checked)}
                     className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400 cursor-pointer"
                   />
                   <span>IGST</span>
@@ -660,7 +680,7 @@ export const KleanmaxSalesQuotation: React.FC<KleanmaxSalesQuotationProps> = ({
 
           {/* Fixed Footer */}
           <div className="border-t border-slate-300 pt-3 text-center text-[11px] font-black text-slate-800">
-            Contact :- 7338882036 / 9710148218 -- Website :- www.kleanmaxpro.com
+            Contact :- Praveena (Sales Executive) - 8122282034 / 7338882036 -- Website :- www.kleanmaxpro.com
           </div>
         </div>
       </div>

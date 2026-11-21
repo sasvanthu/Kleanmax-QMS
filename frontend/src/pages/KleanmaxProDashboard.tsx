@@ -131,9 +131,6 @@ export const KleanmaxProDashboard: React.FC<KleanmaxProDashboardProps> = ({
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
               {company?.company_name || 'Klean Max Pro'}
             </h1>
-            <span className="bg-[#FED10C] text-slate-950 font-black text-[11px] px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-2xs">
-              Floor Care & Scrubbing
-            </span>
             {company?.gstin && (
               <span className="text-[11px] font-mono font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
                 GSTIN: {company.gstin}
@@ -230,18 +227,12 @@ export const KleanmaxProDashboard: React.FC<KleanmaxProDashboardProps> = ({
                 <h2 className="text-lg font-black text-slate-900 group-hover:text-amber-600 transition-colors">
                   Generate Quotation
                 </h2>
-                <div className="flex items-center gap-1.5 mt-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
-                  <span className="text-[11px] font-bold text-amber-800 uppercase tracking-wider">
-                    Area-Based Floor Scrubbing Proposal
-                  </span>
-                </div>
               </div>
               <button
                 type="button"
                 onClick={() => onNavigate('kleanmaxpro_area')}
                 className="w-8 h-8 rounded-xl bg-slate-50 hover:bg-amber-100/70 border border-slate-200/80 text-slate-500 hover:text-amber-700 flex items-center justify-center shrink-0 transition-colors cursor-pointer shadow-2xs"
-                title="Open Area Generator"
+                title="Generate Quote"
               >
                 <ArrowRight className="w-4 h-4" />
               </button>
@@ -255,7 +246,7 @@ export const KleanmaxProDashboard: React.FC<KleanmaxProDashboardProps> = ({
             >
               <div className="flex items-center gap-2">
                 <Calculator className="w-4 h-4 text-slate-950 shrink-0" />
-                <span>Open Area Generator</span>
+                <span>Generate Quote</span>
               </div>
               <ChevronRight className="w-3.5 h-3.5 text-slate-900 group-hover/btn:translate-x-0.5 transition-transform shrink-0" />
             </button>
@@ -270,12 +261,6 @@ export const KleanmaxProDashboard: React.FC<KleanmaxProDashboardProps> = ({
                 <h2 className="text-lg font-black text-slate-900 group-hover:text-amber-600 transition-colors">
                   Past Records
                 </h2>
-                <div className="flex items-center gap-1.5 mt-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
-                  <span className="text-[11px] font-bold text-amber-800 uppercase tracking-wider">
-                    Full Archive, Word (.docx) & PDF Export
-                  </span>
-                </div>
               </div>
               <button
                 type="button"
